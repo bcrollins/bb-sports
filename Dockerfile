@@ -29,11 +29,13 @@ RUN addgroup --system --gid 1001 nodejs \
  && adduser --system --uid 1001 nextjs
 
 # Standalone server output (next.config.mjs `output: 'standalone'`)
-COPY --from=builder /app/public ./public
+COPY --from=builder --chown=nextjs:nodejs /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 # Articles are read at runtime via fs — make sure content/ ships
 COPY --from=builder --chown=nextjs:nodejs /app/content ./content
+# Defensive: ensure traversal/read perms across the runtime filesystem
+RUN chmod -R a+rX ./public ./.next ./content ./node_modules 2>/dev/null || true
 
 USER nextjs
 EXPOSE 3000
