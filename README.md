@@ -6,6 +6,14 @@
 
 A production-ready Next.js 14 site for Brad Benson's personal sports-media brand, built to broadcast-network polish (ESPN / Sky Sports / Fox Sports caliber) on a one-person operation.
 
+| | |
+|---|---|
+| **Live** | <https://web-production-c65d6.up.railway.app> |
+| **Repo** | <https://github.com/bcrollins/bb-sports> |
+| **Health** | <https://web-production-c65d6.up.railway.app/api/health> |
+| **Sitemap** | <https://web-production-c65d6.up.railway.app/sitemap.xml> |
+| **Hosting** | Railway · project `bb-sports` (auto-deploys on push to `main`) |
+
 ---
 
 ## Stack
