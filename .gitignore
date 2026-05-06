@@ -1,0 +1,44 @@
+# dependencies
+node_modules/
+.pnp
+.pnp.js
+.yarn/install-state.gz
+
+# testing
+coverage/
+
+# next.js
+.next/
+out/
+build/
+dist/
+
+# misc
+.DS_Store
+*.pem
+.vscode/
+.idea/
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# local env
+.env
+.env*.local
+.env.development
+.env.production
+
+# vercel (not used, but just in case)
+.vercel/
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+
+# transcripts (local artefacts; copies live in /docs and /transcripts which we keep)
+/sessions/
+
+# OS
+Thumbs.db

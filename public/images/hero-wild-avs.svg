@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" width="1600" height="900">
+  <rect width="1600" height="900" fill="#06122A"/>
+  <rect width="1600" height="14" fill="#7BB3FF"/>
+  <rect y="886" width="1600" height="14" fill="#7BB3FF"/>
+
+  <!-- Ice surface -->
+  <ellipse cx="800" cy="500" rx="700" ry="220" fill="#0E1B33" opacity="0.85"/>
+  <line x1="100" y1="500" x2="1500" y2="500" stroke="#7BB3FF" stroke-width="3" opacity="0.4"/>
+  <circle cx="800" cy="500" r="100" fill="none" stroke="#7BB3FF" stroke-width="3" opacity="0.4"/>
+
+  <!-- Score graphic -->
+  <text x="800" y="320" text-anchor="middle" font-family="Inter, system-ui, sans-serif" font-weight="900" font-size="22" letter-spacing="14" fill="#7BB3FF">NHL · GAME 1</text>
+  <text x="800" y="500" text-anchor="middle" font-family="Anton, Oswald, Inter, sans-serif" font-style="italic" font-weight="900" font-size="240" fill="#F5F2EC" letter-spacing="-6">9 — 6</text>
+  <text x="800" y="600" text-anchor="middle" font-family="Anton, Oswald, Inter, sans-serif" font-style="italic" font-weight="900" font-size="48" fill="#F5F2EC" opacity="0.9" letter-spacing="-1">THE FIREWORK GAME</text>
+  <text x="800" y="780" text-anchor="middle" font-family="Inter, system-ui, sans-serif" font-weight="700" font-size="24" letter-spacing="6" fill="#7BB3FF" opacity="0.8">WAS IT ACTUALLY GOOD HOCKEY?</text>
+</svg>

@@ -1,0 +1,13 @@
+node_modules
+.next
+.git
+.github
+.vscode
+.idea
+*.md
+!README.md
+docs/
+transcripts/
+.env*
+.DS_Store
+README.md

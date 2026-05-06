@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800" width="800" height="800">
+  <rect width="800" height="800" fill="#F5F2EC"/>
+  <rect width="800" height="14" fill="#0A1F44"/>
+  <g transform="translate(400 400)">
+    <circle r="220" fill="#EAE5D9" stroke="#0A1F44" stroke-width="4"/>
+    <circle cy="-50" r="100" fill="#0A1F44"/>
+    <path d="M -160 200 Q -160 60 0 60 Q 160 60 160 200 Z" fill="#0A1F44"/>
+  </g>
+  <text x="400" y="720" text-anchor="middle" font-family="Playfair Display, Georgia, serif" font-style="italic" font-weight="700" font-size="36" fill="#0A1F44">Brad Benson</text>
+  <text x="400" y="760" text-anchor="middle" font-family="Inter, system-ui, sans-serif" font-weight="500" font-size="16" letter-spacing="3" fill="#6B7280">FOUNDER · BB SPORTS · UF '27</text>
+</svg>

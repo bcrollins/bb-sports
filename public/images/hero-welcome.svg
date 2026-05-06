@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" width="1600" height="900">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#06122A"/>
+      <stop offset="1" stop-color="#0A1F44"/>
+    </linearGradient>
+  </defs>
+  <rect width="1600" height="900" fill="url(#bg)"/>
+  <rect width="1600" height="14" fill="#D7263D"/>
+  <rect y="886" width="1600" height="14" fill="#D7263D"/>
+
+  <g opacity="0.06">
+    <path d="M 0 0 L 1600 -300 L 1600 -270 L 0 30 Z" fill="#F5F2EC"/>
+    <path d="M 0 80 L 1600 -220 L 1600 -190 L 0 110 Z" fill="#F5F2EC"/>
+  </g>
+
+  <text x="800" y="200" text-anchor="middle" font-family="Inter, system-ui, sans-serif" font-weight="800" font-size="22" letter-spacing="10" fill="#D7263D">ISSUE 001</text>
+
+  <text x="800" y="500" text-anchor="middle" font-family="Anton, Oswald, Inter, sans-serif" font-style="italic" font-weight="900" font-size="280" fill="#F5F2EC" letter-spacing="-8">BB SPORTS</text>
+
+  <text x="800" y="610" text-anchor="middle" font-family="Inter, system-ui, sans-serif" font-weight="700" font-size="40" fill="#F5F2EC" opacity="0.9">Sports from the fan's view.</text>
+  <text x="800" y="700" text-anchor="middle" font-family="Anton, Oswald, Inter, sans-serif" font-style="italic" font-weight="900" font-size="80" fill="#D7263D" letter-spacing="-2">NO BULLSHIT.</text>
+  <text x="800" y="800" text-anchor="middle" font-family="Inter, system-ui, sans-serif" font-weight="700" font-size="22" letter-spacing="8" fill="#F5F2EC" opacity="0.65">FOUNDED · EDITED · WRITTEN BY BRAD BENSON</text>
+</svg>
