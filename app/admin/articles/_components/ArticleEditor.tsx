@@ -105,9 +105,22 @@ export function ArticleEditor({ initial, mode }: { initial?: ArticleFormValues; 
       setError('Title and slug are required.');
       return;
     }
+    const willPublish = publishOverride ?? v.published;
+    if (willPublish && v.aiAssisted && !v.bradsTake.trim()) {
+      setError('AI-assisted pieces cannot publish without Brad’s Take.');
+      return;
+    }
+    if (v.hero.trim() && !v.heroAlt.trim()) {
+      setError('Hero alt text is required when a hero image is set.');
+      return;
+    }
+    if (v.hero.trim() && !v.heroCredit.trim()) {
+      setError('Hero credit is required when a hero image is set.');
+      return;
+    }
     setSubmitting(true);
     try {
-      const payload = { ...v, published: publishOverride ?? v.published };
+      const payload = { ...v, published: willPublish };
       const url = mode === 'new' ? '/api/admin/articles' : `/api/admin/articles/${v.id}`;
       const res = await fetch(url, {
         method: mode === 'new' ? 'POST' : 'PUT',

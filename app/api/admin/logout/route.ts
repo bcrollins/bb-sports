@@ -16,6 +16,6 @@ export async function POST() {
       // ignore — audit only
     }
   }
-  clearSessionCookie();
+  await clearSessionCookie();
   return NextResponse.json({ ok: true });
 }

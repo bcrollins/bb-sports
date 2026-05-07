@@ -2,14 +2,19 @@ import Link from 'next/link';
 import ArticleCard from '@/components/ArticleCard';
 import NewsletterSignup from '@/components/NewsletterSignup';
 import { getAllArticles, sportLabel } from '@/lib/articles';
+import { getConfig } from '@/lib/queries';
 
 export const revalidate = 60;
 
 export default async function HomePage() {
-  const articles = await getAllArticles();
+  const [articles, heroConfig] = await Promise.all([
+    getAllArticles(),
+    getConfig<HomepageHeroConfig | null>('hero', null),
+  ]);
   const [lead, ...rest] = articles;
   const featured = rest.slice(0, 3);
   const more = rest.slice(3, 9);
+  const hero = normalizeHero(heroConfig);
 
   return (
     <div className="bg-bone min-h-[60vh]">
@@ -29,35 +34,35 @@ export default async function HomePage() {
             <div className="inline-flex items-center gap-2 mb-4">
               <span className="bb-eyebrow !text-bone/80 !tracking-[0.32em]">ISSUE 001</span>
               <span className="h-[2px] w-10 bg-breaking" aria-hidden="true" />
-              <span className="bb-eyebrow !text-breaking !tracking-[0.32em]">SOFT LAUNCH</span>
+              <span className="bb-eyebrow !text-breaking !tracking-[0.32em]">{hero.eyebrow}</span>
             </div>
             <h1
               className="font-display uppercase italic tracking-[-0.025em] leading-[0.86] text-bone"
               style={{ fontSize: 'clamp(2.5rem, 9vw, 7rem)' }}
             >
-              Sports from
-              <br />
-              the fan's view.
-              <br />
-              <span className="text-breaking">No bullshit.</span>
+              {hero.headlineLines.map((line, index) => (
+                <span key={`${line}-${index}`}>
+                  {index > 0 ? <br /> : null}
+                  <span className={index === hero.headlineLines.length - 1 ? 'text-breaking' : undefined}>{line}</span>
+                </span>
+              ))}
             </h1>
             <p className="mt-6 text-lg sm:text-xl text-bone/85 max-w-2xl leading-relaxed">
-              Opinion-led NFL, NHL, college football, soccer, NBA, and MMA — written like a fan, sourced like a reporter.
-              Founded and edited by{' '}
+              {hero.sub}{' '}
               <Link href="/about" className="underline underline-offset-4 decoration-breaking hover:text-breaking">
                 Brad Benson
               </Link>
               .
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
-              <Link href="/articles" className="bb-button-primary !bg-breaking hover:!bg-breaking/90">
-                Read the takes
+              <Link href={hero.ctaPrimary.href} className="bb-button-primary !bg-breaking hover:!bg-breaking/90">
+                {hero.ctaPrimary.label}
               </Link>
               <Link
-                href="/coming-soon"
+                href={hero.ctaSecondary.href}
                 className="bb-button-ghost !border-bone !text-bone hover:!bg-bone/10"
               >
-                Get the newsletter
+                {hero.ctaSecondary.label}
               </Link>
             </div>
           </div>
@@ -138,7 +143,7 @@ export default async function HomePage() {
       )}
 
       {/* MISSION STATEMENT — pulled-quote slab */}
-      <section className="bg-navy text-bone">
+      <section id="newsletter" className="bg-navy text-bone">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-14 grid md:grid-cols-12 gap-8 items-start">
           <div className="md:col-span-7">
             <div className="bb-eyebrow !text-breaking !tracking-[0.32em]">The mission</div>
@@ -184,4 +189,42 @@ export default async function HomePage() {
       </section>
     </div>
   );
+}
+
+interface HomepageHeroConfig {
+  version?: number;
+  eyebrow?: string;
+  headline?: string;
+  sub?: string;
+  cta_primary?: { label?: string; href?: string };
+  cta_secondary?: { label?: string; href?: string };
+}
+
+const DEFAULT_HERO = {
+  eyebrow: 'SOFT LAUNCH',
+  headlineLines: ['Sports from', "the fan's view.", 'No bullshit.'],
+  sub: 'Opinion-led NFL, NHL, college football, soccer, NBA, and MMA — written like a fan, sourced like a reporter. Founded and edited by',
+  ctaPrimary: { label: 'Read the takes', href: '/articles' },
+  ctaSecondary: { label: 'Get the newsletter', href: '/#newsletter' },
+};
+
+function normalizeHero(config: HomepageHeroConfig | null) {
+  if (!config?.version) return DEFAULT_HERO;
+  const headlineLines = String(config.headline || DEFAULT_HERO.headlineLines.join('\n'))
+    .split(/\n+/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+  return {
+    eyebrow: config.eyebrow || DEFAULT_HERO.eyebrow,
+    headlineLines: headlineLines.length > 0 ? headlineLines : DEFAULT_HERO.headlineLines,
+    sub: config.sub || DEFAULT_HERO.sub,
+    ctaPrimary: {
+      label: config.cta_primary?.label || DEFAULT_HERO.ctaPrimary.label,
+      href: config.cta_primary?.href || DEFAULT_HERO.ctaPrimary.href,
+    },
+    ctaSecondary: {
+      label: config.cta_secondary?.label || DEFAULT_HERO.ctaSecondary.label,
+      href: config.cta_secondary?.href || DEFAULT_HERO.ctaSecondary.href,
+    },
+  };
 }

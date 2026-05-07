@@ -18,6 +18,7 @@ export const dynamic = 'force-dynamic';
 interface ConfigShape {
   breaking_ticker?: { sport: string; text: string }[];
   hero?: {
+    version?: number;
     eyebrow?: string;
     headline?: string;
     sub?: string;

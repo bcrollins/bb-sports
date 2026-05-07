@@ -6,6 +6,9 @@
  *   articles      — blog posts. Migrated from /content/articles markdown on first boot.
  *   site_config   — key/value settings the admin can edit (breaking ticker, hero, about bio).
  *   sessions      — JWT session log (for audit + revoke). Cookie carries the JWT, this is for traceability.
+ *   newsletter_subscribers — first-party newsletter list + consent ledger.
+ *   contact_messages       — tips, press, sponsorship, and general inbox.
+ *   donation_intents       — supporter-interest ledger before Stripe Checkout opens.
  *
  * All timestamps stored as Postgres `timestamptz`. All ids are uuid v4.
  */
@@ -78,6 +81,54 @@ export const sessions = pgTable('sessions', {
   revokedAt: timestamp('revoked_at', { withTimezone: true }),
 });
 
+// ---------- newsletter_subscribers ----------
+export const newsletterSubscribers = pgTable('newsletter_subscribers', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  email: varchar('email', { length: 255 }).notNull().unique(),
+  status: varchar('status', { length: 24 }).notNull().default('subscribed'),
+  source: varchar('source', { length: 80 }).notNull().default('site'),
+  consentText: text('consent_text').notNull().default('Newsletter signup on BB Sports. No spam. Unsubscribe in one click.'),
+  consentVersion: varchar('consent_version', { length: 32 }).notNull().default('2026-05-07'),
+  signupCount: integer('signup_count').notNull().default(1),
+  lastIpAddress: varchar('last_ip_address', { length: 64 }),
+  lastUserAgent: text('last_user_agent'),
+  welcomeSentAt: timestamp('welcome_sent_at', { withTimezone: true }),
+  unsubscribedAt: timestamp('unsubscribed_at', { withTimezone: true }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+// ---------- contact_messages ----------
+export const contactMessages = pgTable('contact_messages', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  mode: varchar('mode', { length: 24 }).notNull(),
+  email: varchar('email', { length: 255 }).notNull(),
+  name: varchar('name', { length: 120 }).notNull().default(''),
+  message: text('message').notNull(),
+  confidential: boolean('confidential').notNull().default(false),
+  status: varchar('status', { length: 24 }).notNull().default('new'),
+  ipAddress: varchar('ip_address', { length: 64 }),
+  userAgent: text('user_agent'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+// ---------- donation_intents ----------
+export const donationIntents = pgTable('donation_intents', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  email: varchar('email', { length: 255 }),
+  name: varchar('name', { length: 120 }).notNull().default(''),
+  amountCents: integer('amount_cents'),
+  message: text('message').notNull().default(''),
+  source: varchar('source', { length: 80 }).notNull().default('site'),
+  status: varchar('status', { length: 32 }).notNull().default('waiting_for_stripe'),
+  stripePaymentLink: text('stripe_payment_link'),
+  ipAddress: varchar('ip_address', { length: 64 }),
+  userAgent: text('user_agent'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
 // ---------- type exports ----------
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
@@ -85,3 +136,6 @@ export type Article = typeof articles.$inferSelect;
 export type NewArticle = typeof articles.$inferInsert;
 export type SiteConfigRow = typeof siteConfig.$inferSelect;
 export type Session = typeof sessions.$inferSelect;
+export type NewsletterSubscriber = typeof newsletterSubscribers.$inferSelect;
+export type ContactMessage = typeof contactMessages.$inferSelect;
+export type DonationIntent = typeof donationIntents.$inferSelect;

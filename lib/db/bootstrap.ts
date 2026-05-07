@@ -89,9 +89,60 @@ async function bootstrap(): Promise<void> {
       revoked_at timestamptz
     );
   `);
+  await db.execute(sql`
+    CREATE TABLE IF NOT EXISTS newsletter_subscribers (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      email varchar(255) NOT NULL UNIQUE,
+      status varchar(24) NOT NULL DEFAULT 'subscribed',
+      source varchar(80) NOT NULL DEFAULT 'site',
+      consent_text text NOT NULL DEFAULT 'Newsletter signup on BB Sports. No spam. Unsubscribe in one click.',
+      consent_version varchar(32) NOT NULL DEFAULT '2026-05-07',
+      signup_count integer NOT NULL DEFAULT 1,
+      last_ip_address varchar(64),
+      last_user_agent text,
+      welcome_sent_at timestamptz,
+      unsubscribed_at timestamptz,
+      created_at timestamptz NOT NULL DEFAULT now(),
+      updated_at timestamptz NOT NULL DEFAULT now()
+    );
+  `);
+  await db.execute(sql`
+    CREATE TABLE IF NOT EXISTS contact_messages (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      mode varchar(24) NOT NULL,
+      email varchar(255) NOT NULL,
+      name varchar(120) NOT NULL DEFAULT '',
+      message text NOT NULL,
+      confidential boolean NOT NULL DEFAULT false,
+      status varchar(24) NOT NULL DEFAULT 'new',
+      ip_address varchar(64),
+      user_agent text,
+      created_at timestamptz NOT NULL DEFAULT now(),
+      updated_at timestamptz NOT NULL DEFAULT now()
+    );
+  `);
+  await db.execute(sql`
+    CREATE TABLE IF NOT EXISTS donation_intents (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      email varchar(255),
+      name varchar(120) NOT NULL DEFAULT '',
+      amount_cents integer,
+      message text NOT NULL DEFAULT '',
+      source varchar(80) NOT NULL DEFAULT 'site',
+      status varchar(32) NOT NULL DEFAULT 'waiting_for_stripe',
+      stripe_payment_link text,
+      ip_address varchar(64),
+      user_agent text,
+      created_at timestamptz NOT NULL DEFAULT now(),
+      updated_at timestamptz NOT NULL DEFAULT now()
+    );
+  `);
   await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_articles_published ON articles(published, published_at DESC);`);
   await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_articles_sport ON articles(sport);`);
   await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_sessions_user ON sessions(user_id);`);
+  await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_newsletter_status ON newsletter_subscribers(status, updated_at DESC);`);
+  await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_contact_messages_status ON contact_messages(status, created_at DESC);`);
+  await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_donation_intents_status ON donation_intents(status, created_at DESC);`);
 
   // 2. Admin user seed (idempotent ON CONFLICT DO NOTHING).
   const adminEmail = process.env.ADMIN_EMAIL;
@@ -127,11 +178,12 @@ async function bootstrap(): Promise<void> {
       { sport: 'PL', text: "Man United's 'rebuild' is the longest-running take from Brad." },
     ],
     hero: {
+      version: 2,
       eyebrow: 'SOFT LAUNCH',
-      headline: 'NO BULLSHIT.',
-      sub: "I'm Brad Benson — a fan first, a journalist second. BB Sports is opinion-led NFL, NHL, college football, soccer, NBA, and MMA, written like a fan and sourced like a reporter.",
-      cta_primary: { label: 'Read the latest', href: '/articles' },
-      cta_secondary: { label: 'About Brad', href: '/about' },
+      headline: "Sports from\nthe fan's view.\nNo bullshit.",
+      sub: 'Opinion-led NFL, NHL, college football, soccer, NBA, and MMA — written like a fan, sourced like a reporter. Founded and edited by',
+      cta_primary: { label: 'Read the takes', href: '/articles' },
+      cta_secondary: { label: 'Get the newsletter', href: '/#newsletter' },
     },
     about_bio: [
       "I'm Brad Benson, a journalism &amp; sports media major at the University of Florida (class of '27). I grew up in Chicago — where you bleed Bears, Bulls, Hawks, Cubs, and yelling at the TV is a love language.",

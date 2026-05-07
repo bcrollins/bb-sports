@@ -11,8 +11,7 @@
  *                          jose; route handlers re-verify against the users table.
  *
  * Always allowed (no gate, no auth):
- *   /coming-soon, /api/gate, /api/health, /admin/login, /api/admin/login,
- *   /api/admin/logout, _next assets, robots/sitemap/icons/og.
+ *   /coming-soon, /api/gate, /api/health, _next assets, robots/sitemap/icons/og.
  */
 import { NextRequest, NextResponse } from 'next/server';
 import { jwtVerify } from 'jose';
@@ -25,11 +24,6 @@ const GATE_BYPASS_EXACT = new Set<string>([
   '/coming-soon',
   '/api/gate',
   '/api/health',
-  '/api/newsletter',
-  '/api/contact',
-  '/admin/login',
-  '/api/admin/login',
-  '/api/admin/logout',
   '/robots.txt',
   '/sitemap.xml',
   '/favicon.ico',
@@ -45,26 +39,30 @@ export async function middleware(req: NextRequest) {
   // 0. Always allow Next assets.
   if (GATE_BYPASS_PREFIX.some((p) => pathname.startsWith(p))) return NextResponse.next();
 
-  // 1. Admin routes — gate by JWT first; admin login bypasses both gates.
-  const adminCheck = await adminAuthIfNeeded(req, pathname);
-  if (adminCheck) return adminCheck;
-
-  // 2. Site gate — non-admin paths require either bb_gate cookie or bb_session (logged-in admin).
+  // 1. Site wall — every non-bypass route requires either bb_gate or a valid
+  // admin session. This includes /admin/login so the white wall is truly global.
   if (GATE_BYPASS_EXACT.has(pathname)) return NextResponse.next();
 
   const hasGate = req.cookies.get(GATE_COOKIE)?.value === '1';
   const hasSession = await hasValidSession(req);
-  if (hasGate || hasSession) return NextResponse.next();
+  if (!hasGate && !hasSession) {
+    // For API requests, return 401 instead of redirecting (caller is JS, not a browser).
+    if (pathname.startsWith('/api/')) {
+      return NextResponse.json({ error: 'Site gated' }, { status: 401 });
+    }
 
-  // For API requests, return 401 instead of redirecting (caller is JS, not a browser).
-  if (pathname.startsWith('/api/')) {
-    return NextResponse.json({ error: 'Site gated' }, { status: 401 });
+    const url = req.nextUrl.clone();
+    url.pathname = '/coming-soon';
+    if (pathname !== '/') url.searchParams.set('next', pathname);
+    return NextResponse.redirect(url);
   }
 
-  const url = req.nextUrl.clone();
-  url.pathname = '/coming-soon';
-  if (pathname !== '/') url.searchParams.set('next', pathname);
-  return NextResponse.redirect(url);
+  // 2. Admin routes — after the white wall is cleared, require a valid
+  // newsroom JWT. /admin/login and login/logout APIs stay public behind the wall.
+  const adminCheck = await adminAuthIfNeeded(req, pathname);
+  if (adminCheck) return adminCheck;
+
+  return NextResponse.next();
 }
 
 async function adminAuthIfNeeded(req: NextRequest, pathname: string): Promise<NextResponse | null> {

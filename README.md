@@ -20,7 +20,7 @@ A production-ready Next.js 14 site for Brad Benson's personal sports-media brand
 
 | Layer | Tech |
 |---|---|
-| Framework | Next.js 14 (App Router, RSC) |
+| Framework | Next.js 15 (App Router, RSC) |
 | Language | TypeScript (strict) |
 | Styling | Tailwind CSS, custom broadcast type system (Anton + Inter + Playfair Display + Source Serif Pro) |
 | Content | Markdown via `gray-matter` + `remark` |
@@ -43,11 +43,17 @@ A production-ready Next.js 14 site for Brad Benson's personal sports-media brand
 /editorial-standards    Public editorial standards
 /corrections            Public corrections log
 /coming-soon            Pre-launch landing with email capture
-/admin                  Internal dashboard stub (auth-gated in v1.1)
+/admin                  Newsroom command center (auth-gated)
+/admin/articles         No-code article roster
+/admin/articles/new     Article editor + live markdown preview
+/admin/site             No-code site copy controls
+/admin/audience         Newsletter / contact / donation-intent ledger
+/admin/access-wall      Blank white site-wall password control
+/admin/launch           Launch-readiness and provider posture
 /api/health             Health probe (Railway healthcheck)
 /api/newsletter         Email capture endpoint (rate-limited)
 /api/contact            Tips / general contact endpoint (rate-limited)
-/api/donations          Stripe payment-link proxy (stub until donations open)
+/api/donations          Stripe payment-link proxy + first-party supporter-interest ledger
 /sitemap.xml            Auto-generated
 /robots.txt             Disallows /admin and /api
 ```
@@ -127,7 +133,7 @@ Railway picks up `Dockerfile` + `railway.json`. Multi-stage Docker build → Nex
 
 | Phase | Ship |
 |---|---|
-| **v1.1 (within 30 days post-launch)** | Real auth on `/admin`, AI draft pipeline (xAI Grok) with approval gate, Postgres-backed CMS migration, comment moderation, donation ledger, newsletter via Resend, photo headshot replacing placeholder. |
+| **v1.1 (within 30 days post-launch)** | AI draft pipeline (xAI Grok) with approval gate, comment moderation, Stripe webhook reconciliation, newsletter welcome/suppression via Resend, photo headshot replacing placeholder. |
 | **v1.2** | Live scores feed (commercial-licensed), share-to-X auto-post on publish, podcast feed + first episode, vertical-clip ingestion. |
 | **v2.0** | Reader referral / leaderboard, sponsorship intake portal, internal analytics dashboard, custom recommendation feed. |
 

@@ -4,8 +4,9 @@ import { ArticleEditor } from '../../_components/ArticleEditor';
 
 export const dynamic = 'force-dynamic';
 
-export default async function EditArticlePage({ params }: { params: { id: string } }) {
-  const a = await getArticleById(params.id);
+export default async function EditArticlePage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const a = await getArticleById(id);
   if (!a) notFound();
   return (
     <ArticleEditor

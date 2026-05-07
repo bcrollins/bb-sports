@@ -63,7 +63,7 @@ export async function POST(req: NextRequest) {
     name: user.name,
     role: user.role,
   });
-  setSessionCookie(token, exp);
+  await setSessionCookie(token, exp);
 
   const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? null;
   const ua = req.headers.get('user-agent');
