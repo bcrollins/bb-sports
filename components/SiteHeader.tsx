@@ -1,8 +1,9 @@
-'use client';
 import Link from 'next/link';
-import { useState } from 'react';
 import Logo from './Logo';
 
+// Every link is a named, discoverable home — no hamburger / "More" bucket.
+// On mobile the nav scrolls horizontally (same broadcast-strip pattern the
+// homepage score ticker uses); on desktop it justifies center.
 const NAV = [
   { href: '/articles', label: 'Articles' },
   { href: '/articles?sport=nfl', label: 'NFL' },
@@ -13,17 +14,15 @@ const NAV = [
   { href: '/articles?sport=mma', label: 'MMA' },
   { href: '/podcast', label: 'Podcast' },
   { href: '/videos', label: 'Videos' },
-  { href: '/about', label: 'About' }
+  { href: '/about', label: 'About' },
 ];
 
 export default function SiteHeader() {
-  const [open, setOpen] = useState(false);
-
   const today = new Date().toLocaleDateString('en-US', {
     weekday: 'short',
     month: 'short',
     day: 'numeric',
-    year: 'numeric'
+    year: 'numeric',
   });
 
   return (
@@ -31,7 +30,7 @@ export default function SiteHeader() {
       {/* Network top rule — broadcast bug */}
       <div className="bb-masthead-rule" aria-hidden="true" />
 
-      {/* Network bar — like the ESPN top bar with the date + score ticker */}
+      {/* Network bar — ESPN-style top strip with the date + brand CTAs */}
       <div className="hidden md:flex items-center justify-between px-6 py-1.5 text-[10.5px] uppercase tracking-[0.22em] text-bone bg-navy-deep border-b border-navy-700">
         <div className="flex items-center gap-4">
           <span className="font-semibold text-bone">BB · LIVE</span>
@@ -53,45 +52,33 @@ export default function SiteHeader() {
       </div>
 
       {/* Masthead — broadcast lockup */}
-      <div className="px-4 sm:px-6 py-7 sm:py-9 text-center relative">
+      <div className="px-4 sm:px-6 py-7 sm:py-9 text-center">
         <Logo asLink variant="masthead" scheme="navy-on-bone" className="mx-auto" />
         <div className="mt-3 text-[10.5px] sm:text-xs uppercase tracking-[0.32em] text-navy/80 font-semibold">
-          Sports from the fan's view <span className="mx-1 text-navy/30">·</span>{' '}
+          Sports from the fan&rsquo;s view <span className="mx-1 text-navy/30">·</span>{' '}
           <span className="text-breaking font-extrabold">No bullshit.</span>
         </div>
-
-        {/* Mobile menu — every nav item has a discoverable, named home below; this is the toggle, not a hamburger bucket */}
-        <button
-          onClick={() => setOpen(!open)}
-          aria-expanded={open}
-          aria-controls="primary-nav"
-          aria-label={open ? 'Close navigation' : 'Open navigation'}
-          className="md:hidden absolute right-4 top-7 inline-flex items-center justify-center min-w-[64px] min-h-[44px] rounded-sm border-2 border-navy text-navy bg-bone-50 font-bold uppercase tracking-[0.18em] text-[11px]"
-        >
-          {open ? 'Close' : 'Menu'}
-        </button>
       </div>
 
-      {/* Primary nav — broadcast pill bar */}
-      <nav
-        id="primary-nav"
-        aria-label="Primary"
-        className={`${open ? 'block' : 'hidden'} md:block bg-navy text-bone`}
-      >
-        <ul className="flex flex-col md:flex-row md:items-stretch md:justify-center md:flex-wrap">
+      {/* Primary nav — broadcast pill strip.
+          Mobile: horizontally scrollable, every link visible (no "Menu" toggle).
+          Desktop: justify-center, wraps if needed. */}
+      <nav id="primary-nav" aria-label="Primary" className="bg-navy text-bone">
+        <ul
+          className="flex md:justify-center md:flex-wrap overflow-x-auto md:overflow-visible scroll-smooth [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+        >
           {NAV.map((item, i) => (
-            <li key={item.href} className="md:contents">
+            <li key={item.href} className="shrink-0">
               <Link
                 href={item.href}
-                onClick={() => setOpen(false)}
                 className={[
-                  'block md:inline-flex md:items-center md:justify-center',
-                  'px-5 md:px-5 py-3 md:py-3.5',
-                  'text-[12.5px] md:text-[12px] font-bold uppercase tracking-[0.18em]',
+                  'inline-flex items-center justify-center',
+                  'px-4 sm:px-5 py-3 md:py-3.5',
+                  'text-[12px] font-bold uppercase tracking-[0.18em] whitespace-nowrap',
                   'text-bone hover:text-bone hover:bg-breaking transition-colors',
-                  'min-h-[48px]',
-                  'border-b md:border-b-0 md:border-r border-bone/15',
-                  i === NAV.length - 1 ? 'md:border-r-0' : ''
+                  'min-h-[48px] min-w-[64px]',
+                  'border-r border-bone/15',
+                  i === NAV.length - 1 ? 'border-r-0' : '',
                 ].join(' ')}
               >
                 {item.label}
