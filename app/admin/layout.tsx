@@ -1,13 +1,22 @@
 /**
- * /admin layout — broadcast-grade newsroom shell shared by every admin page.
+ * /admin layout — BB Sports newsroom operating system.
  *
- * Server-rendered. Requires an authenticated session (middleware enforces this
- * before this code runs, so we can safely call getSession here without redirects).
- *
- * The /admin/login page has its own bare layout via app/admin/login/layout.tsx.
+ * The access wall is global. This shell is the second layer: authenticated
+ * admin-only operations for publishing, audience, launch, and site control.
  */
 import Link from 'next/link';
 import type { ReactNode } from 'react';
+import {
+  BarChart3,
+  FileText,
+  Home,
+  LockKeyhole,
+  Newspaper,
+  PenLine,
+  Rocket,
+  Settings,
+  Users,
+} from 'lucide-react';
 import { getSession } from '@/lib/auth';
 import { LogoutButton } from './_components/LogoutButton';
 
@@ -16,51 +25,92 @@ export const metadata = {
   robots: { index: false, follow: false },
 };
 
-const NAV: { href: string; label: string }[] = [
-  { href: '/admin', label: 'Overview' },
-  { href: '/admin/articles', label: 'Articles' },
-  { href: '/admin/articles/new', label: 'New article' },
-  { href: '/admin/site', label: 'Site config' },
+const NAV = [
+  { href: '/admin', label: 'Command', icon: Home },
+  { href: '/admin/articles', label: 'Articles', icon: FileText },
+  { href: '/admin/articles/new', label: 'Write', icon: PenLine },
+  { href: '/admin/audience', label: 'Audience', icon: Users },
+  { href: '/admin/site', label: 'Site', icon: Settings },
+  { href: '/admin/access-wall', label: 'Access wall', icon: LockKeyhole },
+  { href: '/admin/launch', label: 'Launch', icon: Rocket },
 ];
 
 export default async function AdminLayout({ children }: { children: ReactNode }) {
   const session = await getSession();
+
+  if (!session) {
+    return (
+      <div className="fixed inset-0 z-[9998] overflow-y-auto bg-bone text-navy">
+        {children}
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-bone text-navy">
-      <header className="bg-navy text-bone border-b-4 border-broadcast-red">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3 flex items-center gap-4">
-          <Link href="/" className="font-display italic text-xl tracking-wider hover:opacity-80">
-            BB SPORTS
-          </Link>
-          <span className="font-mono text-[10px] uppercase tracking-[0.3em] text-bone/60">
-            Newsroom
-          </span>
-          <nav className="ml-6 hidden sm:flex items-center gap-5 text-sm">
-            {NAV.map((n) => (
-              <Link key={n.href} href={n.href} className="hover:text-broadcast-red transition-colors">
-                {n.label}
+    <div className="fixed inset-0 z-[9998] overflow-y-auto bg-[#f6f7f9] text-navy">
+      <div className="lg:grid lg:min-h-screen lg:grid-cols-[276px_minmax(0,1fr)]">
+        <aside className="border-b border-navy/10 bg-white lg:sticky lg:top-0 lg:h-screen lg:border-b-0 lg:border-r">
+          <div className="flex h-full flex-col">
+            <div className="border-b border-navy/10 px-5 py-5">
+              <Link href="/admin" className="flex items-center gap-3">
+                <span className="grid h-11 w-11 place-items-center rounded-lg bg-navy text-bone">
+                  <Newspaper size={22} strokeWidth={2.4} />
+                </span>
+                <span>
+                  <span className="block font-display text-2xl italic tracking-wide text-navy">BB SPORTS</span>
+                  <span className="block text-[10px] font-bold uppercase tracking-[0.26em] text-navy/50">Newsroom OS</span>
+                </span>
               </Link>
-            ))}
-          </nav>
-          <div className="ml-auto flex items-center gap-4">
-            <span className="hidden md:inline font-mono text-[10px] uppercase tracking-[0.3em] text-bone/60">
-              {session?.name ?? '—'} · {session?.role ?? '—'}
-            </span>
-            <Link href="/" className="text-xs text-bone/70 hover:text-bone underline-offset-2 hover:underline">
-              View site
-            </Link>
-            <LogoutButton />
+            </div>
+
+            <nav aria-label="Admin" className="flex gap-2 overflow-x-auto px-4 py-3 lg:flex-1 lg:flex-col lg:overflow-visible lg:py-5">
+              {NAV.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className="inline-flex min-h-[44px] shrink-0 items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-semibold text-navy/72 transition-colors hover:bg-navy hover:text-bone"
+                  >
+                    <Icon size={17} strokeWidth={2.2} aria-hidden="true" />
+                    <span>{item.label}</span>
+                  </Link>
+                );
+              })}
+            </nav>
+
+            <div className="hidden border-t border-navy/10 p-4 lg:block">
+              <div className="rounded-lg bg-bone-50 p-3">
+                <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-navy/50">Signed in</div>
+                <div className="mt-1 truncate font-serif font-bold text-navy">{session?.name ?? 'Bradley'}</div>
+                <div className="mt-0.5 truncate text-xs text-navy/55">{session?.role ?? 'admin'}</div>
+              </div>
+            </div>
           </div>
+        </aside>
+
+        <div className="min-w-0">
+          <header className="sticky top-0 z-30 border-b border-navy/10 bg-white/92 px-4 py-3 backdrop-blur sm:px-6">
+            <div className="mx-auto flex max-w-7xl items-center gap-3">
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.24em] text-navy/50">
+                  <BarChart3 size={14} aria-hidden="true" />
+                  Bradley Benson control room
+                </div>
+              </div>
+              <Link
+                href="/"
+                className="hidden min-h-[36px] items-center rounded border border-navy/15 px-3 text-xs font-bold uppercase tracking-[0.16em] text-navy/70 hover:border-navy hover:text-navy sm:inline-flex"
+              >
+                View site
+              </Link>
+              <LogoutButton />
+            </div>
+          </header>
+
+          <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:py-8">{children}</main>
         </div>
-        <nav className="sm:hidden px-4 py-2 flex gap-4 text-xs overflow-x-auto">
-          {NAV.map((n) => (
-            <Link key={n.href} href={n.href} className="whitespace-nowrap hover:text-broadcast-red">
-              {n.label}
-            </Link>
-          ))}
-        </nav>
-      </header>
-      <main className="max-w-6xl mx-auto px-4 sm:px-6 py-8">{children}</main>
+      </div>
     </div>
   );
 }

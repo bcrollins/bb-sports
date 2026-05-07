@@ -22,12 +22,13 @@ const SPORTS: { value: SportSlug | 'all'; label: string }[] = [
   { value: 'mma', label: 'MMA' }
 ];
 
-type Props = { searchParams: { sport?: string; q?: string } };
+type Props = { searchParams: Promise<{ sport?: string; q?: string }> };
 
 export default async function ArticlesPage({ searchParams }: Props) {
   const all = await getAllArticles();
-  const sport = (searchParams.sport ?? 'all') as SportSlug | 'all';
-  const q = (searchParams.q ?? '').trim().toLowerCase();
+  const params = await searchParams;
+  const sport = (params.sport ?? 'all') as SportSlug | 'all';
+  const q = (params.q ?? '').trim().toLowerCase();
 
   const filtered = all.filter((a) => {
     const okSport = sport === 'all' || a.sport === sport;

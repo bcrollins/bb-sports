@@ -65,7 +65,7 @@ export async function verifySession(token: string): Promise<SessionPayload | nul
 
 /** Read & verify the current session from the request cookie. Returns null if missing/invalid. */
 export async function getSession(): Promise<SessionPayload | null> {
-  const c = cookies().get(COOKIE);
+  const c = (await cookies()).get(COOKIE);
   if (!c?.value) return null;
   return verifySession(c.value);
 }
@@ -109,8 +109,8 @@ export function getTimingMitigationHash(): string {
 }
 
 /** Set the session cookie on the response. Call only inside a route handler / server action. */
-export function setSessionCookie(token: string, exp: Date) {
-  cookies().set(COOKIE, token, {
+export async function setSessionCookie(token: string, exp: Date) {
+  (await cookies()).set(COOKIE, token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
@@ -120,8 +120,8 @@ export function setSessionCookie(token: string, exp: Date) {
 }
 
 /** Clear the session cookie. */
-export function clearSessionCookie() {
-  cookies().delete(COOKIE);
+export async function clearSessionCookie() {
+  (await cookies()).delete(COOKIE);
 }
 
 /** Convenience name. */

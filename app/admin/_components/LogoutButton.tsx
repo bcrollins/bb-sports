@@ -18,7 +18,7 @@ export function LogoutButton() {
           router.refresh();
         }
       }}
-      className="text-xs uppercase tracking-[0.2em] bg-broadcast-red px-3 py-1.5 rounded hover:bg-broadcast-red/90 disabled:opacity-60"
+      className="inline-flex min-h-[36px] items-center rounded bg-broadcast-red px-3 text-xs font-black uppercase tracking-[0.16em] text-bone hover:bg-broadcast-red/90 disabled:opacity-60"
       disabled={pending}
     >
       {pending ? 'Out…' : 'Sign out'}

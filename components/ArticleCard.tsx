@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import type { Article } from '@/lib/articles';
 import { formatDate } from '@/lib/articles';
 import { sportMeta } from '@/lib/sport-meta';
@@ -40,12 +41,12 @@ export default function ArticleCard({ article, variant = 'standard' }: Props) {
       <Link href={`/articles/${article.slug}`} className="block group">
         {article.hero && (
           <div className={`relative ${isLead ? 'aspect-[16/9]' : 'aspect-[16/10]'} bg-navy/10 overflow-hidden`}>
-            <img
+            <Image
               src={article.hero}
               alt={article.heroAlt ?? article.title}
+              fill
+              sizes={isLead ? '(min-width: 768px) 50vw, 100vw' : '(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw'}
               className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-300"
-              loading="lazy"
-              decoding="async"
             />
             {/* Sport bug, top-left, broadcast-style */}
             <div className="absolute top-3 left-3 flex items-center gap-2">

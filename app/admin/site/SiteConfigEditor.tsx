@@ -4,6 +4,7 @@ import { useState } from 'react';
 
 interface BumpItem { sport: string; text: string }
 interface HeroShape {
+  version?: number;
   eyebrow?: string;
   headline?: string;
   sub?: string;
@@ -19,6 +20,14 @@ interface ConfigShape {
 }
 
 const SPORT_OPTIONS = ['BREAKING', 'NFL', 'NHL', 'CFB', 'NBA', 'PL', 'MMA', 'OPED'];
+const DEFAULT_HERO: HeroShape = {
+  version: 2,
+  eyebrow: 'SOFT LAUNCH',
+  headline: "Sports from\nthe fan's view.\nNo bullshit.",
+  sub: 'Opinion-led NFL, NHL, college football, soccer, NBA, and MMA — written like a fan, sourced like a reporter. Founded and edited by',
+  cta_primary: { label: 'Read the takes', href: '/articles' },
+  cta_secondary: { label: 'Get the newsletter', href: '/#newsletter' },
+};
 
 export default function SiteConfigEditor({ initial }: { initial: ConfigShape }) {
   const [config, setConfig] = useState<ConfigShape>(initial);
@@ -57,7 +66,7 @@ export default function SiteConfigEditor({ initial }: { initial: ConfigShape }) 
   }
 
   // ---------- hero editor ----------
-  const hero: HeroShape = config.hero ?? {};
+  const hero: HeroShape = config.hero?.version ? config.hero : DEFAULT_HERO;
   function setHero(next: HeroShape) {
     setConfig((c) => ({ ...c, hero: next }));
   }
@@ -136,7 +145,7 @@ export default function SiteConfigEditor({ initial }: { initial: ConfigShape }) 
           hint="The big italic display section under the navigation."
           saving={saving === 'hero'}
           saved={savedKey === 'hero'}
-          onSave={() => save('hero', hero)}
+          onSave={() => save('hero', { ...hero, version: 2 })}
         />
         <div className="grid sm:grid-cols-2 gap-3 mt-4">
           <Labeled label="Eyebrow">
@@ -144,7 +153,7 @@ export default function SiteConfigEditor({ initial }: { initial: ConfigShape }) 
               value={hero.eyebrow ?? ''} onChange={(e) => setHero({ ...hero, eyebrow: e.target.value })} />
           </Labeled>
           <Labeled label="Headline">
-            <input className="w-full border border-navy/20 rounded px-3 py-2 text-sm font-display italic"
+            <textarea className="w-full border border-navy/20 rounded px-3 py-2 text-sm font-display italic min-h-[84px]"
               value={hero.headline ?? ''} onChange={(e) => setHero({ ...hero, headline: e.target.value })} />
           </Labeled>
           <Labeled label="Sub-headline" full>

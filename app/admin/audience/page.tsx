@@ -1,0 +1,146 @@
+/**
+ * /admin/audience — first-party intake ledger.
+ *
+ * This is the operating screen for pre-launch growth: newsletter subscribers,
+ * tips / sponsor messages, and donation-interest rows live in BB Sports' own
+ * database before any external transport is wired in.
+ */
+import type { ReactNode } from 'react';
+import { getAudienceSnapshot } from '@/lib/queries';
+
+export const dynamic = 'force-dynamic';
+
+export default async function AudiencePage() {
+  const snapshot = await getAudienceSnapshot();
+
+  return (
+    <div>
+      <header className="border-b border-navy/15 pb-3 mb-8">
+        <p className="font-mono text-[11px] uppercase tracking-[0.3em] text-broadcast-red">
+          -- Audience ops
+        </p>
+        <h1 className="font-display italic text-4xl mt-1">Audience ledger</h1>
+        <p className="text-navy/70 text-sm mt-1">
+          Newsletter, tips, sponsor interest, and donation intent. First-party records, no spreadsheet drift.
+        </p>
+      </header>
+
+      <div className="grid sm:grid-cols-3 gap-4 mb-10">
+        <Stat label="Subscribers" value={snapshot.counts.subscribers} />
+        <Stat label="New messages" value={snapshot.counts.contactNew} />
+        <Stat label="Donation waits" value={snapshot.counts.donationWaiting} />
+      </div>
+
+      <section className="grid gap-8">
+        <LedgerSection title="Recent subscribers">
+          {snapshot.recentSubscribers.length === 0 ? (
+            <Empty text="No newsletter subscribers recorded yet." />
+          ) : (
+            <div className="overflow-x-auto bg-white border border-navy/10 rounded">
+              <table className="w-full text-sm">
+                <thead className="bg-bone-50 border-b border-navy/10 text-left">
+                  <tr className="font-mono uppercase text-[10px] tracking-[0.18em] text-navy/60">
+                    <th className="px-4 py-2.5">Email</th>
+                    <th className="px-4 py-2.5">Status</th>
+                    <th className="px-4 py-2.5">Source</th>
+                    <th className="px-4 py-2.5">Signups</th>
+                    <th className="px-4 py-2.5">Updated</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-navy/10">
+                  {snapshot.recentSubscribers.map((s) => (
+                    <tr key={s.id}>
+                      <td className="px-4 py-2.5 font-mono text-xs">{s.email}</td>
+                      <td className="px-4 py-2.5">{s.status}</td>
+                      <td className="px-4 py-2.5">{s.source}</td>
+                      <td className="px-4 py-2.5">{s.signupCount}</td>
+                      <td className="px-4 py-2.5 text-navy/55">{s.updatedAt.toLocaleString()}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </LedgerSection>
+
+        <LedgerSection title="Inbox">
+          {snapshot.recentMessages.length === 0 ? (
+            <Empty text="No contact messages recorded yet." />
+          ) : (
+            <div className="grid gap-3">
+              {snapshot.recentMessages.map((m) => (
+                <article key={m.id} className="bg-white border border-navy/10 rounded p-4">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Badge>{m.mode}</Badge>
+                    {m.confidential ? <Badge tone="red">Confidential</Badge> : null}
+                    <span className="text-xs text-navy/50 ml-auto">{m.createdAt.toLocaleString()}</span>
+                  </div>
+                  <div className="mt-2 font-serif font-bold text-navy">
+                    {m.name || 'Unnamed'} · <a className="bb-link" href={`mailto:${m.email}`}>{m.email}</a>
+                  </div>
+                  <p className="mt-2 text-sm leading-relaxed text-charcoal/85 whitespace-pre-wrap">{m.message}</p>
+                </article>
+              ))}
+            </div>
+          )}
+        </LedgerSection>
+
+        <LedgerSection title="Donation interest">
+          {snapshot.recentDonationIntents.length === 0 ? (
+            <Empty text="No supporter interest recorded yet." />
+          ) : (
+            <div className="grid gap-3">
+              {snapshot.recentDonationIntents.map((d) => (
+                <article key={d.id} className="bg-white border border-navy/10 rounded p-4">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Badge>{d.status}</Badge>
+                    <span className="text-xs text-navy/50 ml-auto">{d.createdAt.toLocaleString()}</span>
+                  </div>
+                  <div className="mt-2 text-sm text-charcoal/85">
+                    {d.email ? <a className="bb-link" href={`mailto:${d.email}`}>{d.email}</a> : 'No email'}
+                    {d.amountCents ? ` · $${(d.amountCents / 100).toFixed(2)}` : ''}
+                  </div>
+                  {d.message ? <p className="mt-2 text-sm text-charcoal/80">{d.message}</p> : null}
+                </article>
+              ))}
+            </div>
+          )}
+        </LedgerSection>
+      </section>
+    </div>
+  );
+}
+
+function Stat({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="bg-white border border-navy/10 rounded p-5">
+      <p className="font-mono text-[11px] uppercase tracking-[0.25em] text-navy/60">{label}</p>
+      <p className="font-display italic text-5xl mt-1">{value}</p>
+    </div>
+  );
+}
+
+function LedgerSection({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <section>
+      <h2 className="font-display italic text-2xl border-b border-navy/15 pb-2 mb-4">{title}</h2>
+      {children}
+    </section>
+  );
+}
+
+function Badge({ children, tone = 'navy' }: { children: ReactNode; tone?: 'navy' | 'red' }) {
+  return (
+    <span
+      className={`font-mono text-[10px] uppercase tracking-[0.18em] px-2 py-1 rounded ${
+        tone === 'red' ? 'bg-broadcast-red/10 text-broadcast-red' : 'bg-navy/10 text-navy/70'
+      }`}
+    >
+      {children}
+    </span>
+  );
+}
+
+function Empty({ text }: { text: string }) {
+  return <div className="bg-white border border-navy/10 rounded p-6 text-sm text-navy/70">{text}</div>;
+}

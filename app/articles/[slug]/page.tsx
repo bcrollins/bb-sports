@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import type { Metadata } from 'next';
 import { getAllArticles, getArticleBySlug, getRelatedArticles, formatDate, sportLabel } from '@/lib/articles';
 import { sportMeta } from '@/lib/sport-meta';
@@ -7,7 +8,7 @@ import ArticleCard from '@/components/ArticleCard';
 import NewsletterSignup from '@/components/NewsletterSignup';
 import SportTag from '@/components/SportTag';
 
-type Props = { params: { slug: string } };
+type Props = { params: Promise<{ slug: string }> };
 
 // Revalidate every 60s so admin edits to a published article surface live and
 // the layout's BreakingNewsBar / footer tagline don't go stale.
@@ -19,7 +20,8 @@ export async function generateStaticParams() {
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const article = await getArticleBySlug(params.slug);
+  const { slug } = await params;
+  const article = await getArticleBySlug(slug);
   if (!article) return {};
   return {
     title: article.title,
@@ -42,7 +44,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function ArticleDetail({ params }: Props) {
-  const article = await getArticleBySlug(params.slug);
+  const { slug } = await params;
+  const article = await getArticleBySlug(slug);
   if (!article) return notFound();
   const related = await getRelatedArticles(article, 3);
   const m = sportMeta(article.sport);
@@ -119,12 +122,14 @@ export default async function ArticleDetail({ params }: Props) {
       {article.hero && (
         <div className="max-w-4xl mx-auto px-4 sm:px-6 mt-6">
           <figure className="rounded-sm overflow-hidden border border-navy/10">
-            <img
+            <Image
               src={article.hero}
               alt={article.heroAlt ?? article.title}
+              width={1600}
+              height={900}
+              sizes="(min-width: 1024px) 896px, calc(100vw - 2rem)"
               className="w-full h-auto object-cover"
-              loading="eager"
-              decoding="async"
+              priority
             />
             {article.heroCredit && (
               <figcaption className="text-xs text-charcoal/60 px-3 py-2 bg-bone-50 border-t border-navy/10">

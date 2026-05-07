@@ -6,9 +6,19 @@
  * accessor returns an empty result so the public site degrades gracefully instead
  * of crashing.
  */
-import { and, asc, desc, eq, gt, lt, ne } from 'drizzle-orm';
+import { and, asc, desc, eq, gt, lt, ne, sql } from 'drizzle-orm';
 import { db, dbAvailable } from './db/client';
-import { articles, siteConfig, type Article } from './db/schema';
+import {
+  articles,
+  contactMessages,
+  donationIntents,
+  newsletterSubscribers,
+  siteConfig,
+  type Article,
+  type ContactMessage,
+  type DonationIntent,
+  type NewsletterSubscriber,
+} from './db/schema';
 import { ensureBootstrapped } from './db/bootstrap';
 
 // ---------- articles ----------
@@ -206,6 +216,154 @@ export async function getRelatedArticlesBySport(
     ))
     .orderBy(desc(articles.publishedAt))
     .limit(limit);
+}
+
+// ---------- audience / intake ledgers ----------
+
+export async function upsertNewsletterSubscriber(input: {
+  email: string;
+  source?: string;
+  ip?: string | null;
+  userAgent?: string | null;
+}): Promise<NewsletterSubscriber> {
+  if (!db) throw new Error('Database not available');
+  await ensureBootstrapped();
+  const rows = await db
+    .insert(newsletterSubscribers)
+    .values({
+      email: input.email,
+      source: input.source ?? 'site',
+      lastIpAddress: input.ip ?? null,
+      lastUserAgent: input.userAgent ?? null,
+    })
+    .onConflictDoUpdate({
+      target: newsletterSubscribers.email,
+      set: {
+        status: 'subscribed',
+        source: input.source ?? 'site',
+        lastIpAddress: input.ip ?? null,
+        lastUserAgent: input.userAgent ?? null,
+        unsubscribedAt: null,
+        updatedAt: new Date(),
+        signupCount: sql`${newsletterSubscribers.signupCount} + 1`,
+      },
+    })
+    .returning();
+  return rows[0];
+}
+
+export async function createContactMessage(input: {
+  mode: string;
+  email: string;
+  name?: string;
+  message: string;
+  confidential?: boolean;
+  ip?: string | null;
+  userAgent?: string | null;
+}): Promise<ContactMessage> {
+  if (!db) throw new Error('Database not available');
+  await ensureBootstrapped();
+  const rows = await db
+    .insert(contactMessages)
+    .values({
+      mode: input.mode,
+      email: input.email,
+      name: input.name ?? '',
+      message: input.message,
+      confidential: Boolean(input.confidential),
+      ipAddress: input.ip ?? null,
+      userAgent: input.userAgent ?? null,
+    })
+    .returning();
+  return rows[0];
+}
+
+export async function createDonationIntent(input: {
+  email?: string | null;
+  name?: string;
+  amountCents?: number | null;
+  message?: string;
+  source?: string;
+  status?: string;
+  stripePaymentLink?: string | null;
+  ip?: string | null;
+  userAgent?: string | null;
+}): Promise<DonationIntent> {
+  if (!db) throw new Error('Database not available');
+  await ensureBootstrapped();
+  const rows = await db
+    .insert(donationIntents)
+    .values({
+      email: input.email ?? null,
+      name: input.name ?? '',
+      amountCents: input.amountCents ?? null,
+      message: input.message ?? '',
+      source: input.source ?? 'site',
+      status: input.status ?? 'waiting_for_stripe',
+      stripePaymentLink: input.stripePaymentLink ?? null,
+      ipAddress: input.ip ?? null,
+      userAgent: input.userAgent ?? null,
+    })
+    .returning();
+  return rows[0];
+}
+
+export async function getAudienceSnapshot(): Promise<{
+  counts: {
+    subscribers: number;
+    contactNew: number;
+    donationWaiting: number;
+  };
+  recentSubscribers: NewsletterSubscriber[];
+  recentMessages: ContactMessage[];
+  recentDonationIntents: DonationIntent[];
+}> {
+  if (!db) {
+    return {
+      counts: { subscribers: 0, contactNew: 0, donationWaiting: 0 },
+      recentSubscribers: [],
+      recentMessages: [],
+      recentDonationIntents: [],
+    };
+  }
+  await ensureBootstrapped();
+  const [
+    subscriberRows,
+    contactRows,
+    donationRows,
+    recentSubscribers,
+    recentMessages,
+    recentDonationIntents,
+  ] = await Promise.all([
+    db.select().from(newsletterSubscribers).where(eq(newsletterSubscribers.status, 'subscribed')),
+    db.select().from(contactMessages).where(eq(contactMessages.status, 'new')),
+    db.select().from(donationIntents).where(eq(donationIntents.status, 'waiting_for_stripe')),
+    db
+      .select()
+      .from(newsletterSubscribers)
+      .orderBy(desc(newsletterSubscribers.updatedAt))
+      .limit(8),
+    db
+      .select()
+      .from(contactMessages)
+      .orderBy(desc(contactMessages.createdAt))
+      .limit(8),
+    db
+      .select()
+      .from(donationIntents)
+      .orderBy(desc(donationIntents.createdAt))
+      .limit(8),
+  ]);
+  return {
+    counts: {
+      subscribers: subscriberRows.length,
+      contactNew: contactRows.length,
+      donationWaiting: donationRows.length,
+    },
+    recentSubscribers,
+    recentMessages,
+    recentDonationIntents,
+  };
 }
 
 export { dbAvailable };

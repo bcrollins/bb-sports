@@ -1,143 +1,218 @@
 /**
- * /admin — Bradley's newsroom overview.
+ * /admin — BB Sports command center.
  *
- * Server-rendered. Pulls live counts from Postgres so what Brad sees here is
- * the same source of truth the public site reads from.
+ * One screen for Brad to understand what is live, what needs attention, and
+ * where to act without touching code.
  */
 import Link from 'next/link';
+import type { ReactNode } from 'react';
 import { sql } from 'drizzle-orm';
+import { Activity, ArrowUpRight, FileText, LockKeyhole, PenLine, Settings, Users } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import { db } from '@/lib/db/client';
 import { ensureBootstrapped } from '@/lib/db/bootstrap';
 import { getSession } from '@/lib/auth';
-import { getAllArticles } from '@/lib/queries';
+import { getAllArticles, getAudienceSnapshot } from '@/lib/queries';
 
 export const dynamic = 'force-dynamic';
 
-interface Counts { total: number; published: number; drafts: number; }
+interface Counts {
+  total: number;
+  published: number;
+  drafts: number;
+  aiAssisted: number;
+}
 
 async function loadCounts(): Promise<Counts> {
-  if (!db) return { total: 0, published: 0, drafts: 0 };
+  if (!db) return { total: 0, published: 0, drafts: 0, aiAssisted: 0 };
   await ensureBootstrapped();
   const r = (await db.execute(sql`
     SELECT
       COUNT(*)::int AS total,
       COUNT(*) FILTER (WHERE published)::int AS published,
-      COUNT(*) FILTER (WHERE NOT published)::int AS drafts
+      COUNT(*) FILTER (WHERE NOT published)::int AS drafts,
+      COUNT(*) FILTER (WHERE ai_assisted)::int AS "aiAssisted"
     FROM articles
   `)) as unknown as Counts[];
-  return r[0] ?? { total: 0, published: 0, drafts: 0 };
+  return r[0] ?? { total: 0, published: 0, drafts: 0, aiAssisted: 0 };
 }
 
 export default async function AdminOverview() {
-  const session = await getSession();
-  const counts = await loadCounts();
-  const recent = (await getAllArticles()).slice(0, 6);
+  const [session, counts, articles, audience] = await Promise.all([
+    getSession(),
+    loadCounts(),
+    getAllArticles(),
+    getAudienceSnapshot(),
+  ]);
+  const recent = articles.slice(0, 7);
+  const launchScore = [
+    counts.published >= 5,
+    audience.counts.subscribers >= 1,
+    process.env.DATABASE_URL,
+    process.env.JWT_SECRET,
+  ].filter(Boolean).length;
 
   return (
-    <div>
-      <header className="border-b border-navy/15 pb-3 mb-8">
-        <p className="font-mono text-[11px] uppercase tracking-[0.3em] text-broadcast-red">
-          ── Newsroom · {session?.role}
-        </p>
-        <h1 className="font-display italic text-4xl mt-1">Welcome back, {session?.name?.split(' ')[0] ?? 'Brad'}.</h1>
-        <p className="text-navy/70 text-sm mt-1">
-          You&rsquo;re the only person with the keys. Everything you publish here goes live on{' '}
-          <Link href="/" className="underline hover:text-broadcast-red">
-            bbsports
-          </Link>{' '}
-          immediately.
-        </p>
+    <div className="space-y-8">
+      <header className="overflow-hidden rounded-xl border border-navy/10 bg-white shadow-sm">
+        <div className="grid gap-0 lg:grid-cols-[minmax(0,1fr)_360px]">
+          <div className="p-5 sm:p-7">
+            <p className="font-mono text-[11px] uppercase tracking-[0.3em] text-broadcast-red">
+              Command center
+            </p>
+            <h1 className="mt-2 font-display text-4xl italic leading-tight text-navy sm:text-5xl">
+              Welcome back, {session?.name?.split(' ')[0] ?? 'Brad'}.
+            </h1>
+            <p className="mt-3 max-w-2xl text-sm leading-6 text-charcoal/75">
+              Publish, edit, gate the site, review audience intake, and track launch readiness from one room.
+              Nothing here requires code.
+            </p>
+            <div className="mt-6 flex flex-wrap gap-2">
+              <CommandButton href="/admin/articles/new" label="Write" icon={PenLine} primary />
+              <CommandButton href="/admin/articles" label="Articles" icon={FileText} />
+              <CommandButton href="/admin/audience" label="Audience" icon={Users} />
+              <CommandButton href="/admin/site" label="Site" icon={Settings} />
+              <CommandButton href="/admin/access-wall" label="Wall" icon={LockKeyhole} />
+            </div>
+          </div>
+          <aside className="border-t border-navy/10 bg-navy p-5 text-bone sm:p-7 lg:border-l lg:border-t-0">
+            <div className="flex items-center gap-2 text-[11px] font-black uppercase tracking-[0.24em] text-bone/60">
+              <Activity size={15} /> Launch meter
+            </div>
+            <div className="mt-5 flex items-end gap-2">
+              <span className="font-display text-6xl italic text-bone">{launchScore}</span>
+              <span className="mb-3 text-sm uppercase tracking-[0.18em] text-bone/60">/ 4 green</span>
+            </div>
+            <div className="mt-5 grid gap-2 text-sm">
+              <LaunchLine ok={counts.published >= 5} text="5+ published anchor articles" />
+              <LaunchLine ok={audience.counts.subscribers >= 1} text="newsletter ledger receiving signups" />
+              <LaunchLine ok={Boolean(process.env.DATABASE_URL)} text="Postgres configured" />
+              <LaunchLine ok={Boolean(process.env.JWT_SECRET)} text="admin JWT secret configured" />
+            </div>
+          </aside>
+        </div>
       </header>
 
-      <div className="grid sm:grid-cols-3 gap-4 mb-10">
-        <Stat label="Total articles" value={counts.total} />
-        <Stat label="Published" value={counts.published} />
-        <Stat label="Drafts" value={counts.drafts} />
-      </div>
-
-      <section className="mb-10 grid md:grid-cols-2 gap-4">
-        <ActionCard
-          href="/admin/articles/new"
-          title="Write a new article"
-          body="Markdown editor, hero image URL, sport tag, publish toggle. Goes live instantly."
-        />
-        <ActionCard
-          href="/admin/site"
-          title="Edit the site"
-          body="Breaking-news ticker, hero copy, about page bio. No code required."
-        />
-        <ActionCard
-          href="/admin/articles"
-          title="Manage all articles"
-          body="Edit, unpublish, delete. Sort by sport or status."
-        />
-        <ActionCard
-          href="/"
-          title="Open the live site"
-          body="See what readers see right now."
-          external
-        />
+      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <Stat label="Published" value={counts.published} note={`${counts.total} total articles`} />
+        <Stat label="Drafts" value={counts.drafts} note="Brad-controlled queue" />
+        <Stat label="Subscribers" value={audience.counts.subscribers} note="first-party list" />
+        <Stat label="New inbox" value={audience.counts.contactNew} note={`${audience.counts.donationWaiting} donation waits`} />
       </section>
 
-      <section>
-        <header className="flex items-baseline justify-between border-b border-navy/15 pb-2 mb-4">
-          <h2 className="font-display italic text-2xl">Recently updated</h2>
-          <Link href="/admin/articles" className="text-sm text-broadcast-red underline-offset-2 hover:underline">
-            All articles →
-          </Link>
-        </header>
-        {recent.length === 0 ? (
-          <div className="bg-white border border-navy/10 rounded p-6 text-sm text-navy/70">
-            No articles yet. <Link href="/admin/articles/new" className="text-broadcast-red underline">Write the first one.</Link>
+      <section className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_390px]">
+        <div className="rounded-xl border border-navy/10 bg-white shadow-sm">
+          <div className="flex items-center justify-between gap-4 border-b border-navy/10 px-5 py-4">
+            <div>
+              <h2 className="font-serif text-xl font-bold text-navy">Recently updated</h2>
+              <p className="text-sm text-navy/55">Live articles and drafts Brad touched most recently.</p>
+            </div>
+            <Link href="/admin/articles" className="inline-flex items-center gap-1 text-sm font-semibold text-broadcast-red">
+              Manage <ArrowUpRight size={14} />
+            </Link>
           </div>
-        ) : (
-          <ul className="divide-y divide-navy/10 bg-white border border-navy/10 rounded">
-            {recent.map((a) => (
-              <li key={a.id} className="px-4 py-3 flex items-center gap-4">
-                <span className={`font-mono text-[10px] uppercase tracking-[0.2em] px-2 py-1 rounded ${
-                  a.published ? 'bg-broadcast-red/10 text-broadcast-red' : 'bg-navy/10 text-navy/70'
-                }`}>
-                  {a.published ? 'LIVE' : 'DRAFT'}
-                </span>
-                <Link href={`/admin/articles/${a.id}/edit`} className="font-serif font-bold text-navy hover:text-broadcast-red flex-1 truncate">
-                  {a.title}
-                </Link>
-                <span className="text-xs text-navy/50 hidden sm:inline">{a.sport}</span>
-                <span className="text-xs text-navy/40 hidden md:inline">
-                  {new Date(a.updatedAt).toLocaleDateString()}
-                </span>
-              </li>
-            ))}
-          </ul>
-        )}
+          {recent.length === 0 ? (
+            <div className="p-6 text-sm text-navy/70">
+              No articles yet. <Link href="/admin/articles/new" className="bb-link">Write the first one.</Link>
+            </div>
+          ) : (
+            <ul className="divide-y divide-navy/10">
+              {recent.map((a) => (
+                <li key={a.id} className="grid gap-3 px-5 py-4 sm:grid-cols-[92px_minmax(0,1fr)_120px] sm:items-center">
+                  <span className={`w-fit rounded-full px-3 py-1 font-mono text-[10px] uppercase tracking-[0.18em] ${
+                    a.published ? 'bg-broadcast-red/10 text-broadcast-red' : 'bg-navy/10 text-navy/70'
+                  }`}>
+                    {a.published ? 'Live' : 'Draft'}
+                  </span>
+                  <Link href={`/admin/articles/${a.id}/edit`} className="min-w-0 font-serif text-lg font-bold text-navy hover:text-broadcast-red">
+                    <span className="block truncate">{a.title}</span>
+                    <span className="mt-0.5 block truncate text-xs font-normal text-navy/45">{a.dek}</span>
+                  </Link>
+                  <span className="text-xs text-navy/50 sm:text-right">{new Date(a.updatedAt).toLocaleDateString()}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
+        <aside className="space-y-6">
+          <Panel title="Next action">
+            <div className="space-y-3 text-sm text-charcoal/80">
+              <p>
+                Highest-leverage move: keep article publishing and audience intake in the same loop.
+                Draft, approve, publish, then check inbox reactions here.
+              </p>
+              <Link href="/admin/articles/new" className="inline-flex min-h-[42px] items-center rounded bg-broadcast-red px-4 text-xs font-black uppercase tracking-[0.18em] text-bone">
+                Write next piece
+              </Link>
+            </div>
+          </Panel>
+          <Panel title="Audience pulse">
+            <div className="space-y-3 text-sm">
+              {audience.recentMessages.slice(0, 3).map((m) => (
+                <div key={m.id} className="rounded-lg border border-navy/10 bg-bone-50 p-3">
+                  <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-broadcast-red">{m.mode}</div>
+                  <div className="mt-1 truncate font-semibold text-navy">{m.name || m.email}</div>
+                  <p className="mt-1 line-clamp-2 text-charcoal/70">{m.message}</p>
+                </div>
+              ))}
+              {audience.recentMessages.length === 0 ? <p className="text-navy/55">No inbound messages yet.</p> : null}
+            </div>
+          </Panel>
+        </aside>
       </section>
     </div>
   );
 }
 
-function Stat({ label, value }: { label: string; value: number }) {
+function Stat({ label, value, note }: { label: string; value: number; note: string }) {
   return (
-    <div className="bg-white border border-navy/10 rounded p-5">
-      <p className="font-mono text-[11px] uppercase tracking-[0.25em] text-navy/60">{label}</p>
-      <p className="font-display italic text-5xl mt-1">{value}</p>
+    <div className="rounded-xl border border-navy/10 bg-white p-5 shadow-sm">
+      <p className="font-mono text-[11px] uppercase tracking-[0.25em] text-navy/55">{label}</p>
+      <p className="mt-2 font-display text-5xl italic text-navy">{value}</p>
+      <p className="mt-1 text-sm text-navy/55">{note}</p>
     </div>
   );
 }
 
-function ActionCard({ href, title, body, external }: { href: string; title: string; body: string; external?: boolean }) {
-  const Wrapper = external ? 'a' : Link;
-  const props: { href: string; target?: string; rel?: string } = { href };
-  if (external) {
-    props.target = '_blank';
-    props.rel = 'noreferrer';
-  }
+function CommandButton({
+  href,
+  label,
+  icon: Icon,
+  primary,
+}: {
+  href: string;
+  label: string;
+  icon: LucideIcon;
+  primary?: boolean;
+}) {
   return (
-    <Wrapper
-      {...props}
-      className="block bg-white border border-navy/10 rounded p-5 hover:border-broadcast-red transition-colors"
+    <Link
+      href={href}
+      className={`inline-flex min-h-[44px] items-center gap-2 rounded-lg px-4 text-sm font-bold ${
+        primary ? 'bg-broadcast-red text-bone' : 'border border-navy/15 bg-white text-navy hover:border-navy'
+      }`}
     >
-      <h3 className="font-serif font-bold text-navy text-lg">{title}</h3>
-      <p className="text-sm text-navy/70 mt-1">{body}</p>
-    </Wrapper>
+      <Icon size={16} aria-hidden="true" />
+      {label}
+    </Link>
+  );
+}
+
+function LaunchLine({ ok, text }: { ok: boolean; text: string }) {
+  return (
+    <div className="flex items-center gap-2">
+      <span className={`h-2.5 w-2.5 rounded-full ${ok ? 'bg-emerald-300' : 'bg-bone/25'}`} aria-hidden="true" />
+      <span className={ok ? 'text-bone' : 'text-bone/58'}>{text}</span>
+    </div>
+  );
+}
+
+function Panel({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <section className="rounded-xl border border-navy/10 bg-white p-5 shadow-sm">
+      <h2 className="font-serif text-xl font-bold text-navy">{title}</h2>
+      <div className="mt-3">{children}</div>
+    </section>
   );
 }

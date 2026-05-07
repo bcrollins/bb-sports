@@ -26,7 +26,9 @@ const config: Config = {
         },
         charcoal: '#1A1A1A',
         ink: '#0E0E10',
-        breaking: '#D7263D'
+        breaking: '#D7263D',
+        'navy-deep': '#06122A',
+        'broadcast-red': '#D7263D'
       },
       fontFamily: {
         // CSS variables come from next/font/google in app/layout.tsx.

@@ -6,6 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
 import { createArticle, getAllArticles } from '@/lib/queries';
+import { articlePayloadSchema, validationErrorMessage } from '@/lib/article-validation';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -18,32 +19,32 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  let body: Record<string, unknown> = {};
+  let body: unknown = {};
   try {
     body = await req.json();
   } catch {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
   }
-  const slug = String(body.slug ?? '').trim();
-  const title = String(body.title ?? '').trim();
-  if (!slug || !title) {
-    return NextResponse.json({ error: 'slug + title required' }, { status: 400 });
+  const parsed = articlePayloadSchema.safeParse(body);
+  if (!parsed.success) {
+    return NextResponse.json({ error: validationErrorMessage(parsed.error) }, { status: 400 });
   }
+  const input = parsed.data;
   try {
     const article = await createArticle({
-      slug,
-      title,
-      dek: typeof body.dek === 'string' ? body.dek : '',
-      body: typeof body.body === 'string' ? body.body : '',
-      sport: typeof body.sport === 'string' ? body.sport : 'Op-Ed',
-      hero: typeof body.hero === 'string' ? body.hero : '',
-      heroAlt: typeof body.heroAlt === 'string' ? body.heroAlt : '',
-      heroCredit: typeof body.heroCredit === 'string' ? body.heroCredit : '',
+      slug: input.slug,
+      title: input.title,
+      dek: input.dek,
+      body: input.body,
+      sport: input.sport,
+      hero: input.hero,
+      heroAlt: input.heroAlt,
+      heroCredit: input.heroCredit,
       authorId: user.id,
-      authorName: typeof body.authorName === 'string' ? body.authorName : user.name,
-      aiAssisted: Boolean(body.aiAssisted),
-      bradsTake: typeof body.bradsTake === 'string' ? body.bradsTake : '',
-      published: Boolean(body.published),
+      authorName: input.authorName || user.name,
+      aiAssisted: input.aiAssisted,
+      bradsTake: input.bradsTake,
+      published: input.published,
     });
     return NextResponse.json({ ok: true, article }, { status: 201 });
   } catch (err) {
