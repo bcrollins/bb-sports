@@ -4,14 +4,16 @@
  *   (1) Site-wide gate:    every public visit requires the bb_gate cookie. Without it,
  *                          requests are redirected to /coming-soon where the gate
  *                          password is entered. This is a soft-launch shield —
- *                          the password is `freerashee`, validated server-side.
+ *                          the password is validated server-side; the default
+ *                          launch password is `calebwilliamsMVP`.
  *
  *   (2) Admin gate:        /admin/* and /api/admin/* require a valid bb_session JWT
  *                          (Bradley's super-admin login). Verified here in Edge with
  *                          jose; route handlers re-verify against the users table.
  *
  * Always allowed (no gate, no auth):
- *   /coming-soon, /api/gate, /api/health, _next assets, robots/sitemap/icons/og.
+ *   /coming-soon, /api/gate, /api/health, approved media streams, static brand/image assets,
+ *   _next assets, robots/sitemap/icons/og.
  */
 import { NextRequest, NextResponse } from 'next/server';
 import { jwtVerify } from 'jose';
@@ -30,7 +32,7 @@ const GATE_BYPASS_EXACT = new Set<string>([
   '/og.png',
   '/icon.svg',
 ]);
-const GATE_BYPASS_PREFIX = ['/_next/']; // Next assets always pass the gate.
+const GATE_BYPASS_PREFIX = ['/_next/', '/api/media/assets/', '/brand/', '/images/']; // Static assets always pass the gate.
 const ADMIN_PUBLIC = new Set<string>(['/admin/login', '/api/admin/login', '/api/admin/logout']);
 
 export async function middleware(req: NextRequest) {

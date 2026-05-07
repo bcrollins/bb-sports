@@ -1,4 +1,6 @@
+import Image from 'next/image';
 import Link from 'next/link';
+import { BRADLEY_BRAND_ASSETS, PRIMARY_BRADLEY_ASSET } from '@/lib/brandAssets';
 import { getConfig } from '@/lib/queries';
 
 export const metadata = {
@@ -25,17 +27,36 @@ export default async function AboutPage() {
     <article className="bg-bone">
       <header className="bg-navy-deep text-bone relative overflow-hidden">
         <div className="h-1 bg-breaking" aria-hidden="true" />
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 py-12 sm:py-16">
-          <p className="bb-eyebrow !text-breaking !tracking-[0.32em]">The founder</p>
-          <h1
-            className="mt-3 font-display uppercase italic text-bone leading-[0.9] tracking-[-0.025em]"
-            style={{ fontSize: 'clamp(2.5rem, 9vw, 7rem)' }}
-          >
-            Brad Benson.
-          </h1>
-          <p className="mt-5 text-xl text-bone/85 max-w-2xl leading-relaxed">
-            Sports journalism student. Hockey kid. Soccer kid. Track kid. Bears, Panthers, Manchester United, Florida Gators, Bulls, Cubs — in that order, on a normal week.
-          </p>
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-12 sm:py-16 grid gap-8 lg:grid-cols-12 lg:items-end">
+          <div className="lg:col-span-7">
+            <p className="bb-eyebrow !text-breaking !tracking-[0.32em]">The founder</p>
+            <h1
+              className="mt-3 font-display uppercase italic text-bone leading-[0.9] tracking-[-0.025em]"
+              style={{ fontSize: 'clamp(2.5rem, 9vw, 7rem)' }}
+            >
+              Brad Benson.
+            </h1>
+            <p className="mt-5 text-xl text-bone/85 max-w-2xl leading-relaxed">
+              Sports journalism student. Hockey kid. Soccer kid. Track kid. Bears, Panthers, Manchester United, Florida Gators, Bulls, Cubs — in that order, on a normal week.
+            </p>
+          </div>
+          <figure className="lg:col-span-5">
+            <div className="relative aspect-[4/5] overflow-hidden rounded-sm border border-bone/15 bg-navy shadow-2xl">
+              <Image
+                src={PRIMARY_BRADLEY_ASSET.src}
+                alt={PRIMARY_BRADLEY_ASSET.alt}
+                width={PRIMARY_BRADLEY_ASSET.width}
+                height={PRIMARY_BRADLEY_ASSET.height}
+                priority
+                sizes="(min-width: 1024px) 380px, 92vw"
+                className="h-full w-full object-cover"
+                style={{ objectPosition: PRIMARY_BRADLEY_ASSET.objectPosition }}
+              />
+            </div>
+            <figcaption className="mt-2 font-mono text-[10px] uppercase tracking-[0.18em] text-bone/55">
+              Photo: {PRIMARY_BRADLEY_ASSET.credit}
+            </figcaption>
+          </figure>
         </div>
       </header>
 
@@ -97,9 +118,34 @@ export default async function AboutPage() {
           </Link>
         </div>
 
-        <div className="mt-10 p-5 border border-navy/15 bg-bone-50 rounded text-sm text-charcoal/85">
-          <strong>A note on photos:</strong> a proper headshot is on the to-do list. Until then, this site uses placeholder portraits and BB Sports illustrations. If you’re a sports photographer in Gainesville and want to trade a session for a credit, hit the contact form.
-        </div>
+        <section className="mt-12 border-t border-navy/15 pt-8">
+          <div className="bb-eyebrow !text-breaking !tracking-[0.28em]">Media kit</div>
+          <h2 className="mt-2 font-display uppercase italic text-navy text-3xl">Bradley visuals</h2>
+          <p className="mt-3 text-sm leading-6 text-charcoal/75">
+            Approved BB Sports founder assets. Use the NHL trophy photo as the primary profile image, the Manchester United photo for soccer context, and the illustrated card for launch graphics or internal brand material.
+          </p>
+          <div className="mt-5 grid gap-4 sm:grid-cols-3">
+            {BRADLEY_BRAND_ASSETS.map((asset) => (
+              <figure key={asset.id} className="border border-navy/15 bg-white">
+                <div className="relative aspect-[4/5] overflow-hidden bg-navy/5">
+                  <Image
+                    src={asset.src}
+                    alt={asset.alt}
+                    width={asset.width}
+                    height={asset.height}
+                    sizes="(min-width: 640px) 220px, 92vw"
+                    className="h-full w-full object-cover"
+                    style={{ objectPosition: asset.objectPosition }}
+                  />
+                </div>
+                <figcaption className="p-3">
+                  <div className="font-serif font-bold text-navy leading-tight">{asset.title}</div>
+                  <div className="mt-1 text-xs text-charcoal/60">{asset.credit}</div>
+                </figcaption>
+              </figure>
+            ))}
+          </div>
+        </section>
       </div>
     </article>
   );

@@ -4,6 +4,7 @@
  * Public visitors see only a white screen and password field until /api/gate
  * sets bb_gate. Admin authentication remains a separate layer after the wall.
  */
+import { safeInternalPath } from '@/lib/redirects';
 import GateForm from './GateForm';
 
 export const metadata = {
@@ -18,7 +19,7 @@ type Props = {
 
 export default async function ComingSoonPage({ searchParams }: Props) {
   const params = await searchParams;
-  const next = typeof params.next === 'string' && params.next.startsWith('/') ? params.next : '/';
+  const next = safeInternalPath(params.next);
 
   return (
     <div className="fixed inset-0 z-[9999] grid min-h-screen place-items-center bg-white text-black">

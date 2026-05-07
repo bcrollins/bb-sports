@@ -137,12 +137,43 @@ async function bootstrap(): Promise<void> {
       updated_at timestamptz NOT NULL DEFAULT now()
     );
   `);
+  await db.execute(sql`
+    CREATE TABLE IF NOT EXISTS media_assets (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      kind varchar(24) NOT NULL DEFAULT 'image',
+      status varchar(32) NOT NULL DEFAULT 'ready',
+      title text NOT NULL DEFAULT '',
+      sport varchar(40) NOT NULL DEFAULT 'general',
+      placement varchar(40) NOT NULL DEFAULT 'homepage',
+      prompt text NOT NULL DEFAULT '',
+      provider varchar(40) NOT NULL DEFAULT 'xai',
+      model varchar(80) NOT NULL DEFAULT '',
+      asset_url text NOT NULL DEFAULT '',
+      external_url text NOT NULL DEFAULT '',
+      content_type varchar(80) NOT NULL DEFAULT '',
+      data_base64 text NOT NULL DEFAULT '',
+      alt_text text NOT NULL DEFAULT '',
+      credit text NOT NULL DEFAULT 'AI-generated via xAI Grok; approved by BB Sports.',
+      aspect_ratio varchar(16) NOT NULL DEFAULT '16:9',
+      resolution varchar(16) NOT NULL DEFAULT '',
+      duration_seconds integer,
+      animated boolean NOT NULL DEFAULT false,
+      approved boolean NOT NULL DEFAULT false,
+      request_id varchar(160),
+      raw_response jsonb,
+      created_by uuid REFERENCES users(id) ON DELETE SET NULL,
+      created_at timestamptz NOT NULL DEFAULT now(),
+      updated_at timestamptz NOT NULL DEFAULT now()
+    );
+  `);
   await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_articles_published ON articles(published, published_at DESC);`);
   await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_articles_sport ON articles(sport);`);
   await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_sessions_user ON sessions(user_id);`);
   await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_newsletter_status ON newsletter_subscribers(status, updated_at DESC);`);
   await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_contact_messages_status ON contact_messages(status, created_at DESC);`);
   await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_donation_intents_status ON donation_intents(status, created_at DESC);`);
+  await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_media_assets_approved ON media_assets(approved, placement, updated_at DESC);`);
+  await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_media_assets_request ON media_assets(request_id);`);
 
   // 2. Admin user seed (idempotent ON CONFLICT DO NOTHING).
   const adminEmail = process.env.ADMIN_EMAIL;

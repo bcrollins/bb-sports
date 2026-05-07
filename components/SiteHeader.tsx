@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { UserCircle } from 'lucide-react';
 import Logo from './Logo';
 
 // Every link is a named, discoverable home — no hamburger / "More" bucket.
@@ -52,7 +53,16 @@ export default function SiteHeader() {
       </div>
 
       {/* Masthead — broadcast lockup */}
-      <div className="px-4 sm:px-6 py-7 sm:py-9 text-center">
+      <div className="relative px-4 sm:px-6 py-7 sm:py-9 text-center">
+        <Link
+          href="/admin"
+          aria-label="Login or open profile"
+          title="Login or open profile"
+          className="absolute right-3 top-3 inline-flex h-11 w-11 items-center justify-center rounded-full border border-navy/15 bg-white text-navy shadow-sm transition-colors hover:border-breaking hover:text-breaking focus:outline-none focus-visible:ring-2 focus-visible:ring-breaking"
+        >
+          <UserCircle size={24} strokeWidth={2.2} aria-hidden="true" />
+          <span className="sr-only">Login or open profile</span>
+        </Link>
         <Logo asLink variant="masthead" scheme="navy-on-bone" className="mx-auto" />
         <div className="mt-3 text-[10.5px] sm:text-xs uppercase tracking-[0.32em] text-navy/80 font-semibold">
           Sports from the fan&rsquo;s view <span className="mx-1 text-navy/30">·</span>{' '}

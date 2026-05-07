@@ -9,6 +9,7 @@
  *   newsletter_subscribers — first-party newsletter list + consent ledger.
  *   contact_messages       — tips, press, sponsorship, and general inbox.
  *   donation_intents       — supporter-interest ledger before Stripe Checkout opens.
+ *   media_assets           — internally tracked AI/generated/editorial media library.
  *
  * All timestamps stored as Postgres `timestamptz`. All ids are uuid v4.
  */
@@ -129,6 +130,35 @@ export const donationIntents = pgTable('donation_intents', {
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
+// ---------- media_assets ----------
+export const mediaAssets = pgTable('media_assets', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  kind: varchar('kind', { length: 24 }).notNull().default('image'),
+  status: varchar('status', { length: 32 }).notNull().default('ready'),
+  title: text('title').notNull().default(''),
+  sport: varchar('sport', { length: 40 }).notNull().default('general'),
+  placement: varchar('placement', { length: 40 }).notNull().default('homepage'),
+  prompt: text('prompt').notNull().default(''),
+  provider: varchar('provider', { length: 40 }).notNull().default('xai'),
+  model: varchar('model', { length: 80 }).notNull().default(''),
+  assetUrl: text('asset_url').notNull().default(''),
+  externalUrl: text('external_url').notNull().default(''),
+  contentType: varchar('content_type', { length: 80 }).notNull().default(''),
+  dataBase64: text('data_base64').notNull().default(''),
+  altText: text('alt_text').notNull().default(''),
+  credit: text('credit').notNull().default('AI-generated via xAI Grok; approved by BB Sports.'),
+  aspectRatio: varchar('aspect_ratio', { length: 16 }).notNull().default('16:9'),
+  resolution: varchar('resolution', { length: 16 }).notNull().default(''),
+  durationSeconds: integer('duration_seconds'),
+  animated: boolean('animated').notNull().default(false),
+  approved: boolean('approved').notNull().default(false),
+  requestId: varchar('request_id', { length: 160 }),
+  rawResponse: jsonb('raw_response'),
+  createdBy: uuid('created_by').references(() => users.id, { onDelete: 'set null' }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
 // ---------- type exports ----------
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
@@ -139,3 +169,5 @@ export type Session = typeof sessions.$inferSelect;
 export type NewsletterSubscriber = typeof newsletterSubscribers.$inferSelect;
 export type ContactMessage = typeof contactMessages.$inferSelect;
 export type DonationIntent = typeof donationIntents.$inferSelect;
+export type MediaAsset = typeof mediaAssets.$inferSelect;
+export type NewMediaAsset = typeof mediaAssets.$inferInsert;

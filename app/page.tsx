@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import ArticleCard from '@/components/ArticleCard';
+import GeneratedMediaRail from '@/components/GeneratedMediaRail';
 import NewsletterSignup from '@/components/NewsletterSignup';
 import { getAllArticles, sportLabel } from '@/lib/articles';
 import { getConfig } from '@/lib/queries';
@@ -80,6 +81,8 @@ export default async function HomePage() {
           </aside>
         </div>
       </section>
+
+      <GeneratedMediaRail placement="homepage" />
 
       {/* SCORE-TICKER STYLE COVERAGE STRIP (broadcast cue) */}
       <section className="bg-bone-50 border-b-[2px] border-navy">

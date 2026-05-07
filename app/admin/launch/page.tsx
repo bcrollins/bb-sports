@@ -9,7 +9,8 @@ const PROVIDERS = [
   { name: 'Admin JWT', env: 'JWT_SECRET', owner: 'Admin auth' },
   { name: 'Stripe donations', env: 'STRIPE_DONATION_LINK', owner: 'Donation rails' },
   { name: 'Resend', env: 'RESEND_API_KEY', owner: 'Email transport' },
-  { name: 'xAI Grok', env: 'XAI_API_KEY', owner: 'AI draft assistance' },
+  { name: 'xAI Grok key', env: 'XAI_API_KEY', owner: 'AI draft/media assistance' },
+  { name: 'xAI commercial gate', env: 'BBSPORTS_APPROVED_XAI', owner: 'Commercial-use approval flag' },
   { name: 'Cloudflare R2', env: 'R2_BUCKET_NAME', owner: 'Media storage' },
 ];
 
@@ -83,7 +84,9 @@ export default async function LaunchPage() {
         </div>
         <div className="divide-y divide-navy/10">
           {PROVIDERS.map((provider) => {
-            const configured = Boolean(process.env[provider.env]);
+            const configured = provider.env === 'BBSPORTS_APPROVED_XAI'
+              ? process.env[provider.env] === 'true'
+              : Boolean(process.env[provider.env]);
             return (
               <div key={provider.env} className="grid gap-3 px-5 py-4 sm:grid-cols-[minmax(0,1fr)_160px_120px] sm:items-center">
                 <div>

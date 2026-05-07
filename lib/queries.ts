@@ -6,17 +6,19 @@
  * accessor returns an empty result so the public site degrades gracefully instead
  * of crashing.
  */
-import { and, asc, desc, eq, gt, lt, ne, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, gt, lt, ne, sql, type SQL } from 'drizzle-orm';
 import { db, dbAvailable } from './db/client';
 import {
   articles,
   contactMessages,
   donationIntents,
+  mediaAssets,
   newsletterSubscribers,
   siteConfig,
   type Article,
   type ContactMessage,
   type DonationIntent,
+  type MediaAsset,
   type NewsletterSubscriber,
 } from './db/schema';
 import { ensureBootstrapped } from './db/bootstrap';
@@ -364,6 +366,124 @@ export async function getAudienceSnapshot(): Promise<{
     recentMessages,
     recentDonationIntents,
   };
+}
+
+// ---------- media assets ----------
+
+export function publicMediaUrl(asset: Pick<MediaAsset, 'id' | 'dataBase64' | 'assetUrl' | 'externalUrl'>): string {
+  if (asset.dataBase64) return `/api/media/assets/${asset.id}/file`;
+  return asset.assetUrl || asset.externalUrl || '';
+}
+
+export async function getMediaAssets(options: {
+  approved?: boolean;
+  placement?: string;
+  limit?: number;
+} = {}): Promise<MediaAsset[]> {
+  if (!db) return [];
+  await ensureBootstrapped();
+  const conditions: SQL[] = [];
+  if (typeof options.approved === 'boolean') conditions.push(eq(mediaAssets.approved, options.approved));
+  if (options.placement) conditions.push(eq(mediaAssets.placement, options.placement));
+  const where = conditions.length === 0 ? undefined : conditions.length === 1 ? conditions[0] : and(...conditions);
+  if (where) {
+    return db
+      .select()
+      .from(mediaAssets)
+      .where(where)
+      .orderBy(desc(mediaAssets.updatedAt))
+      .limit(options.limit ?? 24);
+  }
+  return db.select().from(mediaAssets).orderBy(desc(mediaAssets.updatedAt)).limit(options.limit ?? 24);
+}
+
+export async function getMediaAssetById(id: string): Promise<MediaAsset | null> {
+  if (!db) return null;
+  await ensureBootstrapped();
+  const rows = await db.select().from(mediaAssets).where(eq(mediaAssets.id, id)).limit(1);
+  return rows[0] ?? null;
+}
+
+export async function createMediaAsset(input: {
+  kind: string;
+  status?: string;
+  title?: string;
+  sport?: string;
+  placement?: string;
+  prompt?: string;
+  provider?: string;
+  model?: string;
+  assetUrl?: string;
+  externalUrl?: string;
+  contentType?: string;
+  dataBase64?: string;
+  altText?: string;
+  credit?: string;
+  aspectRatio?: string;
+  resolution?: string;
+  durationSeconds?: number | null;
+  animated?: boolean;
+  approved?: boolean;
+  requestId?: string | null;
+  rawResponse?: unknown;
+  createdBy?: string | null;
+}): Promise<MediaAsset> {
+  if (!db) throw new Error('Database not available');
+  await ensureBootstrapped();
+  const rows = await db
+    .insert(mediaAssets)
+    .values({
+      kind: input.kind,
+      status: input.status ?? 'ready',
+      title: input.title ?? '',
+      sport: input.sport ?? 'general',
+      placement: input.placement ?? 'homepage',
+      prompt: input.prompt ?? '',
+      provider: input.provider ?? 'xai',
+      model: input.model ?? '',
+      assetUrl: input.assetUrl ?? '',
+      externalUrl: input.externalUrl ?? '',
+      contentType: input.contentType ?? '',
+      dataBase64: input.dataBase64 ?? '',
+      altText: input.altText ?? '',
+      credit: input.credit ?? 'AI-generated via xAI Grok; approved by BB Sports.',
+      aspectRatio: input.aspectRatio ?? '16:9',
+      resolution: input.resolution ?? '',
+      durationSeconds: input.durationSeconds ?? null,
+      animated: Boolean(input.animated),
+      approved: Boolean(input.approved),
+      requestId: input.requestId ?? null,
+      rawResponse: input.rawResponse ?? null,
+      createdBy: input.createdBy ?? null,
+    })
+    .returning();
+  return rows[0];
+}
+
+export async function updateMediaAsset(
+  id: string,
+  patch: Partial<{
+    status: string;
+    title: string;
+    sport: string;
+    placement: string;
+    assetUrl: string;
+    externalUrl: string;
+    contentType: string;
+    altText: string;
+    credit: string;
+    approved: boolean;
+    rawResponse: unknown;
+  }>,
+): Promise<MediaAsset | null> {
+  if (!db) throw new Error('Database not available');
+  await ensureBootstrapped();
+  const rows = await db
+    .update(mediaAssets)
+    .set({ ...patch, updatedAt: new Date() })
+    .where(eq(mediaAssets.id, id))
+    .returning();
+  return rows[0] ?? null;
 }
 
 export { dbAvailable };

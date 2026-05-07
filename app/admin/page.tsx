@@ -7,7 +7,7 @@
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { sql } from 'drizzle-orm';
-import { Activity, ArrowUpRight, FileText, LockKeyhole, PenLine, Settings, Users } from 'lucide-react';
+import { Activity, ArrowUpRight, FileText, ImageIcon, LockKeyhole, PenLine, Settings, Users } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { db } from '@/lib/db/client';
 import { ensureBootstrapped } from '@/lib/db/bootstrap';
@@ -70,6 +70,7 @@ export default async function AdminOverview() {
             <div className="mt-6 flex flex-wrap gap-2">
               <CommandButton href="/admin/articles/new" label="Write" icon={PenLine} primary />
               <CommandButton href="/admin/articles" label="Articles" icon={FileText} />
+              <CommandButton href="/admin/media" label="Media" icon={ImageIcon} />
               <CommandButton href="/admin/audience" label="Audience" icon={Users} />
               <CommandButton href="/admin/site" label="Site" icon={Settings} />
               <CommandButton href="/admin/access-wall" label="Wall" icon={LockKeyhole} />

@@ -11,7 +11,7 @@ BB Sports is a commercial media property. Production providers must be authorize
 | Stripe | Donations | YELLOW | Payment link is optional. Donation intent is stored first-party until Stripe is configured. |
 | Resend | Email transport | YELLOW | Newsletter ledger works without transport. Welcome/send flows stay disabled until domain/API are configured. |
 | Cloudflare R2 | Object storage | YELLOW | No production upload dependency yet. Hero image URLs require alt text and credit. |
-| xAI Grok | AI assistance | YELLOW | No production AI publishing path is active. Any future AI draft must stay approval-gated and labeled. |
+| xAI Grok | AI assistance and generated media | YELLOW | Admin media routes are built but fail closed unless `XAI_API_KEY` and `BBSPORTS_APPROVED_XAI=true` are configured. Any AI draft/media must stay approval-gated and labeled. |
 | Google Fonts via `next/font` | Font source | GREEN | Fonts are self-hosted by Next at build/runtime, not loaded from a browser CDN. |
 | Lucide React | Admin icons | GREEN | ISC license. |
 | Zod | API validation | GREEN | MIT license. |

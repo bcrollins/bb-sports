@@ -31,8 +31,8 @@ const config: Config = {
         'broadcast-red': '#D7263D'
       },
       fontFamily: {
-        // CSS variables come from next/font/google in app/layout.tsx.
-        // Fallbacks are kept so the page is still legible if a font 404s.
+        // Internal CSS variables are defined in app/globals.css. No build-time
+        // Google Fonts fetch is required for deterministic Railway deploys.
         serif: ['var(--font-playfair)', 'var(--font-source-serif)', 'Georgia', 'serif'],
         sans: ['var(--font-inter)', 'system-ui', 'sans-serif'],
         display: ['var(--font-anton)', 'var(--font-oswald)', 'var(--font-inter)', 'system-ui', 'sans-serif'],

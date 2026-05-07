@@ -230,13 +230,16 @@ export function ArticleEditor({ initial, mode }: { initial?: ArticleFormValues; 
                 ))}
               </select>
             </Field>
-            <Field label="Hero image URL" hint="Optional. Full image URL (https://…).">
+            <Field label="Hero image URL" hint="Optional. Full URL or /api/media asset path.">
               <input
-                type="url"
+                type="text"
                 value={v.hero}
                 onChange={(e) => field('hero', e.target.value)}
                 className="w-full border border-navy/20 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-broadcast-red/50"
               />
+              <Link href="/admin/media" className="mt-2 inline-flex text-xs font-semibold text-broadcast-red underline-offset-2 hover:underline">
+                Generate or copy a Grok media asset
+              </Link>
             </Field>
             <Field label="Hero alt text" hint="Required when a hero is set — describes the image for screen readers.">
               <input
