@@ -24,7 +24,7 @@
   body {
     background-color: var(--bb-bone);
     color: var(--bb-charcoal);
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    font-family: var(--font-inter), system-ui, -apple-system, sans-serif;
     font-feature-settings: 'ss01', 'cv01';
   }
 
@@ -34,7 +34,7 @@
   }
 
   h1, h2, h3, h4 {
-    font-family: 'Playfair Display', 'Source Serif Pro', Georgia, serif;
+    font-family: var(--font-playfair), var(--font-source-serif), Georgia, serif;
     color: var(--bb-navy-deep);
     letter-spacing: -0.01em;
   }
@@ -42,7 +42,7 @@
   /* Newspaper-style first-letter on article body */
   .prose-newspaper > p:first-of-type::first-letter {
     float: left;
-    font-family: 'Playfair Display', serif;
+    font-family: var(--font-playfair), serif;
     font-size: 4.5rem;
     line-height: 0.85;
     padding: 0.45rem 0.5rem 0 0;
@@ -61,7 +61,7 @@
   }
 
   .bb-eyebrow {
-    font-family: 'Inter', sans-serif;
+    font-family: var(--font-inter), sans-serif;
     text-transform: uppercase;
     letter-spacing: 0.18em;
     font-size: 0.7rem;
@@ -188,7 +188,7 @@
 
 /* Article body styling */
 .article-body p {
-  font-family: 'Source Serif Pro', 'Playfair Display', Georgia, serif;
+  font-family: var(--font-source-serif), var(--font-playfair), Georgia, serif;
   font-size: 1.125rem;
   line-height: 1.7;
   margin-bottom: 1.4rem;
@@ -207,13 +207,13 @@
   border-left: 4px solid var(--bb-navy);
   padding: .35rem 0 .35rem 1rem;
   margin: 1.5rem 0;
-  font-family: 'Playfair Display', serif;
+  font-family: var(--font-playfair), serif;
   font-style: italic;
   font-size: 1.25rem;
   color: var(--bb-navy);
 }
 .article-body ul, .article-body ol {
-  font-family: 'Source Serif Pro', Georgia, serif;
+  font-family: var(--font-source-serif), Georgia, serif;
   font-size: 1.075rem;
   margin: 1rem 0 1.4rem 1.4rem;
   list-style: disc;

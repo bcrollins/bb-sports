@@ -9,6 +9,10 @@ import SportTag from '@/components/SportTag';
 
 type Props = { params: { slug: string } };
 
+// Revalidate every 60s so admin edits to a published article surface live and
+// the layout's BreakingNewsBar / footer tagline don't go stale.
+export const revalidate = 60;
+
 export async function generateStaticParams() {
   const all = await getAllArticles();
   return all.map((a) => ({ slug: a.slug }));

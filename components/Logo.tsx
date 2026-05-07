@@ -54,9 +54,12 @@ export default function Logo({
         className="block"
       >
         <rect x="0" y="0" width="80" height="80" rx="6" fill={bugBg} />
-        {/* Two B's stacked — Anton-style condensed italic monogram */}
+        {/* Two B's stacked — Anton-style condensed italic monogram.
+            Font references the next/font CSS variable (set on <html> in
+            app/layout.tsx) with system fallbacks so the SVG still renders
+            if the font hasn't loaded yet. */}
         <g
-          fontFamily="Anton, 'Oswald', 'Inter', system-ui, sans-serif"
+          fontFamily="var(--font-anton), var(--font-oswald), var(--font-inter), system-ui, sans-serif"
           fontStyle="italic"
           fontWeight="900"
           fill={bugFg}
@@ -75,8 +78,10 @@ export default function Logo({
       className="font-display uppercase italic leading-[0.85] whitespace-nowrap tracking-[-0.01em]"
       style={{
         color: fg,
-        fontFamily: "Anton, 'Oswald', 'Inter', system-ui, sans-serif",
-        fontWeight: 400 // Anton ships at one weight
+        // font-family flows from the `font-display` Tailwind token, which
+        // resolves to var(--font-anton). Inline override removed so the
+        // CSS variable cascade works even before next/font hydrates.
+        fontWeight: 400, // Anton ships at one weight
       }}
     >
       <span aria-hidden="true">BB&nbsp;SPORTS</span>

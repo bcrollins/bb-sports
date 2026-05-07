@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { getConfig } from '@/lib/queries';
 
 export const metadata = {
   title: 'About Brad',
@@ -6,7 +7,20 @@ export const metadata = {
     'Brad Benson — University of Florida journalism and sports media (2027). Founder, editor, and only contributor of BB Sports.'
 };
 
-export default function AboutPage() {
+// Revalidate every 60s so admin edits to about_bio in /admin/site surface
+// without requiring a redeploy.
+export const revalidate = 60;
+
+// Default bio used when no DB or no site_config.about_bio — keeps the page
+// fully renderable in local dev and before the admin has edited the bio.
+const DEFAULT_BIO: string[] = [];
+
+export default async function AboutPage() {
+  const adminBio = await getConfig<string[] | null>('about_bio', null);
+  const bioParagraphs =
+    Array.isArray(adminBio) && adminBio.filter((p) => p?.trim()).length > 0
+      ? adminBio.filter((p) => p?.trim())
+      : DEFAULT_BIO;
   return (
     <article className="bg-bone">
       <header className="bg-navy-deep text-bone relative overflow-hidden">
@@ -27,6 +41,14 @@ export default function AboutPage() {
 
       <div className="max-w-3xl mx-auto px-4 sm:px-6 py-10">
         <section className="article-body">
+          {bioParagraphs.length > 0 && (
+            <>
+              {bioParagraphs.map((p, i) => (
+                <p key={i} dangerouslySetInnerHTML={{ __html: p }} />
+              ))}
+            </>
+          )}
+
           <h2>The basics</h2>
           <ul>
             <li><strong>Hometown:</strong> Boca Raton, Florida.</li>

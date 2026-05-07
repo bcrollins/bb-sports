@@ -8,6 +8,10 @@ export const metadata = {
     'Every BB Sports take, organized by sport. NFL, NHL, college football, soccer, NBA, MMA — written like a fan, sourced like a reporter.'
 };
 
+// Revalidate every 60s so newly published articles appear without a redeploy
+// and the layout's BreakingNewsBar / footer tagline reflect admin edits.
+export const revalidate = 60;
+
 const SPORTS: { value: SportSlug | 'all'; label: string }[] = [
   { value: 'all', label: 'All' },
   { value: 'nfl', label: 'NFL' },

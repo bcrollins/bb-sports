@@ -1,8 +1,17 @@
 import Link from 'next/link';
 import Logo from './Logo';
+import { getConfig } from '@/lib/queries';
 
-export default function SiteFooter() {
+const DEFAULT_TAGLINE = "Sports from the fan's view. No bullshit.";
+
+export default async function SiteFooter() {
   const year = new Date().getFullYear();
+  const taglineRaw = await getConfig<string | null>('footer_tagline', null);
+  const tagline =
+    typeof taglineRaw === 'string' && taglineRaw.trim().length > 0
+      ? taglineRaw.trim()
+      : DEFAULT_TAGLINE;
+
   return (
     <footer className="mt-24 bg-navy-deep text-bone">
       {/* Network top spine */}
@@ -11,6 +20,9 @@ export default function SiteFooter() {
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-14 grid gap-10 md:grid-cols-12">
         <div className="md:col-span-5">
           <Logo variant="lockup" scheme="bone-on-navy" />
+          <p className="mt-3 text-bone/95 max-w-md text-base font-serif italic">
+            {tagline}
+          </p>
           <p className="mt-4 text-bone/80 max-w-md leading-relaxed text-[15px]">
             Opinion-led sports journalism by{' '}
             <Link href="/about" className="underline underline-offset-4 decoration-bone/40 hover:decoration-breaking hover:text-breaking">
