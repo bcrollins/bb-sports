@@ -37,8 +37,12 @@ export async function POST(req: NextRequest) {
       body: typeof body.body === 'string' ? body.body : '',
       sport: typeof body.sport === 'string' ? body.sport : 'Op-Ed',
       hero: typeof body.hero === 'string' ? body.hero : '',
+      heroAlt: typeof body.heroAlt === 'string' ? body.heroAlt : '',
+      heroCredit: typeof body.heroCredit === 'string' ? body.heroCredit : '',
       authorId: user.id,
       authorName: typeof body.authorName === 'string' ? body.authorName : user.name,
+      aiAssisted: Boolean(body.aiAssisted),
+      bradsTake: typeof body.bradsTake === 'string' ? body.bradsTake : '',
       published: Boolean(body.published),
     });
     return NextResponse.json({ ok: true, article }, { status: 201 });

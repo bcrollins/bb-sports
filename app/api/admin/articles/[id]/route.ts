@@ -30,7 +30,20 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   } catch {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
   }
-  const allow = ['slug', 'title', 'dek', 'body', 'sport', 'hero', 'authorName', 'published'] as const;
+  const allow = [
+    'slug',
+    'title',
+    'dek',
+    'body',
+    'sport',
+    'hero',
+    'heroAlt',
+    'heroCredit',
+    'authorName',
+    'aiAssisted',
+    'bradsTake',
+    'published',
+  ] as const;
   const patch: Record<string, unknown> = {};
   for (const k of allow) {
     if (k in body) patch[k] = body[k];

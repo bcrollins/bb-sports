@@ -40,8 +40,17 @@ export const articles = pgTable('articles', {
   body: text('body').notNull().default(''), // markdown source
   sport: varchar('sport', { length: 24 }).notNull().default('Op-Ed'),
   hero: text('hero').notNull().default(''), // hero image URL or empty
+  heroAlt: text('hero_alt').notNull().default(''),     // alt text for the hero
+  heroCredit: text('hero_credit').notNull().default(''), // photo credit line
   authorId: uuid('author_id').references(() => users.id, { onDelete: 'set null' }),
   authorName: varchar('author_name', { length: 120 }).notNull().default('Brad Benson'),
+  // AI-assisted label: when true, the public article page renders the
+  // "AI · Brad-edited" badge. Required by the editorial standards for any
+  // piece where AI did the heavy lift of the draft.
+  aiAssisted: boolean('ai_assisted').notNull().default(false),
+  // "Brad's Take" — short personal commentary slot for AI-drafted pieces.
+  // Optional plain text; the article page renders it as a callout block.
+  bradsTake: text('brads_take').notNull().default(''),
   published: boolean('published').notNull().default(false),
   publishedAt: timestamp('published_at', { withTimezone: true }),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),

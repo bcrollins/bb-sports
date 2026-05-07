@@ -142,6 +142,18 @@ export default async function ArticleDetail({ params }: Props) {
           dangerouslySetInnerHTML={{ __html: article.bodyHtml }}
         />
 
+        {/* Brad's Take callout — required slot on AI-assisted pieces.
+            Renders only when both flags are present so AI drafts can't ship
+            without Brad's actual voice attached. */}
+        {article.aiAssisted && article.bradsTake && (
+          <aside className="mt-10 border-l-4 border-breaking bg-white/70 px-5 py-5 rounded-sm">
+            <div className="bb-eyebrow !text-breaking !tracking-[0.32em]">Brad&rsquo;s Take</div>
+            <p className="mt-2 font-serif italic text-lg leading-relaxed text-charcoal/95">
+              {article.bradsTake}
+            </p>
+          </aside>
+        )}
+
         {/* Editorial signature */}
         <div className="mt-10 pt-6 border-t border-navy/15 text-sm text-charcoal/75">
           <p>

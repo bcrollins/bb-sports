@@ -18,7 +18,11 @@ export default async function EditArticlePage({ params }: { params: { id: string
         body: a.body,
         sport: a.sport,
         hero: a.hero,
+        heroAlt: a.heroAlt,
+        heroCredit: a.heroCredit,
         authorName: a.authorName,
+        aiAssisted: a.aiAssisted,
+        bradsTake: a.bradsTake,
         published: a.published,
       }}
     />

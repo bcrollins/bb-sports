@@ -50,14 +50,25 @@ async function bootstrap(): Promise<void> {
       body text NOT NULL DEFAULT '',
       sport varchar(24) NOT NULL DEFAULT 'Op-Ed',
       hero text NOT NULL DEFAULT '',
+      hero_alt text NOT NULL DEFAULT '',
+      hero_credit text NOT NULL DEFAULT '',
       author_id uuid REFERENCES users(id) ON DELETE SET NULL,
       author_name varchar(120) NOT NULL DEFAULT 'Brad Benson',
+      ai_assisted boolean NOT NULL DEFAULT false,
+      brads_take text NOT NULL DEFAULT '',
       published boolean NOT NULL DEFAULT false,
       published_at timestamptz,
       created_at timestamptz NOT NULL DEFAULT now(),
       updated_at timestamptz NOT NULL DEFAULT now()
     );
   `);
+  // Forward-compat: ALTER TABLE for older databases that were bootstrapped
+  // before these columns existed. Idempotent — IF NOT EXISTS is supported on
+  // ADD COLUMN in Postgres 9.6+.
+  await db.execute(sql`ALTER TABLE articles ADD COLUMN IF NOT EXISTS hero_alt text NOT NULL DEFAULT '';`);
+  await db.execute(sql`ALTER TABLE articles ADD COLUMN IF NOT EXISTS hero_credit text NOT NULL DEFAULT '';`);
+  await db.execute(sql`ALTER TABLE articles ADD COLUMN IF NOT EXISTS ai_assisted boolean NOT NULL DEFAULT false;`);
+  await db.execute(sql`ALTER TABLE articles ADD COLUMN IF NOT EXISTS brads_take text NOT NULL DEFAULT '';`);
   await db.execute(sql`
     CREATE TABLE IF NOT EXISTS site_config (
       key varchar(64) PRIMARY KEY,
@@ -160,8 +171,12 @@ async function bootstrap(): Promise<void> {
           body: content.trim(),
           sport: String(data.sport ?? 'Op-Ed'),
           hero: String(data.hero ?? ''),
+          heroAlt: String(data.heroAlt ?? ''),
+          heroCredit: String(data.heroCredit ?? ''),
           authorId: adminId ?? undefined,
           authorName: String(data.author ?? 'Brad Benson'),
+          aiAssisted: Boolean(data.aiAssisted),
+          bradsTake: String(data.bradsTake ?? ''),
           published: true,
           publishedAt: data.date ? new Date(String(data.date)) : new Date(),
         })

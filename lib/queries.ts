@@ -88,8 +88,12 @@ export async function createArticle(input: {
   body?: string;
   sport?: string;
   hero?: string;
+  heroAlt?: string;
+  heroCredit?: string;
   authorId?: string | null;
   authorName?: string;
+  aiAssisted?: boolean;
+  bradsTake?: string;
   published?: boolean;
 }): Promise<Article> {
   if (!db) throw new Error('Database not available');
@@ -103,8 +107,12 @@ export async function createArticle(input: {
       body: input.body ?? '',
       sport: input.sport ?? 'Op-Ed',
       hero: input.hero ?? '',
+      heroAlt: input.heroAlt ?? '',
+      heroCredit: input.heroCredit ?? '',
       authorId: input.authorId ?? undefined,
       authorName: input.authorName ?? 'Brad Benson',
+      aiAssisted: Boolean(input.aiAssisted),
+      bradsTake: input.bradsTake ?? '',
       published: Boolean(input.published),
       publishedAt: input.published ? new Date() : null,
     })
@@ -121,7 +129,11 @@ export async function updateArticle(
     body: string;
     sport: string;
     hero: string;
+    heroAlt: string;
+    heroCredit: string;
     authorName: string;
+    aiAssisted: boolean;
+    bradsTake: string;
     published: boolean;
   }>,
 ): Promise<Article | null> {

@@ -30,7 +30,11 @@ export interface ArticleFormValues {
   body: string;
   sport: string;
   hero: string;
+  heroAlt: string;
+  heroCredit: string;
   authorName: string;
+  aiAssisted: boolean;
+  bradsTake: string;
   published: boolean;
 }
 
@@ -41,7 +45,11 @@ const EMPTY: ArticleFormValues = {
   body: '',
   sport: 'Op-Ed',
   hero: '',
+  heroAlt: '',
+  heroCredit: '',
   authorName: 'Brad Benson',
+  aiAssisted: false,
+  bradsTake: '',
   published: false,
 };
 
@@ -217,6 +225,22 @@ export function ArticleEditor({ initial, mode }: { initial?: ArticleFormValues; 
                 className="w-full border border-navy/20 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-broadcast-red/50"
               />
             </Field>
+            <Field label="Hero alt text" hint="Required when a hero is set — describes the image for screen readers.">
+              <input
+                type="text"
+                value={v.heroAlt}
+                onChange={(e) => field('heroAlt', e.target.value)}
+                className="w-full border border-navy/20 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-broadcast-red/50"
+              />
+            </Field>
+            <Field label="Hero credit" hint="Photo credit line (e.g. 'AP / John Smith').">
+              <input
+                type="text"
+                value={v.heroCredit}
+                onChange={(e) => field('heroCredit', e.target.value)}
+                className="w-full border border-navy/20 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-broadcast-red/50"
+              />
+            </Field>
             <Field label="Author">
               <input
                 type="text"
@@ -225,6 +249,30 @@ export function ArticleEditor({ initial, mode }: { initial?: ArticleFormValues; 
                 className="w-full border border-navy/20 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-broadcast-red/50"
               />
             </Field>
+            <Field label="AI-assisted" hint="Required label when AI did the heavy lift on the draft.">
+              <label className="inline-flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={v.aiAssisted}
+                  onChange={(e) => field('aiAssisted', e.target.checked)}
+                />
+                Mark as AI-assisted (badges as &ldquo;AI · Brad-edited&rdquo;)
+              </label>
+            </Field>
+            {v.aiAssisted && (
+              <Field
+                label="Brad&rsquo;s Take"
+                hint="Short personal commentary slot rendered as a callout. Required for AI-drafted pieces."
+              >
+                <textarea
+                  value={v.bradsTake}
+                  onChange={(e) => field('bradsTake', e.target.value)}
+                  rows={4}
+                  className="w-full border border-navy/20 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-broadcast-red/50"
+                  placeholder="What Brad actually thinks. AI never writes this."
+                />
+              </Field>
+            )}
             <Field label="Status">
               <label className="inline-flex items-center gap-2 text-sm">
                 <input
