@@ -1,8 +1,28 @@
 import Link from 'next/link';
-import { getBreakingItems } from '@/lib/breaking';
+import { getConfig } from '@/lib/queries';
+import { getBreakingItems, type BreakingItem } from '@/lib/breaking';
 
-export default function BreakingNewsBar() {
-  const items = getBreakingItems();
+interface DbBumper { sport: string; text: string; href?: string }
+
+/**
+ * Reads the breaking ticker from site_config (admin-editable).
+ * Falls back to the hand-curated `lib/breaking.ts` defaults if the admin hasn't set one yet.
+ */
+async function loadItems(): Promise<BreakingItem[]> {
+  const fromDb = await getConfig<DbBumper[] | null>('breaking_ticker', null);
+  if (Array.isArray(fromDb) && fromDb.length > 0) {
+    return fromDb.map((b, i) => ({
+      id: `cfg-${i}`,
+      sport: b.sport,
+      text: b.text,
+      href: b.href ?? '/articles',
+    }));
+  }
+  return getBreakingItems();
+}
+
+export default async function BreakingNewsBar() {
+  const items = await loadItems();
   if (items.length === 0) return null;
 
   return (
@@ -12,13 +32,10 @@ export default function BreakingNewsBar() {
       aria-label="Breaking sports news"
     >
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-2 flex items-stretch gap-3 text-sm">
-        {/* Network bug */}
         <div className="shrink-0 inline-flex items-center px-3 -mx-2 sm:-mx-3 my-[-0.5rem] bg-white text-breaking font-black uppercase tracking-[0.18em] text-[11px]">
           <span className="block w-2 h-2 rounded-full bg-breaking mr-2 animate-[bb-pulse_1.4s_ease-in-out_infinite]" />
           Breaking
         </div>
-
-        {/* Marquee */}
         <div className="flex-1 overflow-hidden flex items-center">
           <div className="flex gap-10 whitespace-nowrap animate-[bb-marquee_55s_linear_infinite] hover:[animation-play-state:paused]">
             {[...items, ...items].map((item, i) => (

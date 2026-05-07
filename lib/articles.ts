@@ -1,15 +1,30 @@
+/**
+ * BB Sports — public article API (used by all reader-facing pages).
+ *
+ * Source of truth: Postgres `articles` table. The first reader request after a
+ * cold start triggers DB bootstrap (which seeds /content/articles markdown into
+ * the table on first boot, then never touches the filesystem again).
+ *
+ * If DATABASE_URL is missing (e.g. local dev with no Postgres), this falls back
+ * to reading the filesystem directly so the site still renders end-to-end.
+ */
 import fs from 'node:fs';
 import path from 'node:path';
 import matter from 'gray-matter';
-import { remark } from 'remark';
-import remarkGfm from 'remark-gfm';
-import remarkHtml from 'remark-html';
+import { renderMarkdown } from './markdown';
+import {
+  getPublishedArticles as dbGetPublished,
+  getPublishedArticleBySlug as dbGetBySlug,
+} from './queries';
+import { dbAvailable } from './db/client';
+import type { Article as DbArticle } from './db/schema';
 
 export type Article = {
+  id?: string;
   slug: string;
   title: string;
   dek?: string;
-  date: string;          // ISO 8601
+  date: string; // ISO 8601
   sport: SportSlug;
   tags: string[];
   hero?: string;
@@ -19,8 +34,9 @@ export type Article = {
   bradsTake?: string;
   readingTimeMinutes: number;
   excerpt: string;
-  body: string;          // raw markdown
-  bodyHtml: string;      // rendered html
+  body: string;
+  bodyHtml: string;
+  authorName?: string;
 };
 
 export type SportSlug =
@@ -39,11 +55,23 @@ const SPORT_LABELS: Record<SportSlug, string> = {
   soccer: 'Soccer',
   nba: 'NBA',
   mma: 'MMA',
-  general: 'General'
+  general: 'General',
 };
 
 export function sportLabel(s: SportSlug): string {
   return SPORT_LABELS[s] ?? 'General';
+}
+
+/** Map an admin-tag (NFL, CFB, Op-Ed…) to a public sport slug. */
+function toSportSlug(input: string | null | undefined): SportSlug {
+  const s = String(input ?? '').toLowerCase().trim();
+  if (s === 'nfl') return 'nfl';
+  if (s === 'nhl') return 'nhl';
+  if (s === 'cfb' || s === 'college football' || s === 'college-football') return 'college-football';
+  if (s === 'soccer' || s === 'pl' || s === 'football') return 'soccer';
+  if (s === 'nba') return 'nba';
+  if (s === 'mma' || s === 'ufc') return 'mma';
+  return 'general';
 }
 
 const ARTICLES_DIR = path.join(process.cwd(), 'content', 'articles');
@@ -64,31 +92,42 @@ function makeExcerpt(markdown: string): string {
   return stripped.slice(0, 235).replace(/\s+\S*$/, '') + '…';
 }
 
-let cache: Article[] | null = null;
+async function fromDb(row: DbArticle): Promise<Article> {
+  const html = await renderMarkdown(row.body);
+  const date = (row.publishedAt ?? row.updatedAt).toISOString();
+  return {
+    id: row.id,
+    slug: row.slug,
+    title: row.title,
+    dek: row.dek || undefined,
+    date,
+    sport: toSportSlug(row.sport),
+    tags: [],
+    hero: row.hero || undefined,
+    aiAssisted: false,
+    readingTimeMinutes: estimateReadingTime(row.body),
+    excerpt: makeExcerpt(row.body),
+    body: row.body,
+    bodyHtml: html,
+    authorName: row.authorName,
+  };
+}
 
-export async function getAllArticles(): Promise<Article[]> {
-  if (cache) return cache;
-  if (!fs.existsSync(ARTICLES_DIR)) {
-    cache = [];
-    return cache;
-  }
+async function fromFilesystem(): Promise<Article[]> {
+  if (!fs.existsSync(ARTICLES_DIR)) return [];
   const files = fs.readdirSync(ARTICLES_DIR).filter((f) => f.endsWith('.md'));
   const items: Article[] = [];
   for (const file of files) {
     const full = path.join(ARTICLES_DIR, file);
     const raw = fs.readFileSync(full, 'utf-8');
     const { data, content } = matter(raw);
-
-    const html = (
-      await remark().use(remarkGfm).use(remarkHtml, { sanitize: false }).process(content)
-    ).toString();
-
+    const html = await renderMarkdown(content);
     items.push({
       slug: data.slug ?? file.replace(/\.md$/, ''),
       title: data.title ?? '(untitled)',
       dek: data.dek,
       date: data.date ?? new Date().toISOString(),
-      sport: (data.sport as SportSlug) ?? 'general',
+      sport: toSportSlug(data.sport),
       tags: data.tags ?? [],
       hero: data.hero,
       heroAlt: data.heroAlt,
@@ -98,26 +137,45 @@ export async function getAllArticles(): Promise<Article[]> {
       readingTimeMinutes: estimateReadingTime(content),
       excerpt: data.excerpt ?? makeExcerpt(content),
       body: content,
-      bodyHtml: html
+      bodyHtml: html,
+      authorName: data.author ?? 'Brad Benson',
     });
   }
-
-  // Most recent first
   items.sort((a, b) => +new Date(b.date) - +new Date(a.date));
-  cache = items;
-  return cache;
+  return items;
+}
+
+export async function getAllArticles(): Promise<Article[]> {
+  if (dbAvailable) {
+    try {
+      const rows = await dbGetPublished();
+      const out = await Promise.all(rows.map(fromDb));
+      // If DB is empty (e.g., bootstrap hadn't seeded yet), fall back to filesystem so
+      // public pages aren't blank.
+      if (out.length > 0) return out;
+    } catch {
+      // fall through to filesystem
+    }
+  }
+  return fromFilesystem();
 }
 
 export async function getArticleBySlug(slug: string): Promise<Article | null> {
-  const all = await getAllArticles();
-  return all.find((a) => a.slug === slug) ?? null;
+  if (dbAvailable) {
+    try {
+      const row = await dbGetBySlug(slug);
+      if (row) return await fromDb(row);
+    } catch {
+      // fall through
+    }
+  }
+  const fs = await fromFilesystem();
+  return fs.find((a) => a.slug === slug) ?? null;
 }
 
 export async function getRelatedArticles(article: Article, limit = 3): Promise<Article[]> {
   const all = await getAllArticles();
-  return all
-    .filter((a) => a.slug !== article.slug)
-    .slice(0, limit);
+  return all.filter((a) => a.slug !== article.slug).slice(0, limit);
 }
 
 export function formatDate(iso: string): string {
@@ -125,6 +183,6 @@ export function formatDate(iso: string): string {
   return d.toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'long',
-    day: 'numeric'
+    day: 'numeric',
   });
 }

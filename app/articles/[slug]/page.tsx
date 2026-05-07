@@ -43,6 +43,15 @@ export default async function ArticleDetail({ params }: Props) {
   const related = await getRelatedArticles(article, 3);
   const m = sportMeta(article.sport);
 
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://bbsports.media';
+  const articleUrl = `${siteUrl}/articles/${article.slug}`;
+  // schema.org requires absolute URLs for image/logo. Prepend siteUrl when
+  // the configured value is relative (filesystem articles use /images/foo.svg;
+  // DB-backed entries can be full URLs already).
+  const absoluteHero = article.hero
+    ? article.hero.startsWith('http') ? article.hero : `${siteUrl}${article.hero}`
+    : undefined;
+
   const articleJsonLd = {
     '@context': 'https://schema.org',
     '@type': 'NewsArticle',
@@ -50,15 +59,20 @@ export default async function ArticleDetail({ params }: Props) {
     description: article.dek ?? article.excerpt,
     datePublished: article.date,
     dateModified: article.date,
-    author: { '@type': 'Person', name: 'Brad Benson' },
+    mainEntityOfPage: { '@type': 'WebPage', '@id': articleUrl },
+    author: {
+      '@type': 'Person',
+      name: 'Brad Benson',
+      url: `${siteUrl}/about`,
+    },
     publisher: {
       '@type': 'NewsMediaOrganization',
       name: 'BB Sports',
-      logo: { '@type': 'ImageObject', url: '/icon.svg' }
+      logo: { '@type': 'ImageObject', url: `${siteUrl}/icon.svg` },
     },
-    image: article.hero ? [article.hero] : undefined,
+    image: absoluteHero ? [absoluteHero] : undefined,
     articleSection: sportLabel(article.sport),
-    keywords: article.tags.join(', ')
+    keywords: article.tags.length > 0 ? article.tags.join(', ') : undefined,
   };
 
   return (

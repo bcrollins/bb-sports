@@ -1,0 +1,101 @@
+/**
+ * BB Sports — Edge middleware. Two layers:
+ *
+ *   (1) Site-wide gate:    every public visit requires the bb_gate cookie. Without it,
+ *                          requests are redirected to /coming-soon where the gate
+ *                          password is entered. This is a soft-launch shield —
+ *                          the password is `freerashee`, validated server-side.
+ *
+ *   (2) Admin gate:        /admin/* and /api/admin/* require a valid bb_session JWT
+ *                          (Bradley's super-admin login). Verified here in Edge with
+ *                          jose; route handlers re-verify against the users table.
+ *
+ * Always allowed (no gate, no auth):
+ *   /coming-soon, /api/gate, /api/health, /admin/login, /api/admin/login,
+ *   /api/admin/logout, _next assets, robots/sitemap/icons/og.
+ */
+import { NextRequest, NextResponse } from 'next/server';
+import { jwtVerify } from 'jose';
+
+const SESSION_COOKIE = 'bb_session';
+const GATE_COOKIE = 'bb_gate';
+
+/** Paths the site gate never blocks (newsletter etc. work pre-gate so users can sign up). */
+const GATE_BYPASS_EXACT = new Set<string>([
+  '/coming-soon',
+  '/api/gate',
+  '/api/health',
+  '/api/newsletter',
+  '/api/contact',
+  '/admin/login',
+  '/api/admin/login',
+  '/api/admin/logout',
+  '/robots.txt',
+  '/sitemap.xml',
+  '/favicon.ico',
+  '/og.png',
+  '/icon.svg',
+]);
+const GATE_BYPASS_PREFIX = ['/_next/']; // Next assets always pass the gate.
+const ADMIN_PUBLIC = new Set<string>(['/admin/login', '/api/admin/login', '/api/admin/logout']);
+
+export async function middleware(req: NextRequest) {
+  const { pathname } = req.nextUrl;
+
+  // 0. Always allow Next assets.
+  if (GATE_BYPASS_PREFIX.some((p) => pathname.startsWith(p))) return NextResponse.next();
+
+  // 1. Admin routes — gate by JWT first; admin login bypasses both gates.
+  const adminCheck = await adminAuthIfNeeded(req, pathname);
+  if (adminCheck) return adminCheck;
+
+  // 2. Site gate — non-admin paths require either bb_gate cookie or bb_session (logged-in admin).
+  if (GATE_BYPASS_EXACT.has(pathname)) return NextResponse.next();
+
+  const hasGate = req.cookies.get(GATE_COOKIE)?.value === '1';
+  const hasSession = await hasValidSession(req);
+  if (hasGate || hasSession) return NextResponse.next();
+
+  // For API requests, return 401 instead of redirecting (caller is JS, not a browser).
+  if (pathname.startsWith('/api/')) {
+    return NextResponse.json({ error: 'Site gated' }, { status: 401 });
+  }
+
+  const url = req.nextUrl.clone();
+  url.pathname = '/coming-soon';
+  if (pathname !== '/') url.searchParams.set('next', pathname);
+  return NextResponse.redirect(url);
+}
+
+async function adminAuthIfNeeded(req: NextRequest, pathname: string): Promise<NextResponse | null> {
+  const isAdminRoute = pathname.startsWith('/admin') || pathname.startsWith('/api/admin');
+  if (!isAdminRoute) return null;
+  if (ADMIN_PUBLIC.has(pathname)) return NextResponse.next();
+
+  if (await hasValidSession(req)) return NextResponse.next();
+
+  if (pathname.startsWith('/api/')) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+  const url = req.nextUrl.clone();
+  url.pathname = '/admin/login';
+  url.searchParams.set('next', pathname);
+  return NextResponse.redirect(url);
+}
+
+async function hasValidSession(req: NextRequest): Promise<boolean> {
+  const token = req.cookies.get(SESSION_COOKIE)?.value;
+  const secret = process.env.JWT_SECRET;
+  if (!token || !secret) return false;
+  try {
+    await jwtVerify(token, new TextEncoder().encode(secret), { algorithms: ['HS256'] });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export const config = {
+  // Run on every path except Next internals & static files.
+  matcher: ['/((?!_next/static|_next/image).*)'],
+};
