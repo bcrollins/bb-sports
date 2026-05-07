@@ -6,7 +6,7 @@
  * accessor returns an empty result so the public site degrades gracefully instead
  * of crashing.
  */
-import { and, asc, desc, eq } from 'drizzle-orm';
+import { and, asc, desc, eq, gt, lt, ne } from 'drizzle-orm';
 import { db, dbAvailable } from './db/client';
 import { articles, siteConfig, type Article } from './db/schema';
 import { ensureBootstrapped } from './db/bootstrap';
@@ -165,23 +165,47 @@ export async function adjacentArticles(
 ): Promise<{ prev: Article | null; next: Article | null }> {
   if (!db || !publishedAt) return { prev: null, next: null };
   await ensureBootstrapped();
+  // Single-row scans, indexed by (published, published_at DESC) — cheaper
+  // than the previous 50-row fetch + JS filter.
   const [prevRows, nextRows] = await Promise.all([
     db
       .select()
       .from(articles)
-      .where(and(eq(articles.published, true)))
+      .where(and(eq(articles.published, true), lt(articles.publishedAt, publishedAt)))
       .orderBy(desc(articles.publishedAt))
-      .limit(50),
+      .limit(1),
     db
       .select()
       .from(articles)
-      .where(and(eq(articles.published, true)))
+      .where(and(eq(articles.published, true), gt(articles.publishedAt, publishedAt)))
       .orderBy(asc(articles.publishedAt))
-      .limit(50),
+      .limit(1),
   ]);
-  const prev = prevRows.find((a) => a.publishedAt && a.publishedAt < publishedAt) ?? null;
-  const next = nextRows.find((a) => a.publishedAt && a.publishedAt > publishedAt) ?? null;
-  return { prev, next };
+  return { prev: prevRows[0] ?? null, next: nextRows[0] ?? null };
+}
+
+/**
+ * Same-sport related: pulls the most-recent published articles in the same
+ * sport, excluding the current one. Used when DATABASE_URL is set; the
+ * filesystem fallback in lib/articles.ts handles the no-DB case separately.
+ */
+export async function getRelatedArticlesBySport(
+  currentId: string,
+  sport: string,
+  limit: number,
+): Promise<Article[]> {
+  if (!db) return [];
+  await ensureBootstrapped();
+  return db
+    .select()
+    .from(articles)
+    .where(and(
+      eq(articles.published, true),
+      eq(articles.sport, sport),
+      ne(articles.id, currentId),
+    ))
+    .orderBy(desc(articles.publishedAt))
+    .limit(limit);
 }
 
 export { dbAvailable };

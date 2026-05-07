@@ -5,6 +5,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://bbsports.media';
   const articles = await getAllArticles();
 
+  // /coming-soon is the soft-launch gate — not a public destination, omitted
+  // from the sitemap. /admin is already disallowed in robots.txt.
   const staticRoutes: MetadataRoute.Sitemap = [
     '',
     '/articles',
@@ -14,7 +16,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     '/contact',
     '/editorial-standards',
     '/corrections',
-    '/coming-soon'
   ].map((path) => ({
     url: `${baseUrl}${path}`,
     lastModified: new Date(),
