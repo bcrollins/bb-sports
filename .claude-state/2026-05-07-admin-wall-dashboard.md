@@ -1,6 +1,6 @@
 # 2026-05-07 Admin Wall + Dashboard Slice
 
-Status: media/domain/dashboard slice code complete, local checks passing, pending commit/push/Railway deploy/live proof.
+Status: media/domain/dashboard slice committed, pushed, deployed to Railway, and live-verified on the Railway-provided domain. Namecheap DNS remains blocked at registrar.
 
 ## Shipped Locally
 
@@ -27,6 +27,11 @@ Status: media/domain/dashboard slice code complete, local checks passing, pendin
 - Local browser fallback verification: 393x852 and 1440x1000 screenshots for `/`, `/about`, and `/admin/media` redirect path; no horizontal overflow; profile icon visible; Bradley founder photo upright.
 - Local gate/API checks: `bb_gate` wall opens with `calebwilliamsMVP`; `/api/admin/media` returns 401 without admin session; `/admin/media` redirects to `/admin/login?next=%2Fadmin%2Fmedia`.
 - xAI fail-closed check: `generateXaiImages` returns 503 until `XAI_API_KEY` and `BBSPORTS_APPROVED_XAI=true` are configured.
+- Live Railway deploy: deployment `3b6d9005-9a2b-451e-ac97-ed9d9c54cad3` reached `SUCCESS` for commit `726f81e84452a0cf0da43b67bd9e9828c1082e40` using the Dockerfile manifest, `node server.js`, and `/api/health`.
+- Live Railway health: `https://web-production-c65d6.up.railway.app/api/health` returned 200 with commit `726f81e84452a0cf0da43b67bd9e9828c1082e40`, DB configured/reachable.
+- Live wall checks: no-cookie `/` redirects to `/coming-soon`; wrong wall password returns 401; `calebwilliamsMVP` returns 200 and sets `bb_gate=1`.
+- Live UI checks: `/` and `/about` include the profile icon; `/about` includes Bradley visuals and the founder image; live brand image and Next optimizer both return JPEGs; 393x852 and 1440x1000 live screenshots showed no horizontal overflow.
+- Live admin checks: `/admin/media` redirects to `/admin/login?next=%2Fadmin%2Fmedia` without admin session; `/api/admin/media` returns 401 without admin session.
 
 ## Added in Current Slice
 
@@ -40,4 +45,4 @@ Status: media/domain/dashboard slice code complete, local checks passing, pendin
 
 ## Resume Pointer
 
-Next: commit and push to `main`, wait for Railway deploy, and verify live `/api/health`, wall behavior, public gated access, Bradley images, `/about`, `/admin/media` redirect, and `/api/admin/media` 401 without admin session. Namecheap still needs the exact DNS records from `docs/DOMAIN-DNS.md` applied at the registrar.
+Next: apply the exact Namecheap DNS records from `docs/DOMAIN-DNS.md`, add `XAI_API_KEY` and `BBSPORTS_APPROVED_XAI=true` when xAI commercial use is approved, then sign into `/admin/media` as Bradley and generate/approve the first real BB Sports media assets.
