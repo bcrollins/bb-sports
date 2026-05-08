@@ -30,9 +30,10 @@ test('donation intent accepts supporter waitlist data without Stripe checkout', 
     email: 'fan@example.com',
     amountCents: '2500',
     message: 'Let me know when donations open.',
+    source: 'support-page',
   });
   assert.equal(parsed.amountCents, 2500);
-  assert.equal(parsed.source, 'site');
+  assert.equal(parsed.source, 'support-page');
 });
 
 test('access wall update requires a durable password length', () => {

@@ -1,9 +1,19 @@
+import Image from 'next/image';
 import Link from 'next/link';
 import ArticleCard from '@/components/ArticleCard';
 import GeneratedMediaRail from '@/components/GeneratedMediaRail';
 import NewsletterSignup from '@/components/NewsletterSignup';
-import { getAllArticles, sportLabel } from '@/lib/articles';
+import SportTag from '@/components/SportTag';
+import {
+  getAllArticles,
+  formatDate,
+  sportLabel,
+  type Article,
+  type SportSlug,
+} from '@/lib/articles';
+import { buildHomepageDesk, HOME_PRIMARY_ACTIONS } from '@/lib/homepage';
 import { getConfig } from '@/lib/queries';
+import { sportMeta } from '@/lib/sport-meta';
 
 export const revalidate = 60;
 
@@ -12,185 +22,354 @@ export default async function HomePage() {
     getAllArticles(),
     getConfig<HomepageHeroConfig | null>('hero', null),
   ]);
-  const [lead, ...rest] = articles;
-  const featured = rest.slice(0, 3);
-  const more = rest.slice(3, 9);
+  const desk = buildHomepageDesk(articles);
   const hero = normalizeHero(heroConfig);
 
   return (
-    <div className="bg-bone min-h-[60vh]">
-      {/* HERO — broadcast-style "show open" */}
-      <section className="relative bg-navy-deep text-bone overflow-hidden">
-        {/* network ambient pattern */}
-        <div
-          aria-hidden="true"
-          className="absolute inset-0 opacity-[0.06] pointer-events-none"
-          style={{
-            backgroundImage:
-              'repeating-linear-gradient(-12deg, transparent 0 14px, #F5F2EC 14px 16px)'
-          }}
-        />
-        <div className="relative max-w-6xl mx-auto px-4 sm:px-6 py-10 sm:py-16 grid md:grid-cols-12 gap-8 items-end">
-          <div className="md:col-span-8">
-            <div className="inline-flex items-center gap-2 mb-4">
-              <span className="bb-eyebrow !text-bone/80 !tracking-[0.32em]">ISSUE 001</span>
-              <span className="h-[2px] w-10 bg-breaking" aria-hidden="true" />
-              <span className="bb-eyebrow !text-breaking !tracking-[0.32em]">{hero.eyebrow}</span>
+    <div className="min-h-[60vh] bg-bone">
+      <section className="bg-bone-50 border-b border-navy/15">
+        <div className="mx-auto grid max-w-7xl gap-6 px-4 py-6 sm:px-6 lg:grid-cols-[minmax(0,1fr)_360px] lg:py-8">
+          <div>
+            <div className="mb-4 flex flex-wrap items-center gap-3 text-[10.5px] font-black uppercase tracking-[0.22em] text-navy/70">
+              <span className="inline-flex min-h-[32px] items-center bg-breaking px-3 text-white">
+                BB Sports Front Page
+              </span>
+              <span>{hero.eyebrow}</span>
+              <span className="hidden text-navy/30 sm:inline">|</span>
+              <span className="text-navy/80">{desk.provider.label}</span>
             </div>
-            <h1
-              className="font-display uppercase italic tracking-[-0.025em] leading-[0.86] text-bone"
-              style={{ fontSize: 'clamp(2.5rem, 9vw, 7rem)' }}
-            >
-              {hero.headlineLines.map((line, index) => (
-                <span key={`${line}-${index}`}>
-                  {index > 0 ? <br /> : null}
-                  <span className={index === hero.headlineLines.length - 1 ? 'text-breaking' : undefined}>{line}</span>
-                </span>
-              ))}
-            </h1>
-            <p className="mt-6 text-lg sm:text-xl text-bone/85 max-w-2xl leading-relaxed">
-              {hero.sub}{' '}
-              <Link href="/about" className="underline underline-offset-4 decoration-breaking hover:text-breaking">
-                Brad Benson
-              </Link>
-              .
-            </p>
-            <div className="mt-8 flex flex-wrap gap-3">
-              <Link href={hero.ctaPrimary.href} className="bb-button-primary !bg-breaking hover:!bg-breaking/90">
-                {hero.ctaPrimary.label}
-              </Link>
-              <Link
-                href={hero.ctaSecondary.href}
-                className="bb-button-ghost !border-bone !text-bone hover:!bg-bone/10"
-              >
-                {hero.ctaSecondary.label}
-              </Link>
-            </div>
+
+            {desk.lead ? (
+              <LeadStory article={desk.lead} summary={hero.sub} />
+            ) : (
+              <EmptyFrontPage />
+            )}
           </div>
 
-          <aside className="md:col-span-4 bg-bone text-charcoal p-5 rounded-sm border-t-[3px] border-breaking">
-            <div className="bb-eyebrow">Disclosure · House rule #1</div>
-            <p className="mt-2 text-sm leading-relaxed text-charcoal/85">
-              Brad roots openly for the <strong>Bears</strong>, <strong>Panthers</strong>,{' '}
-              <strong>Manchester United</strong>, <strong>Florida Gators</strong>,{' '}
-              <strong>Bulls</strong>, and <strong>Cubs</strong>. Bias is disclosed, not hidden.
-            </p>
-            <Link href="/editorial-standards" className="mt-3 inline-block text-sm bb-link">
-              Editorial standards →
-            </Link>
+          <aside className="grid gap-4 lg:content-start">
+            <section className="border border-navy/15 bg-white">
+              <div className="border-b border-navy/15 bg-navy px-4 py-3 text-bone">
+                <h2 className="font-display text-xl italic uppercase tracking-normal text-bone">
+                  Top headlines
+                </h2>
+              </div>
+              <div className="divide-y divide-navy/10 px-4">
+                {desk.topStories.length > 0 ? (
+                  desk.topStories.map((article) => <MiniStory key={article.slug} article={article} />)
+                ) : (
+                  <p className="py-5 text-sm text-charcoal/75">
+                    Brad's next approved piece lands here first.
+                  </p>
+                )}
+              </div>
+            </section>
+
+            <section className="border border-navy/15 bg-white p-4">
+              <h2 className="bb-eyebrow">Two-tap desk</h2>
+              <div className="mt-3 grid grid-cols-2 gap-2">
+                {HOME_PRIMARY_ACTIONS.map((action) =>
+                  action.external ? (
+                    <a
+                      key={action.href}
+                      href={action.href}
+                      target="_blank"
+                      rel="noopener"
+                      className="inline-flex min-h-[44px] items-center justify-center border border-navy/20 px-3 text-center text-[11px] font-black uppercase tracking-[0.16em] text-navy transition-colors hover:border-breaking hover:text-breaking"
+                    >
+                      {action.label}
+                    </a>
+                  ) : (
+                    <Link
+                      key={action.href}
+                      href={action.href}
+                      className="inline-flex min-h-[44px] items-center justify-center border border-navy/20 px-3 text-center text-[11px] font-black uppercase tracking-[0.16em] text-navy transition-colors hover:border-breaking hover:text-breaking"
+                    >
+                      {action.label}
+                    </Link>
+                  ),
+                )}
+              </div>
+            </section>
+
+            <section className="border-l-4 border-breaking bg-navy p-4 text-bone">
+              <h2 className="bb-eyebrow !text-bone/70">Bias disclosed</h2>
+              <p className="mt-2 text-sm leading-relaxed text-bone/85">
+                Brad roots for the Bears, Panthers, Manchester United, Florida Gators, Bulls, and Cubs.
+                The house rule is simple: say it, source it, correct it publicly.
+              </p>
+              <Link href="/editorial-standards" className="mt-3 inline-block text-sm font-semibold underline decoration-breaking underline-offset-4 hover:text-breaking">
+                Editorial standards
+              </Link>
+            </section>
           </aside>
+        </div>
+      </section>
+
+      <section className="border-b border-navy/15 bg-white" aria-label="Scoreboard-style editorial board">
+        <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6">
+          <div className="mb-3 flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <p className="bb-eyebrow !text-breaking !tracking-[0.28em]">Game board</p>
+              <h2 className="font-display text-2xl italic uppercase text-navy">Coverage lanes, not unlicensed scores</h2>
+            </div>
+            <p className="max-w-xl text-sm leading-relaxed text-charcoal/70">
+              {desk.provider.disclaimer}
+            </p>
+          </div>
+          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-6">
+            {desk.watchBoard.map((item) => (
+              <WatchBoardCard key={item.sport} item={item} />
+            ))}
+          </div>
         </div>
       </section>
 
       <GeneratedMediaRail placement="homepage" />
 
-      {/* SCORE-TICKER STYLE COVERAGE STRIP (broadcast cue) */}
-      <section className="bg-bone-50 border-b-[2px] border-navy">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3">
-          <ul className="grid grid-cols-3 sm:grid-cols-6 gap-1 sm:gap-2">
-            {(['nfl', 'nhl', 'college-football', 'soccer', 'nba', 'mma'] as const).map((s) => (
-              <li key={s}>
-                <Link
-                  href={`/articles?sport=${s}`}
-                  className="block text-center py-2 sm:py-2.5 px-1 text-[11px] sm:text-xs uppercase tracking-[0.2em] font-bold text-navy hover:bg-navy hover:text-bone transition-colors min-h-[40px]"
-                >
-                  {sportLabel(s)}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </div>
-      </section>
-
-      {/* LEAD STORY + FEATURED GRID */}
-      {articles.length > 0 && (
-        <section className="max-w-6xl mx-auto px-4 sm:px-6 py-10 sm:py-12">
-          <div className="bb-thin-rule pb-3 mb-6 flex items-end justify-between">
+      <section id="latest" className="mx-auto grid max-w-7xl gap-8 px-4 py-10 sm:px-6 lg:grid-cols-[minmax(0,2fr)_minmax(320px,1fr)]">
+        <div>
+          <div className="bb-thin-rule mb-6 flex items-end justify-between gap-4 pb-3">
             <div className="flex items-center gap-3">
-              <span className="block w-1.5 h-7 bg-breaking" aria-hidden="true" />
-              <h2 className="font-display uppercase italic text-navy-900 text-2xl tracking-[-0.01em]">
-                Latest takes
+              <span className="block h-7 w-1.5 bg-breaking" aria-hidden="true" />
+              <h2 className="font-display text-3xl italic uppercase text-navy-900">
+                Latest from Brad
               </h2>
             </div>
             <Link href="/articles" className="bb-link text-sm">
-              All articles →
+              All articles
             </Link>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {lead && <ArticleCard article={lead} variant="lead" />}
-            <div className="grid gap-6">
-              {featured.map((a) => (
-                <ArticleCard key={a.slug} article={a} />
+          {desk.latest.length > 0 ? (
+            <div className="grid gap-6 sm:grid-cols-2">
+              {desk.latest.map((article) => (
+                <ArticleCard key={article.slug} article={article} />
               ))}
             </div>
-          </div>
-        </section>
-      )}
+          ) : (
+            <div className="border border-navy/15 bg-white p-6">
+              <h3 className="font-serif text-2xl font-bold text-navy-900">The archive is warming up.</h3>
+              <p className="mt-2 text-charcoal/75">
+                Published, Brad-approved pieces appear here automatically from the internal CMS.
+              </p>
+            </div>
+          )}
+        </div>
 
-      {/* MORE ARTICLES */}
-      {more.length > 0 && (
-        <section className="max-w-6xl mx-auto px-4 sm:px-6 py-10">
-          <div className="bb-thin-rule pb-3 mb-6 flex items-end gap-3">
-            <span className="block w-1.5 h-7 bg-breaking" aria-hidden="true" />
-            <h2 className="font-display uppercase italic text-navy-900 text-2xl tracking-[-0.01em]">
-              More from BB Sports
+        <aside className="grid gap-5 content-start">
+          <NewsletterSignup variant="block" />
+          <section className="border border-navy/15 bg-white p-5">
+            <p className="bb-eyebrow !text-breaking">Support the desk</p>
+            <h2 className="mt-2 font-serif text-2xl font-bold leading-tight text-navy-900">
+              Keep every article free. No premium wall. No gambling promos.
             </h2>
-          </div>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {more.map((a) => (
-              <ArticleCard key={a.slug} article={a} />
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* MISSION STATEMENT — pulled-quote slab */}
-      <section id="newsletter" className="bg-navy text-bone">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-14 grid md:grid-cols-12 gap-8 items-start">
-          <div className="md:col-span-7">
-            <div className="bb-eyebrow !text-breaking !tracking-[0.32em]">The mission</div>
-            <h2
-              className="mt-4 font-display uppercase italic text-bone leading-[0.95] tracking-[-0.02em]"
-              style={{ fontSize: 'clamp(1.75rem, 4.5vw, 3.5rem)' }}
-            >
-              I'm so tired of the by-the-book version of sports journalism.
-            </h2>
-            <p className="mt-5 text-bone/85 text-lg leading-relaxed max-w-2xl">
-              I want to write the way fans actually talk about sports. Loud. Specific. With receipts. With opinions you can argue with — not the hedge-everything stuff you've read a thousand times. That's the whole project.
+            <p className="mt-3 text-sm leading-relaxed text-charcoal/75">
+              BB Sports stores supporter interest first-party and only sends money through Stripe when the
+              account is verified for public launch.
             </p>
-            <p className="mt-3 text-bone/85 text-lg leading-relaxed max-w-2xl">
-              Bias is disclosed. Sources are cited. Corrections are public. AI helps me do the volume that one person otherwise can't — but every word with my byline is mine.
-            </p>
-            <Link
-              href="/about"
-              className="mt-6 inline-block underline underline-offset-4 decoration-breaking text-bone hover:text-breaking font-semibold"
-            >
-              Read the long version →
+            <Link href="/support" className="mt-4 inline-flex min-h-[44px] items-center bg-navy px-4 text-sm font-bold text-bone transition-colors hover:bg-breaking">
+              Support BB Sports
             </Link>
+          </section>
+        </aside>
+      </section>
+
+      <section className="border-y border-navy/15 bg-bone-50">
+        <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6">
+          <div className="bb-thin-rule mb-6 flex items-end gap-3 pb-3">
+            <span className="block h-7 w-1.5 bg-breaking" aria-hidden="true" />
+            <h2 className="font-display text-3xl italic uppercase text-navy-900">
+              League desks
+            </h2>
           </div>
-          <div className="md:col-span-5">
-            <NewsletterSignup variant="block" />
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {desk.sportHubs.map((hub) => (
+              <SportDeskCard key={hub.sport} hub={hub} />
+            ))}
           </div>
         </div>
       </section>
 
-      {/* TRUST STRIP */}
+      <section className="bg-navy-deep text-bone">
+        <div className="mx-auto grid max-w-7xl gap-6 px-4 py-10 sm:px-6 lg:grid-cols-3">
+          <div className="lg:col-span-2">
+            <p className="bb-eyebrow !text-breaking !tracking-[0.3em]">Watch and listen</p>
+            <h2 className="mt-3 font-display text-4xl italic uppercase leading-[0.95] text-bone sm:text-5xl">
+              The video and podcast rails are already named homes.
+            </h2>
+            <p className="mt-4 max-w-2xl text-bone/80">
+              ESPN-level behavior means fans never hunt for the show, the clip, or the next column.
+              BB Sports keeps those surfaces separate and discoverable while Brad builds the content bench.
+            </p>
+          </div>
+          <div className="grid gap-3 content-center sm:grid-cols-2 lg:grid-cols-1">
+            <Link href="/videos" className="border border-bone/20 bg-bone/10 p-4 transition-colors hover:border-breaking hover:bg-breaking">
+              <span className="bb-eyebrow !text-bone/70">Video</span>
+              <span className="mt-2 block font-serif text-2xl font-bold text-bone">Clips and reactions</span>
+            </Link>
+            <Link href="/podcast" className="border border-bone/20 bg-bone/10 p-4 transition-colors hover:border-breaking hover:bg-breaking">
+              <span className="bb-eyebrow !text-bone/70">Audio</span>
+              <span className="mt-2 block font-serif text-2xl font-bold text-bone">The BB Sports show</span>
+            </Link>
+          </div>
+        </div>
+      </section>
+
       <section className="bg-bone-50">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-10 grid sm:grid-cols-3 gap-6 text-sm">
+        <div className="mx-auto grid max-w-7xl gap-4 px-4 py-8 text-sm sm:grid-cols-3 sm:px-6">
           {[
-            { label: 'Bias', body: 'Disclosed in every column where it’s material. Brad’s teams are listed in his bio.' },
-            { label: 'Sources', body: 'Cited inline. Quotes attributed. No fabricated quotes.' },
-            { label: 'Corrections', body: <>Logged publicly with date and what changed. <Link href="/corrections" className="bb-link">Read the log →</Link></> }
+            { label: 'Voice', body: 'Opinion-led, first-person, and Brad-approved before a byline ships.' },
+            { label: 'Sources', body: 'Stats link, quotes attribute, and corrections stay public.' },
+            { label: 'AI policy', body: 'AI-assisted work is labeled and blocked from publish without Brad&apos;s take.' },
           ].map((item) => (
-            <div key={item.label} className="bg-white border border-navy/15 p-5 rounded-sm border-t-[3px] !border-t-breaking">
+            <div key={item.label} className="border-t-[3px] border-breaking bg-white p-5">
               <div className="bb-eyebrow">{item.label}</div>
-              <div className="mt-2 text-charcoal/85">{item.body}</div>
+              <p className="mt-2 text-charcoal/80" dangerouslySetInnerHTML={{ __html: item.body }} />
             </div>
           ))}
         </div>
       </section>
     </div>
+  );
+}
+
+function LeadStory({ article, summary }: { article: Article; summary: string }) {
+  const meta = sportMeta(article.sport);
+  return (
+    <article className="grid overflow-hidden border border-navy/15 bg-white shadow-sm md:grid-cols-[minmax(0,1.08fr)_minmax(280px,0.92fr)]">
+      <Link href={`/articles/${article.slug}`} className="group relative block min-h-[280px] bg-navy/10 md:min-h-[430px]">
+        {article.hero ? (
+          <Image
+            src={article.hero}
+            alt={article.heroAlt ?? article.title}
+            fill
+            priority
+            sizes="(min-width: 1024px) 50vw, 100vw"
+            className="h-full w-full object-contain transition-transform duration-300 group-hover:scale-[1.03] md:object-cover"
+          />
+        ) : (
+          <div className="absolute inset-0 bg-[linear-gradient(135deg,#06122A,#0A1F44_60%,#D7263D)]" />
+        )}
+        <div className="absolute left-4 top-4 flex flex-wrap gap-2">
+          <SportTag sport={article.sport} size="sm" asLink={false} />
+          {article.aiAssisted && <span className="bb-ai-badge !bg-bone/95">AI - Brad-edited</span>}
+        </div>
+      </Link>
+      <div className="flex flex-col justify-between p-5 sm:p-7">
+        <div>
+          <div className="flex flex-wrap items-center gap-2 text-xs text-charcoal/65">
+            <span className="font-black uppercase tracking-[0.18em]" style={{ color: meta.accent }}>
+              Lead take
+            </span>
+            <span>|</span>
+            <time dateTime={article.date}>{formatDate(article.date)}</time>
+            <span>|</span>
+            <span>{article.readingTimeMinutes} min read</span>
+          </div>
+          <Link href={`/articles/${article.slug}`}>
+            <h1 className="mt-4 break-words font-serif text-3xl font-black leading-[1.02] tracking-tight text-navy-900 transition-colors hover:text-breaking sm:text-5xl sm:leading-[0.95] lg:text-6xl">
+              {article.title}
+            </h1>
+          </Link>
+          {article.dek && (
+            <p className="mt-4 text-lg leading-relaxed text-charcoal/82">
+              {article.dek}
+            </p>
+          )}
+          <p className="mt-4 text-sm leading-relaxed text-charcoal/70">
+            {summary}
+          </p>
+        </div>
+        <div className="mt-6 flex flex-wrap gap-3">
+          <Link href={`/articles/${article.slug}`} className="bb-button-primary !bg-breaking hover:!bg-breaking/90">
+            Read lead take
+          </Link>
+          <Link href="/articles" className="bb-button-ghost">
+            Open archive
+          </Link>
+        </div>
+      </div>
+    </article>
+  );
+}
+
+function MiniStory({ article }: { article: Article }) {
+  return (
+    <Link href={`/articles/${article.slug}`} className="group block py-4">
+      <div className="flex items-center gap-2">
+        <SportTag sport={article.sport} size="xs" asLink={false} />
+        <time className="text-xs text-charcoal/55" dateTime={article.date}>
+          {formatDate(article.date)}
+        </time>
+      </div>
+      <h3 className="mt-2 font-serif text-xl font-bold leading-tight text-navy-900 transition-colors group-hover:text-breaking">
+        {article.title}
+      </h3>
+    </Link>
+  );
+}
+
+function WatchBoardCard({ item }: { item: { sport: SportSlug; label: string; href: string; status: string; detail: string; freshnessLabel: string } }) {
+  const meta = sportMeta(item.sport);
+  return (
+    <Link href={item.href} className="group border border-navy/15 bg-bone-50 p-3 transition-colors hover:border-breaking hover:bg-white">
+      <div className="flex items-center justify-between gap-2">
+        <span className="font-mono text-[11px] font-black uppercase tracking-[0.18em]" style={{ color: meta.accent }}>
+          {sportLabel(item.sport)}
+        </span>
+        <span className="text-[10px] font-black uppercase tracking-[0.16em] text-charcoal/50">
+          {item.status}
+        </span>
+      </div>
+      <p className="mt-2 line-clamp-2 text-sm font-semibold leading-snug text-navy-900 group-hover:text-breaking">
+        {item.detail}
+      </p>
+      <p className="mt-2 text-[11px] uppercase tracking-[0.12em] text-charcoal/50">
+        {item.freshnessLabel}
+      </p>
+    </Link>
+  );
+}
+
+function SportDeskCard({ hub }: { hub: { sport: SportSlug; label: string; href: string; count: number; lead: Article | null; latest: Article[] } }) {
+  const meta = sportMeta(hub.sport);
+  return (
+    <section className="border border-navy/15 bg-white">
+      <div className="flex items-center justify-between gap-3 border-b border-navy/10 px-4 py-3">
+        <div>
+          <p className="bb-eyebrow" style={{ color: meta.accent }}>{hub.label}</p>
+          <h3 className="font-serif text-xl font-bold text-navy-900">
+            {hub.lead ? hub.lead.title : 'Desk open'}
+          </h3>
+        </div>
+        <Link href={hub.href} className="shrink-0 text-[11px] font-black uppercase tracking-[0.16em] text-navy hover:text-breaking">
+          {hub.count} takes
+        </Link>
+      </div>
+      <div className="divide-y divide-navy/10 px-4">
+        {hub.lead ? <MiniStory article={hub.lead} /> : (
+          <p className="py-4 text-sm text-charcoal/70">
+            This league has a named home before the first column ships.
+          </p>
+        )}
+        {hub.latest.map((article) => <MiniStory key={article.slug} article={article} />)}
+      </div>
+    </section>
+  );
+}
+
+function EmptyFrontPage() {
+  return (
+    <section className="border border-navy/15 bg-white p-8">
+      <h1 className="font-serif text-4xl font-black text-navy-900">BB Sports is warming up.</h1>
+      <p className="mt-3 max-w-2xl text-charcoal/75">
+        The front page fills from Brad-approved articles in the internal CMS. No mock engagement, no fake scores,
+        no placeholder takes.
+      </p>
+      <Link href="/admin" className="mt-5 inline-flex min-h-[44px] items-center bg-navy px-4 text-sm font-bold text-bone hover:bg-breaking">
+        Open admin
+      </Link>
+    </section>
   );
 }
 
@@ -204,30 +383,14 @@ interface HomepageHeroConfig {
 }
 
 const DEFAULT_HERO = {
-  eyebrow: 'SOFT LAUNCH',
-  headlineLines: ['Sports from', "the fan's view.", 'No bullshit.'],
-  sub: 'Opinion-led NFL, NHL, college football, soccer, NBA, and MMA — written like a fan, sourced like a reporter. Founded and edited by',
-  ctaPrimary: { label: 'Read the takes', href: '/articles' },
-  ctaSecondary: { label: 'Get the newsletter', href: '/#newsletter' },
+  eyebrow: 'Soft launch',
+  sub: 'Opinion-led NFL, NHL, college football, soccer, NBA, and MMA - written like a fan, sourced like a reporter.',
 };
 
 function normalizeHero(config: HomepageHeroConfig | null) {
   if (!config?.version) return DEFAULT_HERO;
-  const headlineLines = String(config.headline || DEFAULT_HERO.headlineLines.join('\n'))
-    .split(/\n+/)
-    .map((line) => line.trim())
-    .filter(Boolean);
   return {
     eyebrow: config.eyebrow || DEFAULT_HERO.eyebrow,
-    headlineLines: headlineLines.length > 0 ? headlineLines : DEFAULT_HERO.headlineLines,
     sub: config.sub || DEFAULT_HERO.sub,
-    ctaPrimary: {
-      label: config.cta_primary?.label || DEFAULT_HERO.ctaPrimary.label,
-      href: config.cta_primary?.href || DEFAULT_HERO.ctaPrimary.href,
-    },
-    ctaSecondary: {
-      label: config.cta_secondary?.label || DEFAULT_HERO.ctaSecondary.label,
-      href: config.cta_secondary?.href || DEFAULT_HERO.ctaSecondary.href,
-    },
   };
 }

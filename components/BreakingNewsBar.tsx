@@ -36,7 +36,7 @@ export default async function BreakingNewsBar() {
           <span className="block w-2 h-2 rounded-full bg-breaking mr-2 animate-[bb-pulse_1.4s_ease-in-out_infinite]" />
           Breaking
         </div>
-        <div className="flex-1 overflow-hidden flex items-center">
+        <div className="min-w-0 flex-1 overflow-hidden flex items-center">
           <div className="flex gap-10 whitespace-nowrap animate-[bb-marquee_55s_linear_infinite] hover:[animation-play-state:paused]">
             {[...items, ...items].map((item, i) => (
               <Link

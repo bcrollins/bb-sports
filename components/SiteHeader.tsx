@@ -15,6 +15,8 @@ const NAV = [
   { href: '/articles?sport=mma', label: 'MMA' },
   { href: '/podcast', label: 'Podcast' },
   { href: '/videos', label: 'Videos' },
+  { href: '/support', label: 'Support' },
+  { href: '/contact', label: 'Tips' },
   { href: '/about', label: 'About' },
 ];
 
@@ -64,9 +66,10 @@ export default function SiteHeader() {
           <span className="sr-only">Login or open profile</span>
         </Link>
         <Logo asLink variant="masthead" scheme="navy-on-bone" className="mx-auto" />
-        <div className="mt-3 text-[10.5px] sm:text-xs uppercase tracking-[0.32em] text-navy/80 font-semibold">
-          Sports from the fan&rsquo;s view <span className="mx-1 text-navy/30">·</span>{' '}
-          <span className="text-breaking font-extrabold">No bullshit.</span>
+        <div className="mx-auto mt-3 flex max-w-[calc(100vw-2rem)] flex-wrap justify-center gap-x-2 gap-y-1 text-[9.5px] sm:text-xs uppercase tracking-[0.18em] sm:tracking-[0.28em] text-navy/80 font-semibold leading-relaxed">
+          <span>Sports from the fan&rsquo;s view</span>
+          <span className="text-navy/30">·</span>
+          <span className="basis-full text-breaking font-extrabold sm:basis-auto">No bullshit.</span>
         </div>
       </div>
 
