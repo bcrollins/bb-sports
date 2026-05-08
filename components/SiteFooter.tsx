@@ -65,6 +65,7 @@ export default async function SiteFooter() {
             <li><Link href="/articles?sport=soccer" className="hover:text-breaking">Soccer</Link></li>
             <li><Link href="/podcast" className="hover:text-breaking">Podcast</Link></li>
             <li><Link href="/videos" className="hover:text-breaking">Videos</Link></li>
+            <li><Link href="/support" className="hover:text-breaking">Support</Link></li>
           </ul>
         </div>
 
@@ -72,6 +73,7 @@ export default async function SiteFooter() {
           <h3 className="text-bone uppercase text-[10.5px] tracking-[0.22em] font-bold mb-3">Site</h3>
           <ul className="space-y-2 text-bone/85 text-[15px]">
             <li><Link href="/about" className="hover:text-breaking">About Brad</Link></li>
+            <li><Link href="/support/terms" className="hover:text-breaking">Donation terms</Link></li>
             <li><Link href="/contact" className="hover:text-breaking">Contact &amp; tips</Link></li>
             <li><Link href="/editorial-standards" className="hover:text-breaking">Editorial standards</Link></li>
             <li><Link href="/corrections" className="hover:text-breaking">Corrections</Link></li>

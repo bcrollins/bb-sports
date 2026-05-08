@@ -108,7 +108,7 @@ export default function Logo({
     body = (
       <span className={`inline-flex flex-col items-center ${className}`}>
         <span className="h-[3px] w-[88%] mb-2" style={{ background: accent }} aria-hidden="true" />
-        <span style={{ fontSize: 'clamp(2.5rem, 11vw, 8.5rem)' }}>{Wordmark}</span>
+        <span style={{ fontSize: 'clamp(2rem, 9vw, 8.5rem)' }}>{Wordmark}</span>
         <span className="h-[3px] w-[88%] mt-2" style={{ background: accent }} aria-hidden="true" />
       </span>
     );

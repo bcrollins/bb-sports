@@ -33,12 +33,14 @@ A production-ready Next.js 14 site for Brad Benson's personal sports-media brand
 ## Pages shipped at v1
 
 ```
-/                       Landing — hero, latest 4 takes, mission slab, newsletter, trust strip
+/                       Network-style front page — lead story, top headlines, league desks, game board, newsletter
 /articles               Archive — search + filter by sport
 /articles/[slug]        Article detail — broadcast slug, body, share, comments stub, related
 /about                  Brad's bio
 /podcast                Audio show — coming-soon
 /videos                 Vertical clips grid + live reactions — coming-soon
+/support                Reader support — first-party donation interest + Stripe handoff when verified
+/support/terms          Public donation / refund / editorial-independence terms
 /contact                General + tip + press + sponsorship form
 /editorial-standards    Public editorial standards
 /corrections            Public corrections log
@@ -102,6 +104,7 @@ Railway picks up `Dockerfile` + `railway.json`. Multi-stage Docker build → Nex
 │   ├── about/                 Bio
 │   ├── podcast/               Coming-soon
 │   ├── videos/                Coming-soon
+│   ├── support/               Reader support + donation terms
 │   ├── contact/               Contact + tips form
 │   ├── editorial-standards/   Public standards
 │   ├── corrections/           Public log
@@ -134,7 +137,7 @@ Railway picks up `Dockerfile` + `railway.json`. Multi-stage Docker build → Nex
 | Phase | Ship |
 |---|---|
 | **v1.1 (within 30 days post-launch)** | AI draft pipeline (xAI Grok) with approval gate, comment moderation, Stripe webhook reconciliation, newsletter welcome/suppression via Resend, photo headshot replacing placeholder. |
-| **v1.2** | Live scores feed (commercial-licensed), share-to-X auto-post on publish, podcast feed + first episode, vertical-clip ingestion. |
+| **v1.2** | Live scores feed (commercial-licensed behind `BBSPORTS_APPROVED_LIVE_SCORES`), share-to-X auto-post on publish, podcast feed + first episode, vertical-clip ingestion. |
 | **v2.0** | Reader referral / leaderboard, sponsorship intake portal, internal analytics dashboard, custom recommendation feed. |
 
 ---

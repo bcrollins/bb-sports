@@ -16,7 +16,7 @@
 
   <text x="800" y="200" text-anchor="middle" font-family="Inter, system-ui, sans-serif" font-weight="800" font-size="22" letter-spacing="10" fill="#D7263D">ISSUE 001</text>
 
-  <text x="800" y="500" text-anchor="middle" font-family="Anton, Oswald, Inter, sans-serif" font-style="italic" font-weight="900" font-size="280" fill="#F5F2EC" letter-spacing="-8">BB SPORTS</text>
+  <text x="800" y="500" text-anchor="middle" font-family="Anton, Oswald, Inter, sans-serif" font-style="italic" font-weight="900" font-size="155" fill="#F5F2EC" letter-spacing="-4">BB SPORTS</text>
 
   <text x="800" y="610" text-anchor="middle" font-family="Inter, system-ui, sans-serif" font-weight="700" font-size="40" fill="#F5F2EC" opacity="0.9">Sports from the fan's view.</text>
   <text x="800" y="700" text-anchor="middle" font-family="Anton, Oswald, Inter, sans-serif" font-style="italic" font-weight="900" font-size="80" fill="#D7263D" letter-spacing="-2">NO BULLSHIT.</text>
