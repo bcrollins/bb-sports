@@ -7,6 +7,7 @@ import Logo from './Logo';
 // homepage score ticker uses); on desktop it justifies center.
 const NAV = [
   { href: '/articles', label: 'Articles' },
+  { href: '/search', label: 'Search' },
   { href: '/articles?sport=nfl', label: 'NFL' },
   { href: '/articles?sport=nhl', label: 'NHL' },
   { href: '/articles?sport=college-football', label: 'College' },

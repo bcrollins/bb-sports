@@ -35,6 +35,7 @@ A production-ready Next.js 14 site for Brad Benson's personal sports-media brand
 ```
 /                       Network-style front page — lead story, top headlines, league desks, game board, newsletter
 /articles               Archive — search + filter by sport
+/search                 First-party ranked article search
 /articles/[slug]        Article detail — broadcast slug, body, share, first-party comments, related
 /about                  Brad's bio
 /podcast                Audio show — coming-soon
@@ -57,6 +58,7 @@ A production-ready Next.js 14 site for Brad Benson's personal sports-media brand
 /api/health             Health probe (Railway healthcheck)
 /api/newsletter         Email capture endpoint (rate-limited)
 /api/articles/[slug]/comments  Public comments load/post endpoint with moderation
+/api/search                    Ranked article search API
 /api/newsletter/unsubscribe    Newsletter suppression endpoint
 /api/contact            Tips / general contact endpoint (rate-limited)
 /api/donations          Stripe payment-link proxy + first-party supporter-interest ledger
