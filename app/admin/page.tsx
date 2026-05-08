@@ -7,12 +7,12 @@
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { sql } from 'drizzle-orm';
-import { Activity, ArrowUpRight, FileText, ImageIcon, LockKeyhole, PenLine, Settings, Users } from 'lucide-react';
+import { Activity, ArrowUpRight, FileText, ImageIcon, LockKeyhole, MessageSquare, PenLine, Settings, Users } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { db } from '@/lib/db/client';
 import { ensureBootstrapped } from '@/lib/db/bootstrap';
 import { getSession } from '@/lib/auth';
-import { getAllArticles, getAudienceSnapshot } from '@/lib/queries';
+import { getAllArticles, getAudienceSnapshot, getCommentModerationCounts } from '@/lib/queries';
 
 export const dynamic = 'force-dynamic';
 
@@ -38,13 +38,15 @@ async function loadCounts(): Promise<Counts> {
 }
 
 export default async function AdminOverview() {
-  const [session, counts, articles, audience] = await Promise.all([
+  const [session, counts, articles, audience, commentCounts] = await Promise.all([
     getSession(),
     loadCounts(),
     getAllArticles(),
     getAudienceSnapshot(),
+    getCommentModerationCounts(),
   ]);
   const recent = articles.slice(0, 7);
+  const commentReview = commentCounts.pending + commentCounts.flagged;
   const launchScore = [
     counts.published >= 5,
     audience.counts.subscribers >= 1,
@@ -71,6 +73,7 @@ export default async function AdminOverview() {
               <CommandButton href="/admin/articles/new" label="Write" icon={PenLine} primary />
               <CommandButton href="/admin/articles" label="Articles" icon={FileText} />
               <CommandButton href="/admin/media" label="Media" icon={ImageIcon} />
+              <CommandButton href="/admin/comments" label="Comments" icon={MessageSquare} />
               <CommandButton href="/admin/audience" label="Audience" icon={Users} />
               <CommandButton href="/admin/site" label="Site" icon={Settings} />
               <CommandButton href="/admin/access-wall" label="Wall" icon={LockKeyhole} />
@@ -94,9 +97,10 @@ export default async function AdminOverview() {
         </div>
       </header>
 
-      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
         <Stat label="Published" value={counts.published} note={`${counts.total} total articles`} />
         <Stat label="Drafts" value={counts.drafts} note="Brad-controlled queue" />
+        <Stat label="Review" value={commentReview} note="comments pending/flagged" />
         <Stat label="Subscribers" value={audience.counts.subscribers} note="first-party list" />
         <Stat label="New inbox" value={audience.counts.contactNew} note={`${audience.counts.donationWaiting} donation waits`} />
       </section>

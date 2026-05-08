@@ -1,0 +1,63 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { requestMeta } from '@/lib/request-meta';
+import { commentCreateSchema, validationErrorMessage } from '@/lib/comment-validation';
+import { createCommentForArticleSlug, dbAvailable, getPublicCommentsByArticleSlug } from '@/lib/queries';
+
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+
+type Context = { params: Promise<{ slug: string }> };
+
+export async function GET(_: NextRequest, { params }: Context) {
+  if (!dbAvailable) {
+    return NextResponse.json({ ok: false, error: 'Comments require the BB Sports database.', comments: [] }, { status: 503 });
+  }
+  const { slug } = await params;
+  try {
+    const comments = await getPublicCommentsByArticleSlug(slug);
+    return NextResponse.json({ ok: true, comments });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Comments unavailable.';
+    return NextResponse.json({ ok: false, error: message, comments: [] }, { status: 503 });
+  }
+}
+
+export async function POST(req: NextRequest, { params }: Context) {
+  const { slug } = await params;
+  const { ip, userAgent } = requestMeta(req);
+
+  let body: unknown;
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: 'Invalid JSON.' }, { status: 400 });
+  }
+
+  const parsed = commentCreateSchema.safeParse(body);
+  if (!parsed.success) {
+    return NextResponse.json({ error: validationErrorMessage(parsed.error) }, { status: 400 });
+  }
+
+  try {
+    const result = await createCommentForArticleSlug({
+      slug,
+      comment: parsed.data,
+      ip,
+      userAgent,
+    });
+    const publicNow = result.status === 'approved';
+    return NextResponse.json({
+      ok: true,
+      status: result.status,
+      reason: result.reason,
+      comment: result.comment,
+      message: publicNow
+        ? 'Comment posted.'
+        : 'Comment received and held for moderation before it appears.',
+    }, { status: publicNow ? 201 : 202 });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Comment could not be saved.';
+    const status = message.includes('Too many comments') ? 429 : message.includes('not found') ? 404 : 503;
+    return NextResponse.json({ error: message }, { status });
+  }
+}

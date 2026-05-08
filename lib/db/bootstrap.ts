@@ -166,6 +166,23 @@ async function bootstrap(): Promise<void> {
       updated_at timestamptz NOT NULL DEFAULT now()
     );
   `);
+  await db.execute(sql`
+    CREATE TABLE IF NOT EXISTS comments (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      article_id uuid NOT NULL REFERENCES articles(id) ON DELETE CASCADE,
+      parent_id uuid REFERENCES comments(id) ON DELETE SET NULL,
+      author_name varchar(80) NOT NULL,
+      author_email varchar(255),
+      body text NOT NULL,
+      status varchar(24) NOT NULL DEFAULT 'pending',
+      moderation_reason text NOT NULL DEFAULT '',
+      ip_address varchar(64),
+      user_agent text,
+      approved_at timestamptz,
+      created_at timestamptz NOT NULL DEFAULT now(),
+      updated_at timestamptz NOT NULL DEFAULT now()
+    );
+  `);
   await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_articles_published ON articles(published, published_at DESC);`);
   await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_articles_sport ON articles(sport);`);
   await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_sessions_user ON sessions(user_id);`);
@@ -174,6 +191,10 @@ async function bootstrap(): Promise<void> {
   await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_donation_intents_status ON donation_intents(status, created_at DESC);`);
   await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_media_assets_approved ON media_assets(approved, placement, updated_at DESC);`);
   await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_media_assets_request ON media_assets(request_id);`);
+  await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_comments_article_public ON comments(article_id, status, created_at ASC);`);
+  await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_comments_parent ON comments(parent_id);`);
+  await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_comments_status ON comments(status, created_at DESC);`);
+  await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_comments_ip_recent ON comments(ip_address, created_at DESC);`);
 
   // 2. Admin user seed (idempotent ON CONFLICT DO NOTHING).
   const adminEmail = process.env.ADMIN_EMAIL;

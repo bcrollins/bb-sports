@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { CheckCircle2, CircleAlert, CircleDashed } from 'lucide-react';
-import { getAllArticles, getAudienceSnapshot } from '@/lib/queries';
+import { getAllArticles, getAudienceSnapshot, getCommentModerationCounts } from '@/lib/queries';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,9 +15,14 @@ const PROVIDERS = [
 ];
 
 export default async function LaunchPage() {
-  const [articles, audience] = await Promise.all([getAllArticles(), getAudienceSnapshot()]);
+  const [articles, audience, commentCounts] = await Promise.all([
+    getAllArticles(),
+    getAudienceSnapshot(),
+    getCommentModerationCounts(),
+  ]);
   const published = articles.length;
   const aiLabelOk = articles.every((a) => !a.aiAssisted || Boolean(a.bradsTake));
+  const commentsUnderControl = Boolean(process.env.DATABASE_URL);
 
   const checks = [
     {
@@ -37,6 +42,12 @@ export default async function LaunchPage() {
       ok: aiLabelOk,
       detail: aiLabelOk ? 'AI-assisted public pieces have Brad take slots.' : 'An AI-assisted piece is missing Brad’s Take.',
       href: '/admin/articles',
+    },
+    {
+      label: 'Comment moderation loop',
+      ok: commentsUnderControl,
+      detail: `${commentCounts.approved} approved, ${commentCounts.pending + commentCounts.flagged} needing review.`,
+      href: '/admin/comments',
     },
     {
       label: 'White access wall',

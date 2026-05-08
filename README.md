@@ -35,7 +35,7 @@ A production-ready Next.js 14 site for Brad Benson's personal sports-media brand
 ```
 /                       Network-style front page — lead story, top headlines, league desks, game board, newsletter
 /articles               Archive — search + filter by sport
-/articles/[slug]        Article detail — broadcast slug, body, share, comments stub, related
+/articles/[slug]        Article detail — broadcast slug, body, share, first-party comments, related
 /about                  Brad's bio
 /podcast                Audio show — coming-soon
 /videos                 Vertical clips grid + live reactions — coming-soon
@@ -48,12 +48,14 @@ A production-ready Next.js 14 site for Brad Benson's personal sports-media brand
 /admin                  Newsroom command center (auth-gated)
 /admin/articles         No-code article roster
 /admin/articles/new     Article editor + live markdown preview
+/admin/comments         First-party comment moderation queue
 /admin/site             No-code site copy controls
 /admin/audience         Newsletter / contact / donation-intent ledger
 /admin/access-wall      Blank white site-wall password control
 /admin/launch           Launch-readiness and provider posture
 /api/health             Health probe (Railway healthcheck)
 /api/newsletter         Email capture endpoint (rate-limited)
+/api/articles/[slug]/comments  Public comments load/post endpoint with moderation
 /api/contact            Tips / general contact endpoint (rate-limited)
 /api/donations          Stripe payment-link proxy + first-party supporter-interest ledger
 /sitemap.xml            Auto-generated
@@ -99,7 +101,7 @@ Railway picks up `Dockerfile` + `railway.json`. Multi-stage Docker build → Nex
 ```
 .
 ├── app/                       Next.js App Router routes
-│   ├── api/                   Route handlers (newsletter, contact, donations, health)
+│   ├── api/                   Route handlers (newsletter, comments, contact, donations, health)
 │   ├── articles/              Archive + dynamic [slug] detail
 │   ├── about/                 Bio
 │   ├── podcast/               Coming-soon
@@ -118,7 +120,7 @@ Railway picks up `Dockerfile` + `railway.json`. Multi-stage Docker build → Nex
 │   ├── robots.ts              robots.txt
 │   ├── sitemap.ts             sitemap.xml
 │   └── globals.css            Tokens + components + article-body styles
-├── components/                Reusable UI (Logo, header, footer, cards, breaking bar, sport tags, newsletter)
+├── components/                Reusable UI (Logo, header, footer, cards, comments, breaking bar, sport tags, newsletter)
 ├── content/articles/          Anchor articles in Markdown w/ frontmatter
 ├── docs/                      Strategy brief + Perfection Engine prompt
 ├── lib/                       Article loader, breaking-news data, sport meta
@@ -136,7 +138,7 @@ Railway picks up `Dockerfile` + `railway.json`. Multi-stage Docker build → Nex
 
 | Phase | Ship |
 |---|---|
-| **v1.1 (within 30 days post-launch)** | AI draft pipeline (xAI Grok) with approval gate, comment moderation, Stripe webhook reconciliation, newsletter welcome/suppression via Resend, photo headshot replacing placeholder. |
+| **v1.1 (within 30 days post-launch)** | AI draft pipeline (xAI Grok) with approval gate, Stripe webhook reconciliation, newsletter welcome/suppression via Resend, photo headshot replacing placeholder. |
 | **v1.2** | Live scores feed (commercial-licensed behind `BBSPORTS_APPROVED_LIVE_SCORES`), share-to-X auto-post on publish, podcast feed + first episode, vertical-clip ingestion. |
 | **v2.0** | Reader referral / leaderboard, sponsorship intake portal, internal analytics dashboard, custom recommendation feed. |
 
