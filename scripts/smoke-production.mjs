@@ -4,6 +4,9 @@ const DEFAULT_BASE_URL = 'https://web-production-c65d6.up.railway.app';
 const SEARCH_QUERY = process.env.BB_SMOKE_SEARCH_QUERY || 'Bears';
 const REQUIRED_SEARCH_TEXT =
   process.env.BB_SMOKE_REQUIRED_TEXT || 'Why the Bears finally have a real shot';
+const ARTICLE_SLUG = process.env.BB_SMOKE_ARTICLE_SLUG || 'why-the-bears-finally-have-a-real-shot';
+const ARTICLE_TITLE =
+  process.env.BB_SMOKE_ARTICLE_TITLE || 'Why the Bears finally have a real shot';
 const GATE_COOKIE = process.env.BB_PRODUCTION_GATE_COOKIE || 'bb_gate=1';
 const TIMEOUT_MS = Number(process.env.BB_SMOKE_TIMEOUT_MS || 12_000);
 
@@ -23,6 +26,10 @@ async function main() {
   await runCheck('health endpoint', checkHealth);
   await runCheck('soft-launch gate redirect', checkGateRedirect);
   await runCheck('gated search page', checkGatedSearchPage);
+  await runCheck('search API JSON', checkSearchApi);
+  await runCheck('article page render', checkArticlePage);
+  await runCheck('comments read path', checkCommentsReadPath);
+  await runCheck('sitemap editorial URLs', checkSitemap);
   await runCheck('analytics contract GET', checkAnalyticsGet);
   await runCheck('analytics validation guard', checkAnalyticsValidationGuard);
   await runCheck('analytics write path', checkAnalyticsWritePath);
@@ -90,6 +97,54 @@ async function checkGatedSearchPage() {
   invariant(html.includes(REQUIRED_SEARCH_TEXT), `required result text missing: ${REQUIRED_SEARCH_TEXT}`);
   invariant(!html.includes('Application error'), 'application error rendered');
   return `${SEARCH_QUERY} result rendered`;
+}
+
+async function checkSearchApi() {
+  const response = await request(`/api/search?q=${encodeURIComponent(SEARCH_QUERY)}`, {
+    headers: { Cookie: GATE_COOKIE },
+  });
+  assertStatus(response, 200, '/api/search');
+  const body = await parseJson(response, '/api/search');
+  invariant(body.ok === true, 'search API did not return ok');
+  invariant(Array.isArray(body.results), 'search API did not return a results array');
+  invariant(
+    body.results.some((result) => result.article?.slug === ARTICLE_SLUG),
+    `search API did not include ${ARTICLE_SLUG}`,
+  );
+  return `${body.results.length} results`;
+}
+
+async function checkArticlePage() {
+  const response = await request(`/articles/${ARTICLE_SLUG}`, {
+    headers: { Cookie: GATE_COOKIE },
+  });
+  assertStatus(response, 200, `/articles/${ARTICLE_SLUG}`);
+  const html = await response.text();
+  invariant(html.includes(ARTICLE_TITLE), `article title missing: ${ARTICLE_TITLE}`);
+  invariant(html.includes('By Brad Benson'), 'article byline missing');
+  invariant(html.includes('Editorial note:'), 'article editorial note missing');
+  invariant(!html.includes('Application error'), 'application error rendered');
+  return ARTICLE_SLUG;
+}
+
+async function checkCommentsReadPath() {
+  const response = await request(`/api/articles/${ARTICLE_SLUG}/comments`, {
+    headers: { Cookie: GATE_COOKIE },
+  });
+  assertStatus(response, 200, `/api/articles/${ARTICLE_SLUG}/comments`);
+  const body = await parseJson(response, `/api/articles/${ARTICLE_SLUG}/comments`);
+  invariant(body.ok === true, 'comments read path did not return ok');
+  invariant(Array.isArray(body.comments), 'comments read path did not return comments array');
+  return `${body.comments.length} public comments`;
+}
+
+async function checkSitemap() {
+  const response = await request('/sitemap.xml');
+  assertStatus(response, 200, '/sitemap.xml');
+  const xml = await response.text();
+  invariant(xml.includes(`/articles/${ARTICLE_SLUG}`), `sitemap missing article ${ARTICLE_SLUG}`);
+  invariant(xml.includes('/search'), 'sitemap missing search route');
+  return 'article and search URLs present';
 }
 
 async function checkAnalyticsGet() {
