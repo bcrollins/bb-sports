@@ -6,6 +6,7 @@
  * accessor returns an empty result so the public site degrades gracefully instead
  * of crashing.
  */
+import { randomBytes } from 'node:crypto';
 import { and, asc, desc, eq, gt, lt, ne, sql, type SQL } from 'drizzle-orm';
 import { db, dbAvailable } from './db/client';
 import {
@@ -226,6 +227,10 @@ export async function getRelatedArticlesBySport(
 
 // ---------- audience / intake ledgers ----------
 
+export function createNewsletterUnsubscribeToken(): string {
+  return randomBytes(24).toString('hex');
+}
+
 export async function upsertNewsletterSubscriber(input: {
   email: string;
   source?: string;
@@ -234,10 +239,12 @@ export async function upsertNewsletterSubscriber(input: {
 }): Promise<NewsletterSubscriber> {
   if (!db) throw new Error('Database not available');
   await ensureBootstrapped();
+  const unsubscribeToken = createNewsletterUnsubscribeToken();
   const rows = await db
     .insert(newsletterSubscribers)
     .values({
       email: input.email,
+      unsubscribeToken,
       source: input.source ?? 'site',
       lastIpAddress: input.ip ?? null,
       lastUserAgent: input.userAgent ?? null,
@@ -247,6 +254,7 @@ export async function upsertNewsletterSubscriber(input: {
       set: {
         status: 'subscribed',
         source: input.source ?? 'site',
+        unsubscribeToken: sql`coalesce(${newsletterSubscribers.unsubscribeToken}, ${unsubscribeToken})`,
         lastIpAddress: input.ip ?? null,
         lastUserAgent: input.userAgent ?? null,
         unsubscribedAt: null,
@@ -256,6 +264,21 @@ export async function upsertNewsletterSubscriber(input: {
     })
     .returning();
   return rows[0];
+}
+
+export async function unsubscribeNewsletterSubscriber(token: string): Promise<NewsletterSubscriber | null> {
+  if (!db) throw new Error('Database not available');
+  await ensureBootstrapped();
+  const rows = await db
+    .update(newsletterSubscribers)
+    .set({
+      status: 'unsubscribed',
+      unsubscribedAt: new Date(),
+      updatedAt: new Date(),
+    })
+    .where(eq(newsletterSubscribers.unsubscribeToken, token))
+    .returning();
+  return rows[0] ?? null;
 }
 
 export async function createContactMessage(input: {

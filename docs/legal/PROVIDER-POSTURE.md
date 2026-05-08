@@ -10,7 +10,7 @@ BB Sports is a commercial media property. Production providers must be authorize
 | PostgreSQL | Internal CMS, admin, ledgers | GREEN when `DATABASE_URL` is configured | Filesystem fallback is allowed only for local/pre-DB development. |
 | First-party comments | Article discussion and moderation | GREEN when `DATABASE_URL` is configured | No external comment provider. Public UI renders approved records only. |
 | Stripe | Donations | YELLOW | Payment link is optional. Donation intent is stored first-party until Stripe is configured. |
-| Resend | Email transport | YELLOW | Newsletter ledger works without transport. Welcome/send flows stay disabled until domain/API are configured. |
+| Resend | Email transport | YELLOW | Newsletter ledger and unsubscribe suppression work without transport. Welcome/send flows stay disabled until domain/API are configured. |
 | Cloudflare R2 | Object storage | YELLOW | No production upload dependency yet. Hero image URLs require alt text and credit. |
 | xAI Grok | AI assistance and generated media | YELLOW | Admin media routes are built but fail closed unless `XAI_API_KEY` and `BBSPORTS_APPROVED_XAI=true` are configured. Any AI draft/media must stay approval-gated and labeled. |
 | Live scores provider | Scores / standings | RED | Homepage renders editorial coverage lanes only. Do not render live scores until commercial terms are stored and `BBSPORTS_APPROVED_LIVE_SCORES=true` is configured. |

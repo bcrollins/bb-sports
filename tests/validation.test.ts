@@ -4,14 +4,22 @@ import { articlePayloadSchema, articlePatchSchema } from '../lib/article-validat
 import { BRADLEY_BRAND_ASSETS, PRIMARY_BRADLEY_ASSET } from '../lib/brandAssets';
 import { moderateComment, PUBLIC_COMMENT_MODERATION_RULES } from '../lib/comment-moderation';
 import { commentCreateSchema, commentModerationSchema } from '../lib/comment-validation';
-import { accessWallUpdateSchema, contactSubmissionSchema, donationIntentSchema, newsletterSignupSchema } from '../lib/intake-validation';
+import { accessWallUpdateSchema, contactSubmissionSchema, donationIntentSchema, newsletterSignupSchema, newsletterUnsubscribeSchema } from '../lib/intake-validation';
 import { mediaGenerationSchema } from '../lib/media-validation';
+import { createNewsletterUnsubscribeToken } from '../lib/queries';
 import { safeAdminPath, safeInternalPath } from '../lib/redirects';
 import { composeSportsMediaPrompt } from '../lib/xai-media';
 
 test('newsletter signup normalizes email and rejects invalid addresses', () => {
   assert.equal(newsletterSignupSchema.parse({ email: '  BRAD@BBSPORTS.FANS ' }).email, 'brad@bbsports.fans');
   assert.equal(newsletterSignupSchema.safeParse({ email: 'not-an-email' }).success, false);
+});
+
+test('newsletter unsubscribe token is one-click safe and non-guessable', () => {
+  const token = createNewsletterUnsubscribeToken();
+  assert.match(token, /^[a-f0-9]{48}$/);
+  assert.equal(newsletterUnsubscribeSchema.safeParse({ token }).success, true);
+  assert.equal(newsletterUnsubscribeSchema.safeParse({ token: 'short' }).success, false);
 });
 
 test('contact submission enforces mode, message length, and normalized email', () => {

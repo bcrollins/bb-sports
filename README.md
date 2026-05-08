@@ -42,6 +42,7 @@ A production-ready Next.js 14 site for Brad Benson's personal sports-media brand
 /support                Reader support — first-party donation interest + Stripe handoff when verified
 /support/terms          Public donation / refund / editorial-independence terms
 /contact                General + tip + press + sponsorship form
+/newsletter/unsubscribe One-click newsletter suppression, gate-bypassed
 /editorial-standards    Public editorial standards
 /corrections            Public corrections log
 /coming-soon            Pre-launch landing with email capture
@@ -56,6 +57,7 @@ A production-ready Next.js 14 site for Brad Benson's personal sports-media brand
 /api/health             Health probe (Railway healthcheck)
 /api/newsletter         Email capture endpoint (rate-limited)
 /api/articles/[slug]/comments  Public comments load/post endpoint with moderation
+/api/newsletter/unsubscribe    Newsletter suppression endpoint
 /api/contact            Tips / general contact endpoint (rate-limited)
 /api/donations          Stripe payment-link proxy + first-party supporter-interest ledger
 /sitemap.xml            Auto-generated
