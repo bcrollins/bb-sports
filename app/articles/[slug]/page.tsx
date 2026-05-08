@@ -50,7 +50,7 @@ export default async function ArticleDetail({ params }: Props) {
   const related = await getRelatedArticles(article, 3);
   const m = sportMeta(article.sport);
 
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://bbsports.media';
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://bbsports.fans';
   const articleUrl = `${siteUrl}/articles/${article.slug}`;
   // schema.org requires absolute URLs for image/logo. Prepend siteUrl when
   // the configured value is relative (filesystem articles use /images/foo.svg;
@@ -180,7 +180,7 @@ export default async function ArticleDetail({ params }: Props) {
             target="_blank"
             rel="noopener"
             href={`https://x.com/intent/tweet?text=${encodeURIComponent(article.title)}&url=${encodeURIComponent(
-              `https://bbsports.media/articles/${article.slug}`
+              `https://bbsports.fans/articles/${article.slug}`
             )}`}
             className="bb-button-ghost"
           >
@@ -190,7 +190,7 @@ export default async function ArticleDetail({ params }: Props) {
             target="_blank"
             rel="noopener"
             href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(
-              `https://bbsports.media/articles/${article.slug}`
+              `https://bbsports.fans/articles/${article.slug}`
             )}`}
             className="bb-button-ghost"
           >
@@ -198,7 +198,7 @@ export default async function ArticleDetail({ params }: Props) {
           </a>
           <a
             href={`mailto:?subject=${encodeURIComponent(article.title)}&body=${encodeURIComponent(
-              `https://bbsports.media/articles/${article.slug}`
+              `https://bbsports.fans/articles/${article.slug}`
             )}`}
             className="bb-button-ghost"
           >

@@ -164,7 +164,7 @@ The AI agent should be xAI Grok or comparable. **Never claim something is AI-gen
 
 | Question | Decision |
 |---|---|
-| Domain | TBD (top picks: `bbsports.com`, `bbsports.media`, `readbbsports.com`, `bbsports.co`). Brandon to register. |
+| Domain | `bbsports.fans` (registered 2026-05-06 at Namecheap; Railway custom domains live 2026-05-08). |
 | Mobile-first | **Yes — non-negotiable** (Brad: "most readers will be on phones") |
 | Dark mode | Not for v1. Light/newspaper as default. Add toggle later. |
 | SEO | **Day 1.** Open Graph, JSON-LD, sitemap, canonical URLs, semantic HTML. |

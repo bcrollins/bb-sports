@@ -59,7 +59,7 @@ export default function ContactPage() {
           <h2 className="font-serif text-xl font-bold text-navy-900">Other ways</h2>
           <ul className="mt-3 space-y-3 text-sm text-charcoal/85">
             <li><a className="bb-link" href="https://x.com/bbsports" target="_blank" rel="noopener">@bbsports on X</a> — fastest for non-confidential.</li>
-            <li><a className="bb-link" href="mailto:tips@bbsports.media">tips@bbsports.media</a> — anything serious.</li>
+            <li><a className="bb-link" href="mailto:tips@bbsports.fans">tips@bbsports.fans</a> — anything serious.</li>
             <li><Link className="bb-link" href="/editorial-standards">Editorial standards</Link> — what we do with what you send us.</li>
             <li><Link className="bb-link" href="/corrections">Corrections</Link> — see something wrong on a piece? Tell us.</li>
           </ul>
@@ -138,7 +138,7 @@ export default function ContactPage() {
                 className="mt-1 h-5 w-5 accent-navy"
               />
               <span className="text-sm text-charcoal/85">
-                <strong>Treat as confidential.</strong> Brad will not name you in the story without your written consent. If you need a more secure channel, email <a className="bb-link" href="mailto:tips@bbsports.media">tips@bbsports.media</a>.
+                <strong>Treat as confidential.</strong> Brad will not name you in the story without your written consent. If you need a more secure channel, email <a className="bb-link" href="mailto:tips@bbsports.fans">tips@bbsports.fans</a>.
               </span>
             </label>
           )}

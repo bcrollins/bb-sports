@@ -8,7 +8,7 @@ import { safeAdminPath, safeInternalPath } from '../lib/redirects';
 import { composeSportsMediaPrompt } from '../lib/xai-media';
 
 test('newsletter signup normalizes email and rejects invalid addresses', () => {
-  assert.equal(newsletterSignupSchema.parse({ email: '  BRAD@BBSPORTS.MEDIA ' }).email, 'brad@bbsports.media');
+  assert.equal(newsletterSignupSchema.parse({ email: '  BRAD@BBSPORTS.FANS ' }).email, 'brad@bbsports.fans');
   assert.equal(newsletterSignupSchema.safeParse({ email: 'not-an-email' }).success, false);
 });
 

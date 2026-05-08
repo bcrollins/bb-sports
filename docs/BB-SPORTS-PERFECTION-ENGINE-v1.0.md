@@ -73,7 +73,7 @@ The mandate: make BB Sports measurably better on every run — toward 10.0 on ev
 
 **Operational Profile**
 - BB Sports is a personal sports-media brand: opinion-led, fan-perspective, AI-assisted, founder-voiced.
-- Domain: TBD (top picks: `bbsports.com`, `bbsports.media`, `readbbsports.com`, `bbsports.co`). Brandon to register.
+- Domain: `bbsports.fans` (registered 2026-05-06 at Namecheap; Railway custom domains live 2026-05-08).
 - Brad Benson is the only contributor at v1. Voice fidelity is the #1 quality metric.
 - BB Sports operates as a pre-launch / soft-launch product with a coming-soon flow, an article archive, an admin pipeline, and AI assistance.
 - AI policy: xAI Grok or comparable. **Never** ship AI content without a human pass and the AI-assisted label.

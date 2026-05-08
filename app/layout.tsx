@@ -4,7 +4,7 @@ import SiteHeader from '@/components/SiteHeader';
 import SiteFooter from '@/components/SiteFooter';
 import BreakingNewsBar from '@/components/BreakingNewsBar';
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://bbsports.media';
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://bbsports.fans';
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
