@@ -20,12 +20,12 @@ Production verification had been manual curl/browser work per slice. That proved
 
 ## Verification
 
-Local and live checks before commit:
-
 - `npm run check` passed: lint, typecheck, 22 tests, production build.
-- `npm run smoke:production` passed against `https://web-production-c65d6.up.railway.app`: health, gate redirect, gated search, analytics GET, analytics validation guard, analytics write.
-- Commit, push, PR, merge, deploy verify pending.
+- Pre-merge `npm run smoke:production` passed against `https://web-production-c65d6.up.railway.app`: health, gate redirect, gated search, analytics GET, analytics validation guard, analytics write.
+- PR #8 merged by squash to `3f88b1aa4638545068f02ee531e4122b26c20819`.
+- Railway live health returned commit `3f88b1aa4638545068f02ee531e4122b26c20819` with DB reachable.
+- `EXPECTED_COMMIT=3f88b1aa4638545068f02ee531e4122b26c20819 npm run smoke:production` passed 6/6 against the live deployment.
 
 ## Resume Pointer
 
-Run the production smoke gate against `https://web-production-c65d6.up.railway.app` with `EXPECTED_COMMIT` set to the deployed commit after merge.
+Next release interval should run `EXPECTED_COMMIT=<deployed-sha> npm run smoke:production` after Railway advances.
