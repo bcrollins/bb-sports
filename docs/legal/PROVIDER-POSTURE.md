@@ -1,6 +1,6 @@
 # BB Sports Provider Posture
 
-Updated: 2026-05-07
+Updated: 2026-05-08
 
 BB Sports is a commercial media property. Production providers must be authorized for commercial use, and any non-green provider must fail closed or degrade gracefully.
 
@@ -8,6 +8,7 @@ BB Sports is a commercial media property. Production providers must be authorize
 | --- | --- | --- | --- |
 | Railway | Hosting | GREEN | Production app runs on Railway. |
 | PostgreSQL | Internal CMS, admin, ledgers | GREEN when `DATABASE_URL` is configured | Filesystem fallback is allowed only for local/pre-DB development. |
+| First-party analytics | Page/article/search/conversion events | GREEN when `DATABASE_URL` is configured | Internal `analytics_events` ledger. No external behavior-tracking provider required. |
 | First-party comments | Article discussion and moderation | GREEN when `DATABASE_URL` is configured | No external comment provider. Public UI renders approved records only. |
 | Stripe | Donations | YELLOW | Payment link is optional. Donation intent is stored first-party until Stripe is configured. |
 | Resend | Email transport | YELLOW | Newsletter ledger and unsubscribe suppression work without transport. Welcome/send flows stay disabled until domain/API are configured. |

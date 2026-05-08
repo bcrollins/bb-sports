@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requestMeta } from '@/lib/request-meta';
 import { commentCreateSchema, validationErrorMessage } from '@/lib/comment-validation';
 import { createCommentForArticleSlug, dbAvailable, getPublicCommentsByArticleSlug } from '@/lib/queries';
+import { recordAnalyticsEventSafe } from '@/lib/analytics';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -45,6 +46,16 @@ export async function POST(req: NextRequest, { params }: Context) {
       ip,
       userAgent,
     });
+    await recordAnalyticsEventSafe({
+      eventName: 'comment_submitted',
+      path: `/articles/${slug}`,
+      source: 'article-comments',
+      properties: {
+        slug,
+        status: result.status,
+        parent_reply: Boolean(parsed.data.parentId),
+      },
+    }, { ip, userAgent });
     const publicNow = result.status === 'approved';
     return NextResponse.json({
       ok: true,

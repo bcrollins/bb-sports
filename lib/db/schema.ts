@@ -10,6 +10,7 @@
  *   contact_messages       — tips, press, sponsorship, and general inbox.
  *   donation_intents       — supporter-interest ledger before Stripe Checkout opens.
  *   media_assets           — internally tracked AI/generated/editorial media library.
+ *   analytics_events       — first-party privacy-filtered behavior events.
  *
  * All timestamps stored as Postgres `timestamptz`. All ids are uuid v4.
  */
@@ -178,6 +179,20 @@ export const comments = pgTable('comments', {
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
+// ---------- analytics_events ----------
+export const analyticsEvents = pgTable('analytics_events', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  eventName: varchar('event_name', { length: 80 }).notNull(),
+  path: text('path').notNull().default('/'),
+  referrer: text('referrer').notNull().default(''),
+  source: varchar('source', { length: 80 }).notNull().default('site'),
+  anonId: varchar('anon_id', { length: 96 }),
+  properties: jsonb('properties').notNull().default({}),
+  ipHash: varchar('ip_hash', { length: 96 }),
+  userAgentHash: varchar('user_agent_hash', { length: 96 }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
 // ---------- type exports ----------
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
@@ -191,3 +206,4 @@ export type DonationIntent = typeof donationIntents.$inferSelect;
 export type MediaAsset = typeof mediaAssets.$inferSelect;
 export type NewMediaAsset = typeof mediaAssets.$inferInsert;
 export type Comment = typeof comments.$inferSelect;
+export type AnalyticsEvent = typeof analyticsEvents.$inferSelect;

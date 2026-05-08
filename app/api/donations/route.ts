@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { donationIntentSchema, validationErrorMessage } from '@/lib/intake-validation';
 import { createDonationIntent } from '@/lib/queries';
 import { requestMeta } from '@/lib/request-meta';
+import { recordAnalyticsEventSafe } from '@/lib/analytics';
 
 // Donations remain Stripe-only for money movement. BB Sports owns the
 // first-party supporter-interest ledger even before Stripe Checkout opens.
@@ -51,6 +52,17 @@ export async function POST(req: NextRequest) {
       ip,
       userAgent,
     });
+    await recordAnalyticsEventSafe({
+      eventName: 'donation_interest_created',
+      path: '/api/donations',
+      source: parsed.data.source,
+      properties: {
+        source: parsed.data.source,
+        amount_cents: parsed.data.amountCents ?? null,
+        stripe_ready: Boolean(link),
+        status: link ? 'ready_to_pay' : 'waiting_for_stripe',
+      },
+    }, { ip, userAgent });
   } catch (err) {
     const error = err instanceof Error ? err.message : 'Donation ledger unavailable.';
     return NextResponse.json({ error }, { status: 503 });

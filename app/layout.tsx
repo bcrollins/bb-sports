@@ -1,8 +1,10 @@
 import type { Metadata, Viewport } from 'next';
+import { Suspense } from 'react';
 import './globals.css';
 import SiteHeader from '@/components/SiteHeader';
 import SiteFooter from '@/components/SiteFooter';
 import BreakingNewsBar from '@/components/BreakingNewsBar';
+import AnalyticsTracker from '@/components/AnalyticsTracker';
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://bbsports.fans';
 
@@ -119,6 +121,9 @@ export default function RootLayout({
         <SiteHeader />
         <main id="main">{children}</main>
         <SiteFooter />
+        <Suspense fallback={null}>
+          <AnalyticsTracker />
+        </Suspense>
       </body>
     </html>
   );

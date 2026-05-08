@@ -185,6 +185,20 @@ async function bootstrap(): Promise<void> {
       updated_at timestamptz NOT NULL DEFAULT now()
     );
   `);
+  await db.execute(sql`
+    CREATE TABLE IF NOT EXISTS analytics_events (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      event_name varchar(80) NOT NULL,
+      path text NOT NULL DEFAULT '/',
+      referrer text NOT NULL DEFAULT '',
+      source varchar(80) NOT NULL DEFAULT 'site',
+      anon_id varchar(96),
+      properties jsonb NOT NULL DEFAULT '{}'::jsonb,
+      ip_hash varchar(96),
+      user_agent_hash varchar(96),
+      created_at timestamptz NOT NULL DEFAULT now()
+    );
+  `);
   await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_articles_published ON articles(published, published_at DESC);`);
   await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_articles_sport ON articles(sport);`);
   await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_sessions_user ON sessions(user_id);`);
@@ -198,6 +212,8 @@ async function bootstrap(): Promise<void> {
   await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_comments_parent ON comments(parent_id);`);
   await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_comments_status ON comments(status, created_at DESC);`);
   await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_comments_ip_recent ON comments(ip_address, created_at DESC);`);
+  await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_analytics_events_name_time ON analytics_events(event_name, created_at DESC);`);
+  await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_analytics_events_path_time ON analytics_events(path, created_at DESC);`);
 
   // 2. Admin user seed (idempotent ON CONFLICT DO NOTHING).
   const adminEmail = process.env.ADMIN_EMAIL;

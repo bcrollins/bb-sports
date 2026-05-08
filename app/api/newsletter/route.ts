@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requestMeta } from '@/lib/request-meta';
 import { upsertNewsletterSubscriber } from '@/lib/queries';
 import { newsletterSignupSchema, validationErrorMessage } from '@/lib/intake-validation';
+import { recordAnalyticsEventSafe } from '@/lib/analytics';
 
 // v1 newsletter endpoint:
 // - validates email
@@ -50,6 +51,14 @@ export async function POST(req: NextRequest) {
       ip,
       userAgent,
     });
+    await recordAnalyticsEventSafe({
+      eventName: 'newsletter_signup',
+      path: '/api/newsletter',
+      source: parsed.data.source ?? 'site',
+      properties: {
+        source: parsed.data.source ?? 'site',
+      },
+    }, { ip, userAgent });
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Newsletter ledger unavailable.';
     return NextResponse.json({ error: message }, { status: 503 });

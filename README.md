@@ -59,6 +59,7 @@ A production-ready Next.js 14 site for Brad Benson's personal sports-media brand
 /api/newsletter         Email capture endpoint (rate-limited)
 /api/articles/[slug]/comments  Public comments load/post endpoint with moderation
 /api/search                    Ranked article search API
+/api/analytics                 First-party privacy-filtered event ledger
 /api/newsletter/unsubscribe    Newsletter suppression endpoint
 /api/contact            Tips / general contact endpoint (rate-limited)
 /api/donations          Stripe payment-link proxy + first-party supporter-interest ledger
