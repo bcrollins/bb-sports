@@ -19,6 +19,10 @@ Fix the repo production start command after verification exposed that `npm run s
 - `PORT=3000 node .next/standalone/server.js`
 - `GET /api/health` returned 200 locally.
 - `GET /search?q=Bears` with `bb_gate=1` returned 200 locally.
+- PR #7 merged by squash to `fcf89d6c1518c8c6f284916b6cb36a8880b8c8fe`.
+- Railway live health returned commit `fcf89d6c1518c8c6f284916b6cb36a8880b8c8fe` with DB reachable.
+- Live gated search returned 200 for `/search?q=Bears`.
+- Live analytics accepted a valid `page_view` smoke payload.
 
 ## Resume Pointer
 
