@@ -16,6 +16,15 @@ export const newsletterSignupSchema = z
   })
   .strict();
 
+export const newsletterUnsubscribeSchema = z
+  .object({
+    token: z
+      .string()
+      .trim()
+      .regex(/^[a-f0-9]{48}$/i, 'Unsubscribe token is invalid.'),
+  })
+  .strict();
+
 export const contactSubmissionSchema = z
   .object({
     mode: z.enum(['general', 'tip', 'press', 'sponsorship']).default('general'),
@@ -50,6 +59,7 @@ export const accessWallUpdateSchema = z
   .strict();
 
 export type NewsletterSignupInput = z.infer<typeof newsletterSignupSchema>;
+export type NewsletterUnsubscribeInput = z.infer<typeof newsletterUnsubscribeSchema>;
 export type ContactSubmissionInput = z.infer<typeof contactSubmissionSchema>;
 export type DonationIntentInput = z.infer<typeof donationIntentSchema>;
 export type AccessWallUpdateInput = z.infer<typeof accessWallUpdateSchema>;

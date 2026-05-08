@@ -94,6 +94,7 @@ async function bootstrap(): Promise<void> {
       id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
       email varchar(255) NOT NULL UNIQUE,
       status varchar(24) NOT NULL DEFAULT 'subscribed',
+      unsubscribe_token varchar(96) UNIQUE,
       source varchar(80) NOT NULL DEFAULT 'site',
       consent_text text NOT NULL DEFAULT 'Newsletter signup on BB Sports. No spam. Unsubscribe in one click.',
       consent_version varchar(32) NOT NULL DEFAULT '2026-05-07',
@@ -106,6 +107,7 @@ async function bootstrap(): Promise<void> {
       updated_at timestamptz NOT NULL DEFAULT now()
     );
   `);
+  await db.execute(sql`ALTER TABLE newsletter_subscribers ADD COLUMN IF NOT EXISTS unsubscribe_token varchar(96);`);
   await db.execute(sql`
     CREATE TABLE IF NOT EXISTS contact_messages (
       id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -187,6 +189,7 @@ async function bootstrap(): Promise<void> {
   await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_articles_sport ON articles(sport);`);
   await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_sessions_user ON sessions(user_id);`);
   await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_newsletter_status ON newsletter_subscribers(status, updated_at DESC);`);
+  await db.execute(sql`CREATE UNIQUE INDEX IF NOT EXISTS idx_newsletter_unsubscribe_token ON newsletter_subscribers(unsubscribe_token) WHERE unsubscribe_token IS NOT NULL;`);
   await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_contact_messages_status ON contact_messages(status, created_at DESC);`);
   await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_donation_intents_status ON donation_intents(status, created_at DESC);`);
   await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_media_assets_approved ON media_assets(approved, placement, updated_at DESC);`);

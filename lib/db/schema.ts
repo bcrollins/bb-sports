@@ -88,6 +88,7 @@ export const newsletterSubscribers = pgTable('newsletter_subscribers', {
   id: uuid('id').primaryKey().defaultRandom(),
   email: varchar('email', { length: 255 }).notNull().unique(),
   status: varchar('status', { length: 24 }).notNull().default('subscribed'),
+  unsubscribeToken: varchar('unsubscribe_token', { length: 96 }).unique(),
   source: varchar('source', { length: 80 }).notNull().default('site'),
   consentText: text('consent_text').notNull().default('Newsletter signup on BB Sports. No spam. Unsubscribe in one click.'),
   consentVersion: varchar('consent_version', { length: 32 }).notNull().default('2026-05-07'),
