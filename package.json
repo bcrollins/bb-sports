@@ -7,10 +7,11 @@
     "dev": "next dev -p 3000",
     "build": "next build",
     "start": "node .next/standalone/server.js",
-    "lint": "eslint app components lib tests middleware.ts next.config.mjs tailwind.config.ts",
+    "lint": "eslint app components lib scripts tests middleware.ts next.config.mjs tailwind.config.ts",
     "typecheck": "tsc --noEmit",
     "test": "tsx --test tests/**/*.test.ts",
     "check": "npm run lint && npm run typecheck && npm run test && npm run build",
+    "smoke:production": "node scripts/smoke-production.mjs",
     "db:push": "drizzle-kit push"
   },
   "dependencies": {

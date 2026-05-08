@@ -7,6 +7,7 @@ BB Sports is a commercial media property. Production providers must be authorize
 | Provider / dependency | Use | Status | Notes |
 | --- | --- | --- | --- |
 | Railway | Hosting | GREEN | Production app runs on Railway. |
+| Production smoke gate | Live deploy verification | GREEN | First-party script checks Railway health, gated search, and analytics. No external provider added. |
 | PostgreSQL | Internal CMS, admin, ledgers | GREEN when `DATABASE_URL` is configured | Filesystem fallback is allowed only for local/pre-DB development. |
 | First-party analytics | Page/article/search/conversion events | GREEN when `DATABASE_URL` is configured | Internal `analytics_events` ledger. No external behavior-tracking provider required. |
 | First-party comments | Article discussion and moderation | GREEN when `DATABASE_URL` is configured | No external comment provider. Public UI renders approved records only. |
