@@ -22,6 +22,7 @@ import {
   timestamp,
   jsonb,
   integer,
+  type AnyPgColumn,
 } from 'drizzle-orm/pg-core';
 
 // ---------- users ----------
@@ -159,6 +160,23 @@ export const mediaAssets = pgTable('media_assets', {
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
+// ---------- comments ----------
+export const comments = pgTable('comments', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  articleId: uuid('article_id').notNull().references(() => articles.id, { onDelete: 'cascade' }),
+  parentId: uuid('parent_id').references((): AnyPgColumn => comments.id, { onDelete: 'set null' }),
+  authorName: varchar('author_name', { length: 80 }).notNull(),
+  authorEmail: varchar('author_email', { length: 255 }),
+  body: text('body').notNull(),
+  status: varchar('status', { length: 24 }).notNull().default('pending'),
+  moderationReason: text('moderation_reason').notNull().default(''),
+  ipAddress: varchar('ip_address', { length: 64 }),
+  userAgent: text('user_agent'),
+  approvedAt: timestamp('approved_at', { withTimezone: true }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
 // ---------- type exports ----------
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
@@ -171,3 +189,4 @@ export type ContactMessage = typeof contactMessages.$inferSelect;
 export type DonationIntent = typeof donationIntents.$inferSelect;
 export type MediaAsset = typeof mediaAssets.$inferSelect;
 export type NewMediaAsset = typeof mediaAssets.$inferInsert;
+export type Comment = typeof comments.$inferSelect;

@@ -12,6 +12,7 @@ The BB Sports admin is Bradley Benson's no-code control room. It is not a develo
 - `/admin/articles` — article roster with edit, publish, unpublish, delete, and public-view actions.
 - `/admin/articles/new` — markdown article editor with live preview, hero metadata, AI-assisted labeling, Brad's Take, and publish controls.
 - `/admin/media` — Grok-backed media desk for staged AI images and motion clips, with approval controls before public placement.
+- `/admin/comments` — first-party article comment moderation with approve, flag, hide, and spam actions.
 - `/admin/site` — no-code site copy controls for breaking ticker, homepage hero, about bio, and footer tagline.
 - `/admin/audience` — first-party ledgers for newsletter subscribers, contact/tip/sponsor messages, and donation interest.
 - `/admin/access-wall` — no-code access-wall password rotation for the blank white public wall.
@@ -23,6 +24,7 @@ The BB Sports admin is Bradley Benson's no-code control room. It is not a develo
 - AI-assisted pieces cannot publish unless Brad's Take is present.
 - Hero images require alt text and credit before saving/publishing.
 - Generated media fails closed until xAI is commercially approved and configured, and public surfaces render approved assets only.
+- Public article comments render approved rows only; spam and flagged rows stay in the newsroom queue.
 - Newsletter, contact, and donation-interest records are stored first-party in Postgres before external services are wired.
 - The wall default password is `calebwilliamsMVP` until Brad changes it in `/admin/access-wall`.
 

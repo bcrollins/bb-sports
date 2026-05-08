@@ -5,6 +5,7 @@ import type { Metadata } from 'next';
 import { getAllArticles, getArticleBySlug, getRelatedArticles, formatDate, sportLabel } from '@/lib/articles';
 import { sportMeta } from '@/lib/sport-meta';
 import ArticleCard from '@/components/ArticleCard';
+import ArticleComments from '@/components/ArticleComments';
 import NewsletterSignup from '@/components/NewsletterSignup';
 import SportTag from '@/components/SportTag';
 
@@ -207,29 +208,7 @@ export default async function ArticleDetail({ params }: Props) {
         </div>
       </div>
 
-      {/* Comments stub */}
-      <section className="max-w-readable mx-auto px-4 sm:px-6 pb-10">
-        <div className="bb-thin-rule pb-3 mb-4 flex items-end gap-3">
-          <span className="block w-1.5 h-7 bg-breaking" aria-hidden="true" />
-          <h2 className="font-display uppercase italic text-navy-900 text-2xl tracking-[-0.01em] flex-1">
-            Yell at me
-          </h2>
-          <span className="text-xs text-charcoal/60">Comments open at public launch</span>
-        </div>
-        <div className="bg-white border border-navy/15 rounded-sm p-5">
-          <p className="text-charcoal/80">
-            Reddit-style threaded comments are coming with the public launch. In the meantime, the fastest way to argue with Brad is{' '}
-            <a className="bb-link" href="https://x.com/bbsports" target="_blank" rel="noopener">
-              on X
-            </a>{' '}
-            or via the{' '}
-            <Link href="/contact" className="bb-link">
-              contact form
-            </Link>
-            .
-          </p>
-        </div>
-      </section>
+      <ArticleComments slug={article.slug} />
 
       {/* Related */}
       {related.length > 0 && (

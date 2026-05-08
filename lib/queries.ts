@@ -10,18 +10,22 @@ import { and, asc, desc, eq, gt, lt, ne, sql, type SQL } from 'drizzle-orm';
 import { db, dbAvailable } from './db/client';
 import {
   articles,
+  comments,
   contactMessages,
   donationIntents,
   mediaAssets,
   newsletterSubscribers,
   siteConfig,
   type Article,
+  type Comment,
   type ContactMessage,
   type DonationIntent,
   type MediaAsset,
   type NewsletterSubscriber,
 } from './db/schema';
 import { ensureBootstrapped } from './db/bootstrap';
+import { moderateComment } from './comment-moderation';
+import type { CommentCreateInput, CommentStatus } from './comment-validation';
 
 // ---------- articles ----------
 
@@ -482,6 +486,179 @@ export async function updateMediaAsset(
     .update(mediaAssets)
     .set({ ...patch, updatedAt: new Date() })
     .where(eq(mediaAssets.id, id))
+    .returning();
+  return rows[0] ?? null;
+}
+
+// ---------- comments / community ----------
+
+export type PublicComment = {
+  id: string;
+  parentId: string | null;
+  authorName: string;
+  body: string;
+  createdAt: string;
+};
+
+export type AdminComment = {
+  id: string;
+  articleId: string;
+  articleSlug: string;
+  articleTitle: string;
+  parentId: string | null;
+  authorName: string;
+  authorEmail: string | null;
+  body: string;
+  status: CommentStatus;
+  moderationReason: string;
+  ipAddress: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+  approvedAt: Date | null;
+};
+
+function toPublicComment(comment: Comment): PublicComment {
+  return {
+    id: comment.id,
+    parentId: comment.parentId,
+    authorName: comment.authorName,
+    body: comment.body,
+    createdAt: comment.createdAt.toISOString(),
+  };
+}
+
+async function getPublishedArticleIdBySlug(slug: string): Promise<string | null> {
+  if (!db) return null;
+  await ensureBootstrapped();
+  const rows = await db
+    .select({ id: articles.id })
+    .from(articles)
+    .where(and(eq(articles.slug, slug), eq(articles.published, true)))
+    .limit(1);
+  return rows[0]?.id ?? null;
+}
+
+export async function getPublicCommentsByArticleSlug(slug: string): Promise<PublicComment[]> {
+  if (!db) return [];
+  const articleId = await getPublishedArticleIdBySlug(slug);
+  if (!articleId) return [];
+  const rows = await db
+    .select()
+    .from(comments)
+    .where(and(eq(comments.articleId, articleId), eq(comments.status, 'approved')))
+    .orderBy(asc(comments.createdAt));
+  return rows.map(toPublicComment);
+}
+
+export async function createCommentForArticleSlug(input: {
+  slug: string;
+  comment: CommentCreateInput;
+  ip?: string | null;
+  userAgent?: string | null;
+}): Promise<{ status: CommentStatus; reason: string; comment: PublicComment | null }> {
+  if (!db) throw new Error('Database not available');
+  const articleId = await getPublishedArticleIdBySlug(input.slug);
+  if (!articleId) throw new Error('Article not found');
+
+  const ip = input.ip ?? 'unknown';
+  const recentLimit = new Date(Date.now() - 10 * 60 * 1000);
+  const recent = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(comments)
+    .where(and(eq(comments.ipAddress, ip), gt(comments.createdAt, recentLimit)));
+  if ((recent[0]?.count ?? 0) >= 5) {
+    throw new Error('Too many comments from this connection. Try again later.');
+  }
+
+  if (input.comment.parentId) {
+    const parentRows = await db
+      .select({ id: comments.id })
+      .from(comments)
+      .where(and(
+        eq(comments.id, input.comment.parentId),
+        eq(comments.articleId, articleId),
+        eq(comments.status, 'approved'),
+      ))
+      .limit(1);
+    if (!parentRows[0]) throw new Error('Reply target is not available.');
+  }
+
+  const moderation = moderateComment(input.comment.body);
+  const rows = await db
+    .insert(comments)
+    .values({
+      articleId,
+      parentId: input.comment.parentId ?? null,
+      authorName: input.comment.authorName,
+      authorEmail: input.comment.authorEmail ?? null,
+      body: input.comment.body,
+      status: moderation.status,
+      moderationReason: moderation.reason,
+      ipAddress: ip,
+      userAgent: input.userAgent ?? null,
+      approvedAt: moderation.status === 'approved' ? new Date() : null,
+    })
+    .returning();
+  const row = rows[0];
+  return {
+    status: moderation.status,
+    reason: moderation.reason,
+    comment: row && moderation.status === 'approved' ? toPublicComment(row) : null,
+  };
+}
+
+export async function getAdminComments(limit = 80): Promise<AdminComment[]> {
+  if (!db) return [];
+  await ensureBootstrapped();
+  const rows = await db
+    .select({
+      id: comments.id,
+      articleId: comments.articleId,
+      articleSlug: articles.slug,
+      articleTitle: articles.title,
+      parentId: comments.parentId,
+      authorName: comments.authorName,
+      authorEmail: comments.authorEmail,
+      body: comments.body,
+      status: comments.status,
+      moderationReason: comments.moderationReason,
+      ipAddress: comments.ipAddress,
+      createdAt: comments.createdAt,
+      updatedAt: comments.updatedAt,
+      approvedAt: comments.approvedAt,
+    })
+    .from(comments)
+    .innerJoin(articles, eq(comments.articleId, articles.id))
+    .orderBy(desc(comments.createdAt))
+    .limit(limit);
+  return rows.map((row) => ({ ...row, status: row.status as CommentStatus }));
+}
+
+export async function getCommentModerationCounts(): Promise<Record<CommentStatus, number>> {
+  const base: Record<CommentStatus, number> = { approved: 0, pending: 0, flagged: 0, spam: 0, hidden: 0 };
+  if (!db) return base;
+  await ensureBootstrapped();
+  const rows = await db
+    .select({ status: comments.status, count: sql<number>`count(*)::int` })
+    .from(comments)
+    .groupBy(comments.status);
+  for (const row of rows) {
+    if (row.status in base) base[row.status as CommentStatus] = row.count;
+  }
+  return base;
+}
+
+export async function updateCommentStatus(id: string, status: CommentStatus): Promise<Comment | null> {
+  if (!db) throw new Error('Database not available');
+  await ensureBootstrapped();
+  const rows = await db
+    .update(comments)
+    .set({
+      status,
+      approvedAt: status === 'approved' ? new Date() : null,
+      updatedAt: new Date(),
+    })
+    .where(eq(comments.id, id))
     .returning();
   return rows[0] ?? null;
 }

@@ -2,6 +2,8 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { articlePayloadSchema, articlePatchSchema } from '../lib/article-validation';
 import { BRADLEY_BRAND_ASSETS, PRIMARY_BRADLEY_ASSET } from '../lib/brandAssets';
+import { moderateComment, PUBLIC_COMMENT_MODERATION_RULES } from '../lib/comment-moderation';
+import { commentCreateSchema, commentModerationSchema } from '../lib/comment-validation';
 import { accessWallUpdateSchema, contactSubmissionSchema, donationIntentSchema, newsletterSignupSchema } from '../lib/intake-validation';
 import { mediaGenerationSchema } from '../lib/media-validation';
 import { safeAdminPath, safeInternalPath } from '../lib/redirects';
@@ -105,4 +107,25 @@ test('Grok media generation schema and prompt enforce BB Sports safety', () => {
   assert.match(prompt, /BB Sports/);
   assert.match(prompt, /do not copy official team logos/i);
   assert.match(prompt, /player likenesses/i);
+});
+
+test('comment schema supports threaded reader replies without fake engagement', () => {
+  const parsed = commentCreateSchema.parse({
+    parentId: '11111111-1111-4111-8111-111111111111',
+    authorName: 'Bears Fan',
+    authorEmail: ' FAN@EXAMPLE.COM ',
+    body: 'This take is hot, but the offensive line point is fair.',
+  });
+  assert.equal(parsed.authorEmail, 'fan@example.com');
+  assert.equal(parsed.parentId, '11111111-1111-4111-8111-111111111111');
+  assert.equal(commentCreateSchema.safeParse({ authorName: 'B', body: 'ok' }).success, false);
+});
+
+test('comment moderation flags spam/gambling promos and allows clean comments', () => {
+  assert.equal(moderateComment('Normal comment about a Bears depth chart.').status, 'approved');
+  assert.equal(moderateComment('Guaranteed winner lock of the day, join my sportsbook.').status, 'spam');
+  assert.equal(moderateComment('THIS TAKE IS ABSOLUTELY INSANE AND FAKE').status, 'flagged');
+  assert.ok(PUBLIC_COMMENT_MODERATION_RULES.rateLimit.includes('5 comments'));
+  assert.equal(commentModerationSchema.safeParse({ status: 'approved' }).success, true);
+  assert.equal(commentModerationSchema.safeParse({ status: 'deleted' }).success, false);
 });
