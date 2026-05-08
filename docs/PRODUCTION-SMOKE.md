@@ -21,6 +21,7 @@ Optional controls:
 - `BB_SMOKE_REQUIRED_TEXT="Why the Bears finally have a real shot"`
 - `BB_SMOKE_ARTICLE_SLUG=why-the-bears-finally-have-a-real-shot`
 - `BB_SMOKE_ARTICLE_TITLE="Why the Bears finally have a real shot"`
+- `BB_SMOKE_IP=198.51.100.10` for public write validation guard rate-limit isolation.
 
 ## Checks
 
@@ -31,6 +32,7 @@ Optional controls:
 - `GET /articles/why-the-bears-finally-have-a-real-shot` returns the headline, byline, and editorial note.
 - `GET /api/articles/why-the-bears-finally-have-a-real-shot/comments` returns the public comments array without creating reader data.
 - `GET /sitemap.xml` includes the known article and search route.
+- Invalid newsletter, contact, donation, and comment payloads return `400` without creating production records.
 - `GET /api/analytics` advertises the POST contract.
 - Invalid analytics event names return `400`.
 - A valid `page_view` event writes through `POST /api/analytics`.
@@ -42,5 +44,5 @@ GREEN. This smoke uses only BB Sports-owned production endpoints and the existin
 ## Path To 10.0
 
 - Add admin-authenticated smoke coverage once a non-personal smoke account exists.
-- Add newsletter/donation write-path smokes with deterministic cleanup.
+- Add newsletter/donation success-path smokes with deterministic cleanup.
 - Run this automatically after every Railway deploy.

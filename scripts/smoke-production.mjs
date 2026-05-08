@@ -9,6 +9,8 @@ const ARTICLE_TITLE =
   process.env.BB_SMOKE_ARTICLE_TITLE || 'Why the Bears finally have a real shot';
 const GATE_COOKIE = process.env.BB_PRODUCTION_GATE_COOKIE || 'bb_gate=1';
 const TIMEOUT_MS = Number(process.env.BB_SMOKE_TIMEOUT_MS || 12_000);
+const SMOKE_IP =
+  process.env.BB_SMOKE_IP || `198.51.100.${Math.max(1, Math.floor(Date.now() / 1000) % 254)}`;
 
 const config = {
   baseUrl: normalizeBaseUrl(
@@ -30,6 +32,10 @@ async function main() {
   await runCheck('article page render', checkArticlePage);
   await runCheck('comments read path', checkCommentsReadPath);
   await runCheck('sitemap editorial URLs', checkSitemap);
+  await runCheck('newsletter validation guard', checkNewsletterValidationGuard);
+  await runCheck('contact validation guard', checkContactValidationGuard);
+  await runCheck('donation validation guard', checkDonationValidationGuard);
+  await runCheck('comment validation guard', checkCommentValidationGuard);
   await runCheck('analytics contract GET', checkAnalyticsGet);
   await runCheck('analytics validation guard', checkAnalyticsValidationGuard);
   await runCheck('analytics write path', checkAnalyticsWritePath);
@@ -147,6 +153,36 @@ async function checkSitemap() {
   return 'article and search URLs present';
 }
 
+async function checkNewsletterValidationGuard() {
+  return await expectRejectedPost('/api/newsletter', {
+    email: 'not-an-email',
+    source: 'production-smoke',
+  });
+}
+
+async function checkContactValidationGuard() {
+  return await expectRejectedPost('/api/contact', {
+    mode: 'tip',
+    email: 'smoke@example.com',
+    message: 'short',
+    secure: true,
+  });
+}
+
+async function checkDonationValidationGuard() {
+  return await expectRejectedPost('/api/donations', {
+    amountCents: 50,
+    source: 'production-smoke',
+  });
+}
+
+async function checkCommentValidationGuard() {
+  return await expectRejectedPost(`/api/articles/${ARTICLE_SLUG}/comments`, {
+    authorName: 'B',
+    body: 'ok',
+  });
+}
+
 async function checkAnalyticsGet() {
   const response = await request('/api/analytics');
   assertStatus(response, 200, '/api/analytics');
@@ -186,6 +222,23 @@ async function checkAnalyticsWritePath() {
   const body = await parseJson(response, '/api/analytics');
   invariant(body.ok === true, 'analytics POST did not return ok');
   return 'page_view recorded';
+}
+
+async function expectRejectedPost(path, body) {
+  const response = await request(path, {
+    method: 'POST',
+    redirect: 'manual',
+    headers: {
+      'Content-Type': 'application/json',
+      Cookie: GATE_COOKIE,
+      'X-Forwarded-For': SMOKE_IP,
+    },
+    body: JSON.stringify(body),
+  });
+  invariant(response.status === 400, `${path} returned ${response.status}, expected 400`);
+  const payload = await parseJson(response, path);
+  invariant(typeof payload.error === 'string' && payload.error.length > 0, `${path} did not return an error`);
+  return 'invalid payload rejected';
 }
 
 async function request(path, init = {}) {
