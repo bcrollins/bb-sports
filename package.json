@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "next dev -p 3000",
     "build": "next build",
-    "start": "node server.js",
+    "start": "node .next/standalone/server.js",
     "lint": "eslint app components lib tests middleware.ts next.config.mjs tailwind.config.ts",
     "typecheck": "tsc --noEmit",
     "test": "tsx --test tests/**/*.test.ts",
