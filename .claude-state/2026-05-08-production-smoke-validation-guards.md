@@ -18,12 +18,12 @@ The smoke gate covered analytics validation but not newsletter, contact, donatio
 
 ## Verification
 
-Local and pre-merge live checks:
-
 - `npm run check` passed: lint, typecheck, 22 tests, production build.
 - `npm run smoke:production` passed 14/14 against `https://web-production-c65d6.up.railway.app` while it served commit `e99b725cf9f9ad638a876ef61bacbd879ce22f38`.
-- Commit, push, PR, merge, deploy verify with `EXPECTED_COMMIT` pending.
+- PR #12 merged by squash to `29559df33b811ec36157740c40ff4be261c4cccf`.
+- Railway live health returned commit `29559df33b811ec36157740c40ff4be261c4cccf` with DB reachable.
+- `EXPECTED_COMMIT=29559df33b811ec36157740c40ff4be261c4cccf npm run smoke:production` passed 14/14 against the live deployment.
 
 ## Resume Pointer
 
-After merge, wait for Railway `/api/health` to report the merged SHA, then run `EXPECTED_COMMIT=<sha> npm run smoke:production`.
+Next release interval can use the 14-check smoke as the post-deploy proof gate.
