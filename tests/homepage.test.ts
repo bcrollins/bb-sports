@@ -8,6 +8,7 @@ import {
   isLiveScoreProviderApproved,
 } from '../lib/homepage';
 import { SUPPORT_AMOUNTS } from '../lib/support';
+import { normalizeSearchQuery, searchArticles } from '../lib/search';
 
 function article(input: Partial<Article> & Pick<Article, 'slug' | 'title' | 'sport' | 'date'>): Article {
   return {
@@ -51,6 +52,34 @@ test('homepage primary actions keep named homes and avoid bucket navigation', ()
   }
   assert.ok(labels.includes('support'));
   assert.ok(labels.includes('tips'));
+});
+
+test('first-party search ranks direct article title matches first', () => {
+  const results = searchArticles([
+    article({
+      slug: 'bears-shot',
+      title: 'Why the Bears finally have a real shot',
+      sport: 'nfl',
+      date: '2026-05-05T12:00:00.000Z',
+      dek: 'Chicago is not sneaking up on anybody.',
+    }),
+    article({
+      slug: 'wild-avs',
+      title: 'Wild and Avs went off',
+      sport: 'nhl',
+      date: '2026-05-06T12:00:00.000Z',
+      dek: 'A playoff hockey fireworks show.',
+    }),
+  ], 'Bears');
+
+  assert.equal(results[0]?.article.slug, 'bears-shot');
+  assert.ok(results[0]?.matchedFields.includes('title'));
+});
+
+test('search query normalization clamps whitespace and length', () => {
+  assert.equal(normalizeSearchQuery('  Bears    offensive   line  '), 'Bears offensive line');
+  assert.equal(normalizeSearchQuery('x'.repeat(200)).length, 80);
+  assert.equal(searchArticles([article({ slug: 'a', title: 'A', sport: 'nfl', date: '2026-05-05T12:00:00.000Z' })], 'x').length, 0);
 });
 
 test('support amounts are bounded Stripe-friendly cent values', () => {

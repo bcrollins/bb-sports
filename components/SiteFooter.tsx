@@ -59,6 +59,7 @@ export default async function SiteFooter() {
           <h3 className="text-bone uppercase text-[10.5px] tracking-[0.22em] font-bold mb-3">Read</h3>
           <ul className="space-y-2 text-bone/85 text-[15px]">
             <li><Link href="/articles" className="hover:text-breaking">All articles</Link></li>
+            <li><Link href="/search" className="hover:text-breaking">Search</Link></li>
             <li><Link href="/articles?sport=nfl" className="hover:text-breaking">NFL</Link></li>
             <li><Link href="/articles?sport=nhl" className="hover:text-breaking">NHL</Link></li>
             <li><Link href="/articles?sport=college-football" className="hover:text-breaking">College football</Link></li>
