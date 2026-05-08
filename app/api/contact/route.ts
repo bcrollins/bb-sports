@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { contactSubmissionSchema, validationErrorMessage } from '@/lib/intake-validation';
 import { createContactMessage } from '@/lib/queries';
 import { requestMeta } from '@/lib/request-meta';
+import { recordAnalyticsEventSafe } from '@/lib/analytics';
 
 const RATE_LIMIT_WINDOW_MS = 60_000;
 const RATE_LIMIT_MAX = 3;
@@ -47,6 +48,15 @@ export async function POST(req: NextRequest) {
       ip,
       userAgent,
     });
+    await recordAnalyticsEventSafe({
+      eventName: 'contact_message_created',
+      path: '/api/contact',
+      source: 'contact-form',
+      properties: {
+        mode,
+        confidential: secure,
+      },
+    }, { ip, userAgent });
   } catch (err) {
     const error = err instanceof Error ? err.message : 'Contact ledger unavailable.';
     return NextResponse.json({ error }, { status: 503 });

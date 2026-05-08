@@ -6,12 +6,16 @@
  * database before any external transport is wired in.
  */
 import type { ReactNode } from 'react';
+import { getAnalyticsSnapshot } from '@/lib/analytics';
 import { getAudienceSnapshot } from '@/lib/queries';
 
 export const dynamic = 'force-dynamic';
 
 export default async function AudiencePage() {
-  const snapshot = await getAudienceSnapshot();
+  const [snapshot, analytics] = await Promise.all([
+    getAudienceSnapshot(),
+    getAnalyticsSnapshot(),
+  ]);
 
   return (
     <div>
@@ -31,7 +35,49 @@ export default async function AudiencePage() {
         <Stat label="Donation waits" value={snapshot.counts.donationWaiting} />
       </div>
 
+      <div className="grid sm:grid-cols-3 lg:grid-cols-6 gap-4 mb-10">
+        <Stat label="Events 7d" value={analytics.counts.events7d} />
+        <Stat label="Page views" value={analytics.counts.pageViews7d} />
+        <Stat label="Article views" value={analytics.counts.articleViews7d} />
+        <Stat label="Searches" value={analytics.counts.searches7d} />
+        <Stat label="Support intent" value={analytics.counts.donationInterest7d} />
+        <Stat label="NL signups" value={analytics.counts.newsletterSignups7d} />
+      </div>
+
       <section className="grid gap-8">
+        <LedgerSection title="First-party analytics">
+          {analytics.recentEvents.length === 0 ? (
+            <Empty text="No analytics events recorded yet." />
+          ) : (
+            <div className="grid gap-4 lg:grid-cols-2">
+              <div className="overflow-x-auto bg-white border border-navy/10 rounded">
+                <table className="w-full text-sm">
+                  <thead className="bg-bone-50 border-b border-navy/10 text-left">
+                    <tr className="font-mono uppercase text-[10px] tracking-[0.18em] text-navy/60">
+                      <th className="px-4 py-2.5">Event</th>
+                      <th className="px-4 py-2.5">Path</th>
+                      <th className="px-4 py-2.5">When</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-navy/10">
+                    {analytics.recentEvents.map((event) => (
+                      <tr key={event.id}>
+                        <td className="px-4 py-2.5 font-mono text-xs">{event.eventName}</td>
+                        <td className="px-4 py-2.5">{event.path}</td>
+                        <td className="px-4 py-2.5 text-navy/55">{event.createdAt.toLocaleString()}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <div className="grid gap-3">
+                <MiniRank title="Top events" rows={analytics.topEvents.map((row) => [row.eventName, row.count])} />
+                <MiniRank title="Top paths" rows={analytics.topPaths.map((row) => [row.path, row.count])} />
+              </div>
+            </div>
+          )}
+        </LedgerSection>
+
         <LedgerSection title="Recent subscribers">
           {snapshot.recentSubscribers.length === 0 ? (
             <Empty text="No newsletter subscribers recorded yet." />
@@ -143,4 +189,24 @@ function Badge({ children, tone = 'navy' }: { children: ReactNode; tone?: 'navy'
 
 function Empty({ text }: { text: string }) {
   return <div className="bg-white border border-navy/10 rounded p-6 text-sm text-navy/70">{text}</div>;
+}
+
+function MiniRank({ title, rows }: { title: string; rows: Array<[string, number]> }) {
+  return (
+    <div className="bg-white border border-navy/10 rounded p-4">
+      <h3 className="font-mono text-[10px] uppercase tracking-[0.2em] text-navy/60">{title}</h3>
+      {rows.length === 0 ? (
+        <p className="mt-2 text-sm text-navy/60">No rows yet.</p>
+      ) : (
+        <ul className="mt-3 space-y-2 text-sm">
+          {rows.map(([label, count]) => (
+            <li key={label} className="flex items-center justify-between gap-3">
+              <span className="truncate">{label}</span>
+              <span className="font-mono text-xs text-navy/55">{count}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
 }

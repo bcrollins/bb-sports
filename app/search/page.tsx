@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { Search } from 'lucide-react';
+import { AnalyticsEventBeacon } from '@/components/AnalyticsTracker';
 import ArticleCard from '@/components/ArticleCard';
 import { getAllArticles, sportLabel, type SportSlug } from '@/lib/articles';
 import { normalizeSearchQuery, searchArticles, SEARCH_MIN_QUERY_LENGTH } from '@/lib/search';
@@ -34,6 +35,19 @@ export default async function SearchPage({ searchParams }: Props) {
 
   return (
     <main className="min-h-[70vh] bg-bone">
+      {query.length >= SEARCH_MIN_QUERY_LENGTH ? (
+        <AnalyticsEventBeacon
+          eventName="search_performed"
+          path="/search"
+          source="search-page"
+          properties={{
+            query_length: query.length,
+            result_count: results.length,
+            sport,
+            filtered: sport !== 'all',
+          }}
+        />
+      ) : null}
       <section className="bg-navy-deep text-bone">
         <div className="h-1 bg-breaking" aria-hidden="true" />
         <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6 sm:py-14">

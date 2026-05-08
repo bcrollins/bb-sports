@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { analyticsPayloadSchema, hashAnalyticsValue, sanitizeAnalyticsProperties } from '../lib/analytics';
 import { articlePayloadSchema, articlePatchSchema } from '../lib/article-validation';
 import { BRADLEY_BRAND_ASSETS, PRIMARY_BRADLEY_ASSET } from '../lib/brandAssets';
 import { moderateComment, PUBLIC_COMMENT_MODERATION_RULES } from '../lib/comment-moderation';
@@ -44,6 +45,27 @@ test('donation intent accepts supporter waitlist data without Stripe checkout', 
   });
   assert.equal(parsed.amountCents, 2500);
   assert.equal(parsed.source, 'support-page');
+});
+
+test('analytics payloads are first-party and privacy-filtered', () => {
+  const parsed = analyticsPayloadSchema.parse({
+    eventName: 'search_performed',
+    path: '/search?q=Bears',
+    referrer: 'https://bbsports.fans/',
+    anonId: 'reader-1',
+    properties: {
+      query_length: 5,
+      result_count: 2,
+      email: 'fan@example.com',
+      message: 'private note',
+      sport: 'nfl',
+    },
+  });
+  assert.equal(parsed.eventName, 'search_performed');
+  assert.equal(analyticsPayloadSchema.safeParse({ eventName: 'BadEvent' }).success, false);
+  const clean = sanitizeAnalyticsProperties(parsed.properties);
+  assert.deepEqual(clean, { query_length: 5, result_count: 2, sport: 'nfl' });
+  assert.match(hashAnalyticsValue('203.0.113.1') ?? '', /^[a-f0-9]{64}$/);
 });
 
 test('access wall update requires a durable password length', () => {
