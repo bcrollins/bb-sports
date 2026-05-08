@@ -20,12 +20,12 @@ The first smoke gate proved deploy health and one search HTML path, but it did n
 
 ## Verification
 
-Local and pre-merge live checks:
-
 - `npm run check` passed: lint, typecheck, 22 tests, production build.
 - `npm run smoke:production` passed 10/10 against `https://web-production-c65d6.up.railway.app` while it served commit `8b0fb99640cae1173db28279b8a0551155cf9ce8`.
-- Commit, push, PR, merge, deploy verify with `EXPECTED_COMMIT` pending.
+- PR #10 merged by squash to `8ee6e5aab59880e889582fab387c5048a2acd24a`.
+- Railway live health returned commit `8ee6e5aab59880e889582fab387c5048a2acd24a` with DB reachable.
+- `EXPECTED_COMMIT=8ee6e5aab59880e889582fab387c5048a2acd24a npm run smoke:production` passed 10/10 against the live deployment.
 
 ## Resume Pointer
 
-After merge, wait for Railway `/api/health` to report the merged SHA, then run `EXPECTED_COMMIT=<sha> npm run smoke:production`.
+Next release interval can use the expanded smoke as the post-deploy proof gate.
