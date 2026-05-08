@@ -51,7 +51,7 @@ export default async function SearchPage({ searchParams }: Props) {
             Search every published BB Sports article by team, sport, player, topic, and Brad&rsquo;s angle.
           </p>
 
-          <form className="mt-7 grid gap-3 md:grid-cols-[minmax(0,1fr)_180px_140px]" role="search">
+          <form className="mt-7 grid w-full min-w-0 gap-3 md:grid-cols-[minmax(0,1fr)_180px_140px]" role="search">
             <label className="sr-only" htmlFor="site-search">Search BB Sports</label>
             <input
               id="site-search"
@@ -59,20 +59,20 @@ export default async function SearchPage({ searchParams }: Props) {
               name="q"
               defaultValue={query}
               placeholder="Bears, playoff hockey, Florida, Man United..."
-              className="min-h-[50px] rounded-sm border-2 border-bone/30 bg-bone/10 px-4 py-2 text-base text-bone placeholder:text-bone/50 focus:bg-bone/20 focus:outline-none focus:ring-2 focus:ring-breaking"
+              className="min-h-[50px] w-full min-w-0 rounded-sm border-2 border-bone/30 bg-bone/10 px-4 py-2 text-base text-bone placeholder:text-bone/50 focus:bg-bone/20 focus:outline-none focus:ring-2 focus:ring-breaking"
             />
             <label className="sr-only" htmlFor="sport-filter">Sport</label>
             <select
               id="sport-filter"
               name="sport"
               defaultValue={sport}
-              className="min-h-[50px] rounded-sm border-2 border-bone/30 bg-navy px-4 py-2 text-base font-semibold text-bone focus:outline-none focus:ring-2 focus:ring-breaking"
+              className="min-h-[50px] w-full min-w-0 rounded-sm border-2 border-bone/30 bg-navy px-4 py-2 text-base font-semibold text-bone focus:outline-none focus:ring-2 focus:ring-breaking"
             >
               {SPORTS.map((item) => (
                 <option key={item.value} value={item.value}>{item.label}</option>
               ))}
             </select>
-            <button type="submit" className="bb-button-primary !bg-breaking hover:!bg-breaking/90">
+            <button type="submit" className="bb-button-primary w-full min-w-0 !bg-breaking hover:!bg-breaking/90">
               Search
             </button>
           </form>
