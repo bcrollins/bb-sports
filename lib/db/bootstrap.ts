@@ -133,12 +133,24 @@ async function bootstrap(): Promise<void> {
       source varchar(80) NOT NULL DEFAULT 'site',
       status varchar(32) NOT NULL DEFAULT 'waiting_for_stripe',
       stripe_payment_link text,
+      stripe_checkout_session_id varchar(255),
+      stripe_payment_intent_id varchar(255),
+      stripe_customer_id varchar(255),
+      stripe_currency varchar(8),
+      stripe_amount_received_cents integer,
+      paid_at timestamptz,
       ip_address varchar(64),
       user_agent text,
       created_at timestamptz NOT NULL DEFAULT now(),
       updated_at timestamptz NOT NULL DEFAULT now()
     );
   `);
+  await db.execute(sql`ALTER TABLE donation_intents ADD COLUMN IF NOT EXISTS stripe_checkout_session_id varchar(255);`);
+  await db.execute(sql`ALTER TABLE donation_intents ADD COLUMN IF NOT EXISTS stripe_payment_intent_id varchar(255);`);
+  await db.execute(sql`ALTER TABLE donation_intents ADD COLUMN IF NOT EXISTS stripe_customer_id varchar(255);`);
+  await db.execute(sql`ALTER TABLE donation_intents ADD COLUMN IF NOT EXISTS stripe_currency varchar(8);`);
+  await db.execute(sql`ALTER TABLE donation_intents ADD COLUMN IF NOT EXISTS stripe_amount_received_cents integer;`);
+  await db.execute(sql`ALTER TABLE donation_intents ADD COLUMN IF NOT EXISTS paid_at timestamptz;`);
   await db.execute(sql`
     CREATE TABLE IF NOT EXISTS media_assets (
       id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -206,6 +218,8 @@ async function bootstrap(): Promise<void> {
   await db.execute(sql`CREATE UNIQUE INDEX IF NOT EXISTS idx_newsletter_unsubscribe_token ON newsletter_subscribers(unsubscribe_token) WHERE unsubscribe_token IS NOT NULL;`);
   await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_contact_messages_status ON contact_messages(status, created_at DESC);`);
   await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_donation_intents_status ON donation_intents(status, created_at DESC);`);
+  await db.execute(sql`CREATE UNIQUE INDEX IF NOT EXISTS idx_donation_intents_checkout_session ON donation_intents(stripe_checkout_session_id) WHERE stripe_checkout_session_id IS NOT NULL;`);
+  await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_donation_intents_payment_intent ON donation_intents(stripe_payment_intent_id) WHERE stripe_payment_intent_id IS NOT NULL;`);
   await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_media_assets_approved ON media_assets(approved, placement, updated_at DESC);`);
   await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_media_assets_request ON media_assets(request_id);`);
   await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_comments_article_public ON comments(article_id, status, created_at ASC);`);

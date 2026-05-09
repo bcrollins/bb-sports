@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { SUPPORT_AMOUNTS } from '@/lib/support';
 
 type Status = 'idle' | 'submitting' | 'success' | 'error';
@@ -12,6 +12,18 @@ export default function SupportForm() {
   const [message, setMessage] = useState('');
   const [status, setStatus] = useState<Status>('idle');
   const [feedback, setFeedback] = useState('Leave an email so BB Sports can send the Stripe link when donations open.');
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const checkoutStatus = params.get('status');
+    if (checkoutStatus === 'success') {
+      setStatus('success');
+      setFeedback('Donation recorded. BB Sports keeps articles free and Brad keeps editorial control.');
+    } else if (checkoutStatus === 'cancelled') {
+      setStatus('idle');
+      setFeedback('Stripe checkout was cancelled. No payment moved.');
+    }
+  }, []);
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();

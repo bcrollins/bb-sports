@@ -20,7 +20,7 @@ Accidental or duplicate donations may be refunded within 30 days when requested 
 
 ## Provider Boundary
 
-Stripe is the only approved payment rail for donations. The first-party BB Sports database remains the supporter-interest ledger and donation-intent record.
+Stripe is the only approved payment rail for donations. The first-party BB Sports database remains the supporter-interest ledger and donation-intent record. When Stripe Checkout is configured, BB Sports creates the Checkout Session server-side and reconciles signed Stripe webhooks before marking a donation paid.
 
 ## Public Surface
 

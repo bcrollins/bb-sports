@@ -20,6 +20,7 @@ const config = {
 };
 
 const results = [];
+let healthSnapshot = null;
 
 async function main() {
   console.log(`BB Sports production smoke: ${config.baseUrl}`);
@@ -32,6 +33,8 @@ async function main() {
   await runCheck('article page render', checkArticlePage);
   await runCheck('comments read path', checkCommentsReadPath);
   await runCheck('sitemap editorial URLs', checkSitemap);
+  await runCheck('donation readiness contract', checkDonationReadiness);
+  await runCheck('Stripe webhook contract', checkStripeWebhookContract);
   await runCheck('newsletter validation guard', checkNewsletterValidationGuard);
   await runCheck('contact validation guard', checkContactValidationGuard);
   await runCheck('donation validation guard', checkDonationValidationGuard);
@@ -65,6 +68,7 @@ async function checkHealth() {
   const response = await request('/api/health');
   assertStatus(response, 200, '/api/health');
   const body = await parseJson(response, '/api/health');
+  healthSnapshot = body;
   invariant(body.status === 'ok', `expected status ok, received ${JSON.stringify(body.status)}`);
   invariant(body.service === 'bb-sports', `expected service bb-sports, received ${body.service}`);
   if (config.expectedCommit) {
@@ -137,6 +141,11 @@ async function checkCommentsReadPath() {
   const response = await request(`/api/articles/${ARTICLE_SLUG}/comments`, {
     headers: { Cookie: GATE_COOKIE },
   });
+  if (response.status === 503 && healthSnapshot?.db?.configured === false) {
+    const body = await parseJson(response, `/api/articles/${ARTICLE_SLUG}/comments`);
+    invariant(body.ok === false, 'comments no-DB fallback did not return a controlled response');
+    return 'database not configured locally';
+  }
   assertStatus(response, 200, `/api/articles/${ARTICLE_SLUG}/comments`);
   const body = await parseJson(response, `/api/articles/${ARTICLE_SLUG}/comments`);
   invariant(body.ok === true, 'comments read path did not return ok');
@@ -151,6 +160,30 @@ async function checkSitemap() {
   invariant(xml.includes(`/articles/${ARTICLE_SLUG}`), `sitemap missing article ${ARTICLE_SLUG}`);
   invariant(xml.includes('/search'), 'sitemap missing search route');
   return 'article and search URLs present';
+}
+
+async function checkDonationReadiness() {
+  const response = await request('/api/donations', {
+    headers: { Cookie: GATE_COOKIE },
+  });
+  invariant([200, 503].includes(response.status), `/api/donations returned ${response.status}`);
+  const payload = await parseJson(response, '/api/donations');
+  invariant(typeof payload.mode === 'string', 'donation readiness did not return mode');
+  invariant(['checkout', 'payment_link', 'disabled'].includes(payload.mode), `unexpected mode ${payload.mode}`);
+  return payload.mode;
+}
+
+async function checkStripeWebhookContract() {
+  const response = await request('/api/stripe/webhook');
+  assertStatus(response, 200, '/api/stripe/webhook');
+  const payload = await parseJson(response, '/api/stripe/webhook');
+  invariant(payload.route === '/api/stripe/webhook', 'Stripe webhook route metadata missing');
+  invariant(Array.isArray(payload.handledEvents), 'Stripe webhook handledEvents missing');
+  invariant(
+    payload.handledEvents.includes('checkout.session.completed'),
+    'Stripe webhook does not advertise checkout.session.completed',
+  );
+  return payload.webhookReady ? 'webhook configured' : 'webhook disabled';
 }
 
 async function checkNewsletterValidationGuard() {

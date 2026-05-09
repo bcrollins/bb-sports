@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "next dev -p 3000",
     "build": "next build",
-    "start": "node .next/standalone/server.js",
+    "start": "node scripts/prepare-standalone.mjs && node .next/standalone/server.js",
     "lint": "eslint app components lib scripts tests middleware.ts next.config.mjs tailwind.config.ts",
     "typecheck": "tsc --noEmit",
     "test": "tsx --test tests/**/*.test.ts",
@@ -27,6 +27,7 @@
     "remark": "^15.0.1",
     "remark-gfm": "^4.0.0",
     "remark-html": "^16.0.1",
+    "stripe": "^22.1.1",
     "zod": "^4.4.3"
   },
   "devDependencies": {

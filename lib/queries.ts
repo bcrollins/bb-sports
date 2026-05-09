@@ -315,6 +315,12 @@ export async function createDonationIntent(input: {
   source?: string;
   status?: string;
   stripePaymentLink?: string | null;
+  stripeCheckoutSessionId?: string | null;
+  stripePaymentIntentId?: string | null;
+  stripeCustomerId?: string | null;
+  stripeCurrency?: string | null;
+  stripeAmountReceivedCents?: number | null;
+  paidAt?: Date | null;
   ip?: string | null;
   userAgent?: string | null;
 }): Promise<DonationIntent> {
@@ -330,11 +336,72 @@ export async function createDonationIntent(input: {
       source: input.source ?? 'site',
       status: input.status ?? 'waiting_for_stripe',
       stripePaymentLink: input.stripePaymentLink ?? null,
+      stripeCheckoutSessionId: input.stripeCheckoutSessionId ?? null,
+      stripePaymentIntentId: input.stripePaymentIntentId ?? null,
+      stripeCustomerId: input.stripeCustomerId ?? null,
+      stripeCurrency: input.stripeCurrency ?? null,
+      stripeAmountReceivedCents: input.stripeAmountReceivedCents ?? null,
+      paidAt: input.paidAt ?? null,
       ipAddress: input.ip ?? null,
       userAgent: input.userAgent ?? null,
     })
     .returning();
   return rows[0];
+}
+
+export async function updateDonationIntentStripeCheckout(input: {
+  id: string;
+  status: string;
+  stripeCheckoutSessionId?: string | null;
+  stripePaymentLink?: string | null;
+}): Promise<DonationIntent | null> {
+  if (!db) throw new Error('Database not available');
+  await ensureBootstrapped();
+  const rows = await db
+    .update(donationIntents)
+    .set({
+      status: input.status,
+      stripeCheckoutSessionId: input.stripeCheckoutSessionId ?? null,
+      stripePaymentLink: input.stripePaymentLink ?? null,
+      updatedAt: new Date(),
+    })
+    .where(eq(donationIntents.id, input.id))
+    .returning();
+  return rows[0] ?? null;
+}
+
+export async function updateDonationIntentStripeStatus(input: {
+  id?: string | null;
+  stripeCheckoutSessionId?: string | null;
+  status: string;
+  stripePaymentIntentId?: string | null;
+  stripeCustomerId?: string | null;
+  stripeCurrency?: string | null;
+  stripeAmountReceivedCents?: number | null;
+  paidAt?: Date | null;
+}): Promise<DonationIntent | null> {
+  if (!db) throw new Error('Database not available');
+  await ensureBootstrapped();
+  const where = input.id
+    ? eq(donationIntents.id, input.id)
+    : input.stripeCheckoutSessionId
+      ? eq(donationIntents.stripeCheckoutSessionId, input.stripeCheckoutSessionId)
+      : null;
+  if (!where) return null;
+  const rows = await db
+    .update(donationIntents)
+    .set({
+      status: input.status,
+      stripePaymentIntentId: input.stripePaymentIntentId ?? undefined,
+      stripeCustomerId: input.stripeCustomerId ?? undefined,
+      stripeCurrency: input.stripeCurrency ?? undefined,
+      stripeAmountReceivedCents: input.stripeAmountReceivedCents ?? undefined,
+      paidAt: input.paidAt ?? undefined,
+      updatedAt: new Date(),
+    })
+    .where(where)
+    .returning();
+  return rows[0] ?? null;
 }
 
 export async function getAudienceSnapshot(): Promise<{

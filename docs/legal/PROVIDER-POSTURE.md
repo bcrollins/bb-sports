@@ -11,7 +11,7 @@ BB Sports is a commercial media property. Production providers must be authorize
 | PostgreSQL | Internal CMS, admin, ledgers | GREEN when `DATABASE_URL` is configured | Filesystem fallback is allowed only for local/pre-DB development. |
 | First-party analytics | Page/article/search/conversion events | GREEN when `DATABASE_URL` is configured | Internal `analytics_events` ledger. No external behavior-tracking provider required. |
 | First-party comments | Article discussion and moderation | GREEN when `DATABASE_URL` is configured | No external comment provider. Public UI renders approved records only. |
-| Stripe | Donations | YELLOW | Payment link is optional. Donation intent is stored first-party until Stripe is configured. |
+| Stripe SDK | Donations, Checkout, webhook reconciliation | YELLOW | `stripe@22.1.1` is MIT licensed and installed. Checkout/webhook routes fail closed until `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET` are configured. |
 | Resend | Email transport | YELLOW | Newsletter ledger and unsubscribe suppression work without transport. Welcome/send flows stay disabled until domain/API are configured. |
 | Cloudflare R2 | Object storage | YELLOW | No production upload dependency yet. Hero image URLs require alt text and credit. |
 | xAI Grok | AI assistance and generated media | YELLOW | Admin media routes are built but fail closed unless `XAI_API_KEY` and `BBSPORTS_APPROVED_XAI=true` are configured. Any AI draft/media must stay approval-gated and labeled. |
@@ -25,7 +25,7 @@ BB Sports is a commercial media property. Production providers must be authorize
 
 ## Hard Blocks Before Public Launch
 
-- Confirm Stripe account/tenant and publish refund/donation terms on the donation surface.
+- Confirm Stripe account/tenant, webhook secret, and publish refund/donation terms on the donation surface.
 - Confirm Resend sending domain and unsubscribe/suppression behavior.
 - Document any non-BB article photo source before use.
 - Keep live score feeds disabled until a commercial license is signed and stored here.
