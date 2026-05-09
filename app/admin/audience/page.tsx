@@ -7,6 +7,12 @@
  */
 import type { ReactNode } from 'react';
 import { getAnalyticsSnapshot } from '@/lib/analytics';
+import {
+  compactStripeId,
+  donationStatusLabel,
+  donationStatusTone,
+  formatDonationMoney,
+} from '@/lib/donation-ledger';
 import { getAudienceSnapshot } from '@/lib/queries';
 
 export const dynamic = 'force-dynamic';
@@ -29,10 +35,12 @@ export default async function AudiencePage() {
         </p>
       </header>
 
-      <div className="grid sm:grid-cols-3 gap-4 mb-10">
+      <div className="mb-10 grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
         <Stat label="Subscribers" value={snapshot.counts.subscribers} />
         <Stat label="New messages" value={snapshot.counts.contactNew} />
         <Stat label="Donation waits" value={snapshot.counts.donationWaiting} />
+        <Stat label="Checkout open" value={snapshot.counts.donationOpen} />
+        <Stat label="Support gross" value={formatDonationMoney(snapshot.counts.donationPaidCents, 'usd', '$0.00')} />
       </div>
 
       <div className="grid sm:grid-cols-3 lg:grid-cols-6 gap-4 mb-10">
@@ -139,13 +147,35 @@ export default async function AudiencePage() {
               {snapshot.recentDonationIntents.map((d) => (
                 <article key={d.id} className="bg-white border border-navy/10 rounded p-4">
                   <div className="flex flex-wrap items-center gap-2">
-                    <Badge>{d.status}</Badge>
+                    <Badge tone={donationStatusTone(d.status)}>{donationStatusLabel(d.status)}</Badge>
+                    <Badge>{d.source}</Badge>
                     <span className="text-xs text-navy/50 ml-auto">{d.createdAt.toLocaleString()}</span>
                   </div>
                   <div className="mt-2 text-sm text-charcoal/85">
                     {d.email ? <a className="bb-link" href={`mailto:${d.email}`}>{d.email}</a> : 'No email'}
-                    {d.amountCents ? ` · $${(d.amountCents / 100).toFixed(2)}` : ''}
+                    {d.name ? ` · ${d.name}` : ''}
                   </div>
+                  <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+                    <LedgerMetric label="Pledged" value={formatDonationMoney(d.amountCents, 'usd')} />
+                    <LedgerMetric
+                      label="Received"
+                      value={formatDonationMoney(d.stripeAmountReceivedCents, d.stripeCurrency || 'usd')}
+                    />
+                    <LedgerMetric label="Paid at" value={d.paidAt ? d.paidAt.toLocaleString() : '-'} />
+                    <LedgerMetric label="Stripe session" value={compactStripeId(d.stripeCheckoutSessionId)} mono />
+                    <LedgerMetric label="Payment intent" value={compactStripeId(d.stripePaymentIntentId)} mono />
+                    <LedgerMetric label="Customer" value={compactStripeId(d.stripeCustomerId)} mono />
+                    <LedgerMetric label="Source" value={d.source} />
+                    <LedgerMetric label="Updated" value={d.updatedAt.toLocaleString()} />
+                  </div>
+                  {d.stripePaymentLink ? (
+                    <a
+                      href={d.stripePaymentLink}
+                      className="mt-3 inline-flex text-xs font-semibold text-broadcast-red underline-offset-2 hover:underline"
+                    >
+                      Open Stripe checkout
+                    </a>
+                  ) : null}
                   {d.message ? <p className="mt-2 text-sm text-charcoal/80">{d.message}</p> : null}
                 </article>
               ))}
@@ -157,7 +187,7 @@ export default async function AudiencePage() {
   );
 }
 
-function Stat({ label, value }: { label: string; value: number }) {
+function Stat({ label, value }: { label: string; value: number | string }) {
   return (
     <div className="bg-white border border-navy/10 rounded p-5">
       <p className="font-mono text-[11px] uppercase tracking-[0.25em] text-navy/60">{label}</p>
@@ -175,12 +205,27 @@ function LedgerSection({ title, children }: { title: string; children: ReactNode
   );
 }
 
-function Badge({ children, tone = 'navy' }: { children: ReactNode; tone?: 'navy' | 'red' }) {
+function LedgerMetric({ label, value, mono = false }: { label: string; value: string; mono?: boolean }) {
+  return (
+    <div className="rounded border border-navy/10 bg-bone-50 px-3 py-2">
+      <p className="font-mono text-[9px] uppercase tracking-[0.18em] text-navy/45">{label}</p>
+      <p className={`mt-1 truncate text-xs text-navy ${mono ? 'font-mono' : 'font-semibold'}`} title={value}>
+        {value}
+      </p>
+    </div>
+  );
+}
+
+function Badge({ children, tone = 'navy' }: { children: ReactNode; tone?: 'navy' | 'red' | 'green' | 'yellow' }) {
+  const toneClass = {
+    navy: 'bg-navy/10 text-navy/70',
+    red: 'bg-broadcast-red/10 text-broadcast-red',
+    green: 'bg-emerald-100 text-emerald-800',
+    yellow: 'bg-amber-100 text-amber-800',
+  }[tone];
   return (
     <span
-      className={`font-mono text-[10px] uppercase tracking-[0.18em] px-2 py-1 rounded ${
-        tone === 'red' ? 'bg-broadcast-red/10 text-broadcast-red' : 'bg-navy/10 text-navy/70'
-      }`}
+      className={`font-mono text-[10px] uppercase tracking-[0.18em] px-2 py-1 rounded ${toneClass}`}
     >
       {children}
     </span>

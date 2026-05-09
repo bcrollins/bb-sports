@@ -409,6 +409,10 @@ export async function getAudienceSnapshot(): Promise<{
     subscribers: number;
     contactNew: number;
     donationWaiting: number;
+    donationOpen: number;
+    donationPaid: number;
+    donationFailed: number;
+    donationPaidCents: number;
   };
   recentSubscribers: NewsletterSubscriber[];
   recentMessages: ContactMessage[];
@@ -416,7 +420,15 @@ export async function getAudienceSnapshot(): Promise<{
 }> {
   if (!db) {
     return {
-      counts: { subscribers: 0, contactNew: 0, donationWaiting: 0 },
+      counts: {
+        subscribers: 0,
+        contactNew: 0,
+        donationWaiting: 0,
+        donationOpen: 0,
+        donationPaid: 0,
+        donationFailed: 0,
+        donationPaidCents: 0,
+      },
       recentSubscribers: [],
       recentMessages: [],
       recentDonationIntents: [],
@@ -426,14 +438,22 @@ export async function getAudienceSnapshot(): Promise<{
   const [
     subscriberRows,
     contactRows,
-    donationRows,
+    donationSummaryRows,
     recentSubscribers,
     recentMessages,
     recentDonationIntents,
   ] = await Promise.all([
     db.select().from(newsletterSubscribers).where(eq(newsletterSubscribers.status, 'subscribed')),
     db.select().from(contactMessages).where(eq(contactMessages.status, 'new')),
-    db.select().from(donationIntents).where(eq(donationIntents.status, 'waiting_for_stripe')),
+    db.execute(sql`
+      SELECT
+        count(*) FILTER (WHERE status = 'waiting_for_stripe')::int AS waiting,
+        count(*) FILTER (WHERE status IN ('ready_to_pay', 'checkout_pending', 'checkout_open'))::int AS open,
+        count(*) FILTER (WHERE status = 'paid')::int AS paid,
+        count(*) FILTER (WHERE status IN ('checkout_failed', 'checkout_expired', 'payment_failed'))::int AS failed,
+        coalesce(sum(stripe_amount_received_cents) FILTER (WHERE status = 'paid'), 0)::int AS paid_cents
+      FROM donation_intents
+    `),
     db
       .select()
       .from(newsletterSubscribers)
@@ -450,11 +470,22 @@ export async function getAudienceSnapshot(): Promise<{
       .orderBy(desc(donationIntents.createdAt))
       .limit(8),
   ]);
+  const donationSummary = (donationSummaryRows as unknown as Array<{
+    waiting: number;
+    open: number;
+    paid: number;
+    failed: number;
+    paid_cents: number;
+  }>)[0];
   return {
     counts: {
       subscribers: subscriberRows.length,
       contactNew: contactRows.length,
-      donationWaiting: donationRows.length,
+      donationWaiting: donationSummary?.waiting ?? 0,
+      donationOpen: donationSummary?.open ?? 0,
+      donationPaid: donationSummary?.paid ?? 0,
+      donationFailed: donationSummary?.failed ?? 0,
+      donationPaidCents: donationSummary?.paid_cents ?? 0,
     },
     recentSubscribers,
     recentMessages,
