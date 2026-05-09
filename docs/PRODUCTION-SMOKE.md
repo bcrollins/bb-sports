@@ -32,6 +32,8 @@ Optional controls:
 - `GET /articles/why-the-bears-finally-have-a-real-shot` returns the headline, byline, and editorial note.
 - `GET /api/articles/why-the-bears-finally-have-a-real-shot/comments` returns the public comments array without creating reader data.
 - `GET /sitemap.xml` includes the known article and search route.
+- `GET /api/donations` reports donation mode (`disabled`, `payment_link`, or `checkout`) without exposing secrets.
+- `GET /api/stripe/webhook` reports handled Stripe webhook events without requiring a secret.
 - Invalid newsletter, contact, donation, and comment payloads return `400` without creating production records.
 - `GET /api/analytics` advertises the POST contract.
 - Invalid analytics event names return `400`.

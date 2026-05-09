@@ -12,7 +12,7 @@
  *                          jose; route handlers re-verify against the users table.
  *
  * Always allowed (no gate, no auth):
- *   /coming-soon, /api/gate, /api/health, /api/analytics, newsletter unsubscribe, approved media streams,
+ *   /coming-soon, /api/gate, /api/health, /api/analytics, Stripe webhook, newsletter unsubscribe, approved media streams,
  *   static brand/image assets, _next assets, robots/sitemap/icons/og.
  */
 import { NextRequest, NextResponse } from 'next/server';
@@ -27,6 +27,7 @@ const GATE_BYPASS_EXACT = new Set<string>([
   '/api/gate',
   '/api/health',
   '/api/analytics',
+  '/api/stripe/webhook',
   '/api/newsletter/unsubscribe',
   '/newsletter/unsubscribe',
   '/robots.txt',

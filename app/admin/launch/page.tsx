@@ -7,7 +7,9 @@ export const dynamic = 'force-dynamic';
 const PROVIDERS = [
   { name: 'Postgres', env: 'DATABASE_URL', owner: 'Internal data source' },
   { name: 'Admin JWT', env: 'JWT_SECRET', owner: 'Admin auth' },
-  { name: 'Stripe donations', env: 'STRIPE_DONATION_LINK', owner: 'Donation rails' },
+  { name: 'Stripe checkout secret', env: 'STRIPE_SECRET_KEY', owner: 'Donation checkout rails' },
+  { name: 'Stripe webhook secret', env: 'STRIPE_WEBHOOK_SECRET', owner: 'Donation reconciliation' },
+  { name: 'Stripe payment link fallback', env: 'STRIPE_DONATION_LINK', owner: 'Donation fallback rails' },
   { name: 'Resend', env: 'RESEND_API_KEY', owner: 'Email transport' },
   { name: 'xAI Grok key', env: 'XAI_API_KEY', owner: 'AI draft/media assistance' },
   { name: 'xAI commercial gate', env: 'BBSPORTS_APPROVED_XAI', owner: 'Commercial-use approval flag' },
