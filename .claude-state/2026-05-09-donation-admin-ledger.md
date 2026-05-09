@@ -24,7 +24,9 @@ The Stripe donation rail could mark first-party donation intents as checkout-ope
 - PASS: local authenticated Chrome DevTools proof for `/admin/audience` at 393px mobile and 1440px desktop using a valid local `bb_session`; no console errors, no network failures, no horizontal overflow.
 - Evidence screenshots: `/tmp/bb-admin-audience-mobile.png`, `/tmp/bb-admin-audience-desktop.png`.
 - PASS: `PRODUCTION_BASE_URL=http://localhost:3000 BB_PRODUCTION_GATE_COOKIE=bb_gate=1 npm run smoke:production` (16/16; local DB intentionally not configured).
-- Pending: PR merge, Railway deploy, live `EXPECTED_COMMIT` smoke.
+- PASS: PR #16 merged as `c8b68e7d19bb081807c7245c5a64238bbe8e01a1`.
+- PASS: Railway health reported live commit `c8b68e7d19bb081807c7245c5a64238bbe8e01a1` with DB reachable at 2026-05-09T21:59:26Z.
+- PASS: `EXPECTED_COMMIT=c8b68e7d19bb081807c7245c5a64238bbe8e01a1 npm run smoke:production` passed 16/16 against live Railway.
 
 ## Provider Posture
 
