@@ -28,7 +28,9 @@ Donations had a public support form and first-party `donation_intents`, but the 
 - PASS: `PRODUCTION_BASE_URL=http://localhost:3000 BB_PRODUCTION_GATE_COOKIE=bb_gate=1 npm run smoke:production` (16/16; local DB intentionally not configured).
 - PASS: Chrome DevTools rendered `/support?status=success` and `/support?status=cancelled` at 393px mobile and `/support?status=success` at 1440px desktop with `bb_gate=1`; no console errors, no network failures, no horizontal overflow.
 - Evidence screenshots: `/tmp/bb-support-success-mobile.png`, `/tmp/bb-support-cancelled-mobile.png`, `/tmp/bb-support-success-desktop.png`.
-- Pending: PR merge, Railway deploy, live `EXPECTED_COMMIT` smoke.
+- PASS: PR #14 merged as `c790a8404d9090fe5f429f6e4cf88c5cdd89fdd4`.
+- PASS: Railway health reported live commit `c790a8404d9090fe5f429f6e4cf88c5cdd89fdd4` with DB reachable at 2026-05-09T21:46:59Z.
+- PASS: `EXPECTED_COMMIT=c790a8404d9090fe5f429f6e4cf88c5cdd89fdd4 npm run smoke:production` passed 16/16 against live Railway.
 
 ## Provider Posture
 
