@@ -102,7 +102,7 @@ export default async function AdminOverview() {
         <Stat label="Drafts" value={counts.drafts} note="Brad-controlled queue" />
         <Stat label="Review" value={commentReview} note="comments pending/flagged" />
         <Stat label="Subscribers" value={audience.counts.subscribers} note="first-party list" />
-        <Stat label="New inbox" value={audience.counts.contactNew} note={`${audience.counts.donationWaiting} donation waits`} />
+        <Stat label="New inbox" value={audience.counts.contactNew} note={`${audience.counts.donationWaiting} waits · ${audience.counts.donationPaid} paid`} />
       </section>
 
       <section className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_390px]">
