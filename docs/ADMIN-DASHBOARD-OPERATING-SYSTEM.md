@@ -1,6 +1,6 @@
 # BB Sports Admin Dashboard Operating System
 
-Updated: 2026-05-07
+Updated: 2026-05-10
 
 ## Purpose
 
@@ -8,7 +8,7 @@ The BB Sports admin is Bradley Benson's no-code control room. It is not a develo
 
 ## Shipped Surfaces
 
-- `/admin` — command center with launch meter, article counts, audience pulse, and primary actions.
+- `/admin` — command center with readiness verdict, weighted launch gates, provider posture, P0/P1 operator queue, article risk cues, audience pulse, and primary actions.
 - `/admin/articles` — article roster with edit, publish, unpublish, delete, and public-view actions.
 - `/admin/articles/new` — markdown article editor with live preview, hero metadata, AI-assisted labeling, Brad's Take, and publish controls.
 - `/admin/media` — Grok-backed media desk for staged AI images and motion clips, with approval controls before public placement.
@@ -29,6 +29,18 @@ The BB Sports admin is Bradley Benson's no-code control room. It is not a develo
 - Newsletter unsubscribe tokens are first-party and gate-bypassed; Resend is transport only, not the suppression source of truth.
 - The wall default password is `calebwilliamsMVP` until Brad changes it in `/admin/access-wall`.
 
+## Command Center Contract
+
+`/admin` is driven by `lib/admin-command-center.ts`, not by hard-coded dashboard vibes. The model converts existing runtime truth into:
+
+- Readiness verdict: `Ship`, `Watch`, or `Block`.
+- Weighted readiness score: anchor articles, draft queue, newsletter ledger, comment queue, donation rail, welcome email, first-party analytics, and admin auth.
+- Provider posture: Postgres, admin JWT, Stripe checkout/webhook, Resend, xAI, and R2 without exposing secret values.
+- Ranked operator actions: P0/P1/P2 items with a named owner, reason, destination, and CTA.
+- Operating lanes: Editorial, Community, Audience, Revenue, Providers.
+
+This keeps the dashboard from becoming decoration. If a provider, queue, or launch gate regresses, the first screen should tell Brad or Brandon exactly where to click next.
+
 ## Verification Standard
 
 Every admin change must pass:
@@ -36,4 +48,6 @@ Every admin change must pass:
 - `npm run typecheck`
 - `npm run test`
 - `npm run build`
-- Browser verification for `/coming-soon`, `/admin`, `/admin/audience`, `/admin/access-wall`, and one article edit path when credentials are available.
+- Browser verification for `/admin` at the primary mobile breakpoint and desktop.
+- Adjacent browser verification for `/admin/launch` or `/admin/audience` when the command model or provider/audience data changes.
+- Protected-route proof: unauthenticated admin routes redirect to `/admin/login`, authenticated admin routes render with a valid session cookie.

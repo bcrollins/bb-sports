@@ -67,14 +67,14 @@ export default async function AdminLayout({ children }: { children: ReactNode })
               </Link>
             </div>
 
-            <nav aria-label="Admin" className="flex gap-2 overflow-x-auto px-4 py-3 lg:flex-1 lg:flex-col lg:overflow-visible lg:py-5">
+            <nav aria-label="Admin" className="grid grid-cols-3 gap-2 px-4 py-3 sm:grid-cols-5 lg:flex lg:flex-1 lg:flex-col lg:overflow-visible lg:py-5">
               {NAV.map((item) => {
                 const Icon = item.icon;
                 return (
                   <Link
                     key={item.href}
                     href={item.href}
-                    className="inline-flex min-h-[44px] shrink-0 items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-semibold text-navy/72 transition-colors hover:bg-navy hover:text-bone"
+                    className="inline-flex min-h-[54px] items-center justify-center gap-1.5 rounded-lg px-2 py-2 text-center text-[11px] font-semibold leading-tight text-navy/72 transition-colors hover:bg-navy hover:text-bone sm:min-h-[44px] sm:flex-row sm:gap-2 sm:text-xs lg:justify-start lg:gap-3 lg:px-3 lg:py-2.5 lg:text-sm"
                   >
                     <Icon size={17} strokeWidth={2.2} aria-hidden="true" />
                     <span>{item.label}</span>
