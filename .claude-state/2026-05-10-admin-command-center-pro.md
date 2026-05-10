@@ -5,7 +5,7 @@ Branch: `codex/bb-sports-admin-command-center-pro`
 Worktree: `/private/tmp/bb-sports-admin-pro`
 Lane: 9 Admin / Dashboard / Internal Tooling
 Mode: C Build specific component or flow
-Status: code complete locally with device-matrix proof; push, merge, deployment, and live smoke still pending.
+Status: committed, pushed, merged, deployed to Railway, and live-smoke verified at merge commit `6d2e2274367197fd9d5b15e674c03bddbf9ee195`.
 
 ## Root Cause
 
@@ -52,8 +52,13 @@ The admin overview had the right destinations, but it was still a link-and-count
 - PASS: no browser console errors and no non-prefetch request failures during authenticated admin proof.
 - PASS: `PRODUCTION_BASE_URL=http://localhost:3000 BB_PRODUCTION_GATE_COOKIE=bb_gate=1 npm run smoke:production` (17/17).
 - PASS: `npm audit --audit-level=high` (no high/critical findings; existing moderate advisories remain and require breaking force upgrades).
-- PENDING: push / PR / merge / Railway deploy.
-- PENDING: live `/api/health` commit match and production smoke.
+- PASS: branch `codex/bb-sports-admin-command-center-pro` pushed to GitHub.
+- PASS: PR #20 merged into `main`.
+- PASS: live `/api/health` advanced to commit `6d2e2274367197fd9d5b15e674c03bddbf9ee195`; DB configured and reachable.
+- PASS: `EXPECTED_COMMIT=6d2e2274367197fd9d5b15e674c03bddbf9ee195 PRODUCTION_BASE_URL=https://web-production-c65d6.up.railway.app BB_PRODUCTION_GATE_COOKIE=bb_gate=1 npm run smoke:production` (17/17).
+- PASS: live `/admin` with `bb_gate=1` redirects to `/admin/login?next=%2Fadmin` without a session.
+- PASS: live `/admin/login?next=%2Fadmin` returns 200 and renders newsroom sign-in copy.
+- NOTE: live authenticated admin UI proof was not attempted because no production admin session secret or login credential is available in this workspace. Authenticated UI proof was completed locally against the same merged commit and production bundle.
 
 ## Provider Posture
 
@@ -61,4 +66,4 @@ No new external provider was added. The new provider model reads existing runtim
 
 ## Resume Pointer
 
-Commit, push, PR, merge, poll live health, and run production smoke against the Railway URL.
+Next: clear real provider gates for public launch: Stripe checkout/webhook, Resend approval/API, xAI approval/API, and R2. Then sign into the live newsroom with Brad/Brandon credentials and repeat authenticated admin device proof against Railway.
