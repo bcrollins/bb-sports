@@ -112,7 +112,7 @@ export default async function AdminLayout({ children }: { children: ReactNode })
             </div>
           </header>
 
-          <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:py-8">{children}</main>
+          <main id="main" className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:py-8">{children}</main>
         </div>
       </div>
     </div>

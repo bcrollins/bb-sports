@@ -17,7 +17,7 @@ export default async function LoginPage({ searchParams }: Props) {
   const next = safeAdminPath(params.next);
 
   return (
-    <main className="min-h-screen bg-bone text-navy flex flex-col">
+    <main id="main" className="min-h-screen bg-bone text-navy flex flex-col">
       <div className="border-b-4 border-broadcast-red bg-navy text-bone px-6 py-3 flex items-center gap-3">
         <Link href="/" className="font-display italic text-2xl tracking-wider hover:opacity-80">
           BB SPORTS
