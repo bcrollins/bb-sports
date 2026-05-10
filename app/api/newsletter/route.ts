@@ -1,14 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requestMeta } from '@/lib/request-meta';
-import { upsertNewsletterSubscriber } from '@/lib/queries';
+import {
+  markNewsletterWelcomeDelivered,
+  markNewsletterWelcomeFailed,
+  upsertNewsletterSubscriber,
+} from '@/lib/queries';
 import { newsletterSignupSchema, validationErrorMessage } from '@/lib/intake-validation';
 import { recordAnalyticsEventSafe } from '@/lib/analytics';
+import { getResendEmailConfig, sendNewsletterWelcomeEmail } from '@/lib/resend';
 
 // v1 newsletter endpoint:
 // - validates email
 // - rate-limits per IP in-memory (replace with Redis when DB lands)
 // - writes the first-party newsletter ledger in Postgres
-// - Resend welcome email stays disabled until the sending domain is verified
+// - Resend welcome email is gated behind BBSPORTS_APPROVED_RESEND and never
+//   becomes the source of truth for subscription/suppression state.
 
 const RATE_LIMIT_WINDOW_MS = 60_000;
 const RATE_LIMIT_MAX = 5;
@@ -45,18 +51,36 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    await upsertNewsletterSubscriber({
+    const subscriber = await upsertNewsletterSubscriber({
       email: parsed.data.email,
       source: parsed.data.source,
       ip,
       userAgent,
     });
+    const welcome = await sendNewsletterWelcomeEmail({
+      to: subscriber.email,
+      unsubscribeToken: subscriber.unsubscribeToken,
+      origin: req.nextUrl.origin,
+      alreadySentAt: subscriber.welcomeSentAt,
+    });
+    if (welcome.status === 'sent') {
+      await markNewsletterWelcomeDelivered({
+        id: subscriber.id,
+        providerId: welcome.providerId,
+      });
+    } else if (welcome.status === 'failed') {
+      await markNewsletterWelcomeFailed({
+        id: subscriber.id,
+        error: welcome.reason,
+      });
+    }
     await recordAnalyticsEventSafe({
       eventName: 'newsletter_signup',
       path: '/api/newsletter',
       source: parsed.data.source ?? 'site',
       properties: {
         source: parsed.data.source ?? 'site',
+        welcome_status: welcome.status,
       },
     }, { ip, userAgent });
   } catch (err) {
@@ -71,5 +95,12 @@ export async function POST(req: NextRequest) {
 }
 
 export async function GET() {
-  return NextResponse.json({ ok: true, route: '/api/newsletter', method: 'POST' });
+  const welcome = getResendEmailConfig();
+  return NextResponse.json({
+    ok: true,
+    route: '/api/newsletter',
+    method: 'POST',
+    welcomeReady: welcome.enabled,
+    welcomeMissing: welcome.missing,
+  });
 }

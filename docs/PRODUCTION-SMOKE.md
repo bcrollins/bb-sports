@@ -34,6 +34,7 @@ Optional controls:
 - `GET /sitemap.xml` includes the known article and search route.
 - `GET /api/donations` reports donation mode (`disabled`, `payment_link`, or `checkout`) without exposing secrets.
 - `GET /api/stripe/webhook` reports handled Stripe webhook events without requiring a secret.
+- `GET /api/newsletter` reports whether the Resend welcome rail is configured without exposing secrets.
 - Invalid newsletter, contact, donation, and comment payloads return `400` without creating production records.
 - `GET /api/analytics` advertises the POST contract.
 - Invalid analytics event names return `400`.

@@ -98,6 +98,7 @@ export default async function AudiencePage() {
                     <th className="px-4 py-2.5">Status</th>
                     <th className="px-4 py-2.5">Source</th>
                     <th className="px-4 py-2.5">Signups</th>
+                    <th className="px-4 py-2.5">Welcome</th>
                     <th className="px-4 py-2.5">Updated</th>
                   </tr>
                 </thead>
@@ -108,6 +109,15 @@ export default async function AudiencePage() {
                       <td className="px-4 py-2.5">{s.status}</td>
                       <td className="px-4 py-2.5">{s.source}</td>
                       <td className="px-4 py-2.5">{s.signupCount}</td>
+                      <td className="px-4 py-2.5">
+                        {s.welcomeSentAt ? (
+                          <span className="text-emerald-700">Sent {s.welcomeSentAt.toLocaleDateString()}</span>
+                        ) : s.welcomeError ? (
+                          <span className="text-broadcast-red">Failed</span>
+                        ) : (
+                          <span className="text-navy/45">Not sent</span>
+                        )}
+                      </td>
                       <td className="px-4 py-2.5 text-navy/55">{s.updatedAt.toLocaleString()}</td>
                     </tr>
                   ))}

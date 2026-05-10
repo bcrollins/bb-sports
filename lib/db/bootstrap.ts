@@ -102,12 +102,17 @@ async function bootstrap(): Promise<void> {
       last_ip_address varchar(64),
       last_user_agent text,
       welcome_sent_at timestamptz,
+      welcome_provider_id varchar(160),
+      welcome_error text,
       unsubscribed_at timestamptz,
       created_at timestamptz NOT NULL DEFAULT now(),
       updated_at timestamptz NOT NULL DEFAULT now()
     );
   `);
   await db.execute(sql`ALTER TABLE newsletter_subscribers ADD COLUMN IF NOT EXISTS unsubscribe_token varchar(96);`);
+  await db.execute(sql`ALTER TABLE newsletter_subscribers ADD COLUMN IF NOT EXISTS welcome_sent_at timestamptz;`);
+  await db.execute(sql`ALTER TABLE newsletter_subscribers ADD COLUMN IF NOT EXISTS welcome_provider_id varchar(160);`);
+  await db.execute(sql`ALTER TABLE newsletter_subscribers ADD COLUMN IF NOT EXISTS welcome_error text;`);
   await db.execute(sql`
     CREATE TABLE IF NOT EXISTS contact_messages (
       id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
