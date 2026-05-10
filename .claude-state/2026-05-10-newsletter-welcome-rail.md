@@ -29,7 +29,9 @@ Newsletter signup wrote to Postgres and unsubscribe suppression existed, but the
 - PASS: `GET http://localhost:3000/api/newsletter` returned `welcomeReady=false` and missing `BBSPORTS_APPROVED_RESEND`, `RESEND_API_KEY`, `RESEND_FROM`.
 - PASS: local authenticated Chrome DevTools proof for `/admin/launch` at 393px mobile and 1440px desktop; no console errors, no network failures, no horizontal overflow.
 - Evidence screenshots: `/tmp/bb-admin-launch-resend-mobile.jpg`, `/tmp/bb-admin-launch-resend-desktop.jpg`.
-- Pending: PR merge, Railway deploy, live `EXPECTED_COMMIT` smoke.
+- PASS: PR #18 merged as `5e9fa239fa7bad17debd0d0064516486bfba9208`.
+- PASS: Railway health reported live commit `5e9fa239fa7bad17debd0d0064516486bfba9208` with DB reachable at 2026-05-10T00:07:24Z.
+- PASS: `EXPECTED_COMMIT=5e9fa239fa7bad17debd0d0064516486bfba9208 npm run smoke:production` passed 17/17 against live Railway.
 
 ## Provider Posture
 
