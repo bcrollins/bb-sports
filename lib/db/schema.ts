@@ -97,6 +97,8 @@ export const newsletterSubscribers = pgTable('newsletter_subscribers', {
   lastIpAddress: varchar('last_ip_address', { length: 64 }),
   lastUserAgent: text('last_user_agent'),
   welcomeSentAt: timestamp('welcome_sent_at', { withTimezone: true }),
+  welcomeProviderId: varchar('welcome_provider_id', { length: 160 }),
+  welcomeError: text('welcome_error'),
   unsubscribedAt: timestamp('unsubscribed_at', { withTimezone: true }),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),

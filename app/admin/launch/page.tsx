@@ -11,6 +11,7 @@ const PROVIDERS = [
   { name: 'Stripe webhook secret', env: 'STRIPE_WEBHOOK_SECRET', owner: 'Donation reconciliation' },
   { name: 'Stripe payment link fallback', env: 'STRIPE_DONATION_LINK', owner: 'Donation fallback rails' },
   { name: 'Resend', env: 'RESEND_API_KEY', owner: 'Email transport' },
+  { name: 'Resend commercial gate', env: 'BBSPORTS_APPROVED_RESEND', owner: 'Commercial-use approval flag' },
   { name: 'xAI Grok key', env: 'XAI_API_KEY', owner: 'AI draft/media assistance' },
   { name: 'xAI commercial gate', env: 'BBSPORTS_APPROVED_XAI', owner: 'Commercial-use approval flag' },
   { name: 'Cloudflare R2', env: 'R2_BUCKET_NAME', owner: 'Media storage' },
@@ -97,7 +98,7 @@ export default async function LaunchPage() {
         </div>
         <div className="divide-y divide-navy/10">
           {PROVIDERS.map((provider) => {
-            const configured = provider.env === 'BBSPORTS_APPROVED_XAI'
+            const configured = provider.env === 'BBSPORTS_APPROVED_XAI' || provider.env === 'BBSPORTS_APPROVED_RESEND'
               ? process.env[provider.env] === 'true'
               : Boolean(process.env[provider.env]);
             return (

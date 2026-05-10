@@ -258,12 +258,49 @@ export async function upsertNewsletterSubscriber(input: {
         lastIpAddress: input.ip ?? null,
         lastUserAgent: input.userAgent ?? null,
         unsubscribedAt: null,
+        welcomeError: null,
         updatedAt: new Date(),
         signupCount: sql`${newsletterSubscribers.signupCount} + 1`,
       },
     })
     .returning();
   return rows[0];
+}
+
+export async function markNewsletterWelcomeDelivered(input: {
+  id: string;
+  providerId: string;
+}): Promise<NewsletterSubscriber | null> {
+  if (!db) throw new Error('Database not available');
+  await ensureBootstrapped();
+  const rows = await db
+    .update(newsletterSubscribers)
+    .set({
+      welcomeSentAt: new Date(),
+      welcomeProviderId: input.providerId,
+      welcomeError: null,
+      updatedAt: new Date(),
+    })
+    .where(eq(newsletterSubscribers.id, input.id))
+    .returning();
+  return rows[0] ?? null;
+}
+
+export async function markNewsletterWelcomeFailed(input: {
+  id: string;
+  error: string;
+}): Promise<NewsletterSubscriber | null> {
+  if (!db) throw new Error('Database not available');
+  await ensureBootstrapped();
+  const rows = await db
+    .update(newsletterSubscribers)
+    .set({
+      welcomeError: input.error.slice(0, 1000),
+      updatedAt: new Date(),
+    })
+    .where(eq(newsletterSubscribers.id, input.id))
+    .returning();
+  return rows[0] ?? null;
 }
 
 export async function unsubscribeNewsletterSubscriber(token: string): Promise<NewsletterSubscriber | null> {

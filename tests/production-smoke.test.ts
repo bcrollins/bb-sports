@@ -23,6 +23,7 @@ test('production smoke gate is wired to first-party launch surfaces', async () =
   assert.match(smokeScript, /\/sitemap\.xml/);
   assert.match(smokeScript, /donation readiness contract/);
   assert.match(smokeScript, /\/api\/stripe\/webhook/);
+  assert.match(smokeScript, /newsletter welcome contract/);
   assert.match(smokeScript, /newsletter validation guard/);
   assert.match(smokeScript, /contact validation guard/);
   assert.match(smokeScript, /donation validation guard/);

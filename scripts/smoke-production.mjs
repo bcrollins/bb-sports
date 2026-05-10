@@ -35,6 +35,7 @@ async function main() {
   await runCheck('sitemap editorial URLs', checkSitemap);
   await runCheck('donation readiness contract', checkDonationReadiness);
   await runCheck('Stripe webhook contract', checkStripeWebhookContract);
+  await runCheck('newsletter welcome contract', checkNewsletterContract);
   await runCheck('newsletter validation guard', checkNewsletterValidationGuard);
   await runCheck('contact validation guard', checkContactValidationGuard);
   await runCheck('donation validation guard', checkDonationValidationGuard);
@@ -184,6 +185,16 @@ async function checkStripeWebhookContract() {
     'Stripe webhook does not advertise checkout.session.completed',
   );
   return payload.webhookReady ? 'webhook configured' : 'webhook disabled';
+}
+
+async function checkNewsletterContract() {
+  const response = await request('/api/newsletter');
+  assertStatus(response, 200, '/api/newsletter');
+  const payload = await parseJson(response, '/api/newsletter');
+  invariant(payload.route === '/api/newsletter', 'newsletter route metadata missing');
+  invariant(Array.isArray(payload.welcomeMissing), 'newsletter welcomeMissing missing');
+  invariant(typeof payload.welcomeReady === 'boolean', 'newsletter welcomeReady missing');
+  return payload.welcomeReady ? 'welcome enabled' : 'welcome disabled';
 }
 
 async function checkNewsletterValidationGuard() {
