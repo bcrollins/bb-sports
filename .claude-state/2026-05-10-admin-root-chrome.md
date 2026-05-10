@@ -3,7 +3,7 @@
 Date: 2026-05-10
 Branch: codex/bb-sports-admin-root-chrome
 Worktree: /private/tmp/bb-sports-admin-root-chrome
-Status: Code complete locally; merge/deploy pending at time of first write.
+Status: Deployed and live.
 
 ## Scope
 
@@ -62,10 +62,19 @@ the newsroom feel like a public page wearing an admin mask.
 
 ## Deployment Status
 
-Pending merge/deploy/live verification at initial write.
+- PR: https://github.com/bcrollins/bb-sports/pull/22
+- Local commit: `8103348f6766a59c5c165827444b3c6a27cd002d`
+- Merged commit on `main`: `fb498243762ffdc1edac9ced2efd03208915ea39`
+- Live `/api/health`: `fb498243762ffdc1edac9ced2efd03208915ea39`, DB configured and reachable.
+- Live production smoke: `PRODUCTION_BASE_URL=https://web-production-c65d6.up.railway.app BB_PRODUCTION_GATE_COOKIE=bb_gate=1 npm run smoke:production` passed 17/17.
+- Live route check:
+  - `/admin` with `bb_gate=1` redirects 307 to `/admin/login?next=%2Fadmin`.
+  - `/admin/login?next=%2Fadmin` contains the newsroom marker and does not contain public primary
+    nav, breaking-news region, or footer.
+  - `/` contains public primary nav, breaking-news region, and footer, and does not contain the
+    admin nav.
 
 ## Resume Pointer
 
-After merge, poll live `/api/health` for the merge SHA, run the production smoke against
-`https://web-production-c65d6.up.railway.app`, then update this note with the deployed commit and
-live route evidence.
+Next admin-dashboard slice can build on the isolated route shells. The admin/public chrome leak is
+closed live; do not reintroduce public site chrome in `app/layout.tsx`.
