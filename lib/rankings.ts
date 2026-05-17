@@ -323,3 +323,50 @@ export const LEAGUE_ORDER: RankingLeague[] = ['nfl', 'mlb', 'nhl', 'nba'];
 export function buildAllRankings(articles: Article[]): LeagueRanking[] {
   return LEAGUE_ORDER.map((l) => buildLeagueRanking(l, articles));
 }
+
+export type DemotionImpact = {
+  league: RankingLeague;
+  leagueLabel: string;
+  team: RankedFranchise;
+  /** How many slots this article alone dropped the team. */
+  appliedDrop: number;
+  /** Reason as written in the article directive. */
+  reason: string;
+};
+
+/**
+ * Resolve the rankings consequences of a single article. Walks the full
+ * article set so the resulting `currentRank` reflects the cumulative state
+ * across every published demotion, not just this article.
+ *
+ * Used by the article page to render a "this take moved [Team]" callout
+ * that links to /rankings#<league>.
+ */
+export function getDemotionImpacts(
+  article: Article,
+  allArticles: Article[],
+): DemotionImpact[] {
+  const trashedHere = readTrashedTeams(article);
+  if (trashedHere.length === 0) return [];
+
+  const byLeague = new Map<RankingLeague, LeagueRanking>();
+  const impacts: DemotionImpact[] = [];
+
+  for (const entry of trashedHere) {
+    let ranking = byLeague.get(entry.league);
+    if (!ranking) {
+      ranking = buildLeagueRanking(entry.league, allArticles);
+      byLeague.set(entry.league, ranking);
+    }
+    const team = ranking.ranked.find((r) => r.id === entry.team);
+    if (!team) continue;
+    impacts.push({
+      league: entry.league,
+      leagueLabel: ranking.label,
+      team,
+      appliedDrop: clampDrop(entry.drop ?? 3),
+      reason: entry.reason,
+    });
+  }
+  return impacts;
+}
