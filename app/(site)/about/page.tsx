@@ -96,7 +96,7 @@ export default async function AboutPage() {
           </p>
 
           <h2>What I’ll cover</h2>
-          <p>In rough priority order: <strong>NFL, NHL, college football, soccer, NBA, MMA.</strong> Lean into college early because the season is right there and college sports change fast enough that there’s always something to argue about.</p>
+          <p>In rough priority order: <strong>NFL, NHL, college football, soccer, NBA, MLB, MMA.</strong> Lean into college early because the season is right there and college sports change fast enough that there’s always something to argue about. The <Link href="/rankings">franchise rankings</Link> page covers all four major North American leagues (NFL / MLB / NHL / NBA), ranked by me, with the reasoning open for argument.</p>
 
           <h2>Where this is going</h2>
           <p>
