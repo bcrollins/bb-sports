@@ -1,12 +1,24 @@
 import type { Metadata } from 'next';
+import Image from 'next/image';
 import Link from 'next/link';
-import { getAllArticles, formatDate } from '@/lib/articles';
+import { getAllArticles, formatDate, type SportSlug } from '@/lib/articles';
+import { sportMeta } from '@/lib/sport-meta';
 import {
   buildAllRankings,
   LEAGUE_ORDER,
   type LeagueRanking,
   type RankedFranchise,
+  type RankingLeague,
 } from '@/lib/rankings';
+
+// Per-league silhouette + sport-meta accent. Used in both the sticky
+// league nav and the league-header on the page.
+const LEAGUE_SILHOUETTE: Record<RankingLeague, string> = {
+  nfl: '/images/player-nfl.svg',
+  mlb: '/images/player-mlb.svg',
+  nhl: '/images/player-nhl.svg',
+  nba: '/images/player-nba.svg',
+};
 
 export const revalidate = 60;
 
@@ -79,6 +91,36 @@ export default async function RankingsPage() {
         </div>
       </header>
 
+      {/* Sticky league nav — surfaces below the hero, lives above the
+          movement rail and league lists. Lets the reader hop directly to
+          any league without scrolling through 100 rows. */}
+      <nav
+        aria-label="Jump to league"
+        className="sticky top-0 z-20 border-b border-navy/15 bg-bone-50/95 backdrop-blur"
+      >
+        <ul className="mx-auto flex max-w-6xl gap-1 overflow-x-auto px-4 sm:px-6 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+          {LEAGUE_ORDER.map((l) => {
+            const meta = sportMeta(l as SportSlug);
+            return (
+              <li key={l}>
+                <a
+                  href={`#${l}`}
+                  className="inline-flex min-h-[48px] items-center gap-2 border-b-2 border-transparent px-3 text-[11px] font-black uppercase tracking-[0.2em] text-navy transition-colors hover:text-breaking sm:px-4"
+                  style={{ borderBottomColor: 'transparent' }}
+                >
+                  <span
+                    className="block h-2 w-2 rounded-full"
+                    style={{ backgroundColor: meta.accent }}
+                    aria-hidden="true"
+                  />
+                  {l.toUpperCase()}
+                </a>
+              </li>
+            );
+          })}
+        </ul>
+      </nav>
+
       {allMovements.length > 0 && (
         <section className="border-b border-navy/15 bg-bone-50">
           <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
@@ -146,32 +188,53 @@ export default async function RankingsPage() {
 }
 
 function LeagueBlock({ league }: { league: LeagueRanking }) {
+  const meta = sportMeta(league.league as SportSlug);
+  const silhouette = LEAGUE_SILHOUETTE[league.league];
   return (
     <section id={league.league} className="scroll-mt-24">
-      <div className="bb-thin-rule mb-6 flex items-end justify-between gap-3 pb-3">
-        <div className="flex items-center gap-3">
-          <span className="block h-9 w-1.5 bg-breaking" aria-hidden="true" />
-          <h2 className="font-display text-4xl italic uppercase text-navy-900">
-            {league.label}
-          </h2>
+      <div
+        className="mb-6 flex items-end justify-between gap-3 border-b-[3px] pb-3"
+        style={{ borderColor: meta.accent }}
+      >
+        <div className="flex items-center gap-4">
+          <div
+            className="relative h-14 w-14 shrink-0 overflow-hidden rounded-sm border border-navy/15"
+            aria-hidden="true"
+          >
+            <Image src={silhouette} alt="" fill sizes="56px" className="object-cover" />
+          </div>
+          <div>
+            <p
+              className="text-[10px] font-black uppercase tracking-[0.22em]"
+              style={{ color: meta.accent }}
+            >
+              Top 25 · ranked by Brad
+            </p>
+            <h2 className="font-display text-4xl italic uppercase leading-none text-navy-900">
+              {league.label}
+            </h2>
+          </div>
         </div>
-        <p className="text-xs uppercase tracking-[0.18em] text-charcoal/55">
-          Top 25 · ranked by Brad
+        <p className="hidden text-xs uppercase tracking-[0.18em] text-charcoal/55 sm:block">
+          {league.movements.length} moved · {league.ranked.length} total
         </p>
       </div>
       <ol className="grid gap-3">
         {league.ranked.map((team) => (
-          <FranchiseRow key={team.id} team={team} />
+          <FranchiseRow key={team.id} team={team} accent={meta.accent} />
         ))}
       </ol>
     </section>
   );
 }
 
-function FranchiseRow({ team }: { team: RankedFranchise }) {
+function FranchiseRow({ team, accent }: { team: RankedFranchise; accent: string }) {
   const moved = team.currentRank - team.baseRank;
   return (
-    <li className="grid gap-3 border border-navy/15 bg-white p-4 sm:grid-cols-[80px_minmax(0,1fr)] sm:p-5">
+    <li
+      className="grid gap-3 border border-navy/15 border-l-[3px] bg-white p-4 sm:grid-cols-[80px_minmax(0,1fr)] sm:p-5"
+      style={{ borderLeftColor: accent }}
+    >
       <div className="flex items-start gap-3 sm:flex-col sm:items-center sm:gap-1">
         <div className="font-display text-4xl italic font-black leading-none text-navy-900">
           {team.currentRank}
