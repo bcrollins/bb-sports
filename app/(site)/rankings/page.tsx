@@ -29,8 +29,30 @@ export default async function RankingsPage() {
     l.movements.map((m) => ({ ...m, leagueLabel: l.label })),
   );
 
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://bbsports.fans';
+  const itemListJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'ItemList',
+    name: 'BB Sports Franchise Rankings',
+    description:
+      "Brad Benson's top-25 franchise rankings across the NFL, MLB, NHL and NBA.",
+    url: `${siteUrl}/rankings`,
+    itemListElement: leagues.flatMap((league) =>
+      league.ranked.map((team) => ({
+        '@type': 'ListItem',
+        position: team.currentRank,
+        name: `${team.city} ${team.name}`,
+        url: `${siteUrl}/rankings#${league.league}`,
+      })),
+    ),
+  };
+
   return (
     <div className="bg-bone">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(itemListJsonLd) }}
+      />
       <header className="bg-navy text-bone">
         <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 sm:py-16">
           <p className="bb-eyebrow !text-breaking !tracking-[0.3em]">Franchise rankings</p>

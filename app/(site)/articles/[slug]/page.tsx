@@ -4,6 +4,7 @@ import Image from 'next/image';
 import type { Metadata } from 'next';
 import { getAllArticles, getArticleBySlug, getRelatedArticles, formatDate, sportLabel } from '@/lib/articles';
 import { sportMeta } from '@/lib/sport-meta';
+import { getDemotionImpacts, type DemotionImpact } from '@/lib/rankings';
 import ArticleCard from '@/components/ArticleCard';
 import ArticleComments from '@/components/ArticleComments';
 import NewsletterSignup from '@/components/NewsletterSignup';
@@ -48,8 +49,12 @@ export default async function ArticleDetail({ params }: Props) {
   const { slug } = await params;
   const article = await getArticleBySlug(slug);
   if (!article) return notFound();
-  const related = await getRelatedArticles(article, 3);
+  const [related, allArticles] = await Promise.all([
+    getRelatedArticles(article, 3),
+    getAllArticles(),
+  ]);
   const m = sportMeta(article.sport);
+  const demotionImpacts = getDemotionImpacts(article, allArticles);
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://bbsports.fans';
   const articleUrl = `${siteUrl}/articles/${article.slug}`;
@@ -160,6 +165,11 @@ export default async function ArticleDetail({ params }: Props) {
           </aside>
         )}
 
+        {/* Rankings impact — only renders when this column trashed a team
+            on /rankings. Pulls cumulative state across every published
+            demotion so the displayed rank is the live page state. */}
+        {demotionImpacts.length > 0 && <RankingsImpact impacts={demotionImpacts} />}
+
         {/* Editorial signature */}
         <div className="mt-10 pt-6 border-t border-navy/15 text-sm text-charcoal/75">
           <p>
@@ -237,5 +247,53 @@ export default async function ArticleDetail({ params }: Props) {
         <NewsletterSignup variant="block" />
       </section>
     </article>
+  );
+}
+
+function RankingsImpact({ impacts }: { impacts: DemotionImpact[] }) {
+  return (
+    <aside className="mt-10 border-2 border-breaking bg-bone-50">
+      <div className="border-b border-breaking/40 bg-breaking px-4 py-2 text-bone">
+        <p className="text-[11px] font-black uppercase tracking-[0.22em]">
+          This take moved the franchise rankings
+        </p>
+      </div>
+      <ul className="divide-y divide-navy/10">
+        {impacts.map((impact) => {
+          const moved = impact.team.currentRank - impact.team.baseRank;
+          return (
+            <li key={`${impact.league}-${impact.team.id}`} className="px-4 py-4">
+              <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+                <div className="font-serif text-xl font-bold text-navy-900">
+                  {impact.team.city} {impact.team.name}
+                </div>
+                <div className="font-mono text-xs font-black uppercase tracking-[0.18em] text-charcoal/70">
+                  {impact.leagueLabel} · #{impact.team.baseRank} → #{impact.team.currentRank}
+                  {moved > 0 && (
+                    <span className="ml-2 text-breaking">▼ {moved}</span>
+                  )}
+                </div>
+              </div>
+              {impact.reason && (
+                <p className="mt-2 text-sm leading-snug text-charcoal/85">
+                  &ldquo;{impact.reason}&rdquo;
+                </p>
+              )}
+              <p className="mt-2 text-[11px] uppercase tracking-[0.18em] text-charcoal/55">
+                Dropped {impact.appliedDrop} slot{impact.appliedDrop === 1 ? '' : 's'} on this column
+              </p>
+            </li>
+          );
+        })}
+      </ul>
+      <div className="border-t border-navy/15 bg-white px-4 py-3">
+        <Link
+          href="/rankings"
+          className="inline-flex min-h-[44px] items-center text-[12px] font-black uppercase tracking-[0.2em] text-navy hover:text-breaking"
+        >
+          See the full top-25 across every league →
+        </Link>
+      </div>
+    </aside>
   );
 }
