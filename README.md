@@ -33,10 +33,11 @@ A production-ready Next.js 14 site for Brad Benson's personal sports-media brand
 ## Pages shipped at v1
 
 ```
-/                       Network-style front page — lead story, top headlines, league desks, game board, newsletter
-/articles               Archive — search + filter by sport
+/                       Players' Tribune-style imagery-first hero, player faces rail, single chronological feed
+/articles               Archive — search + filter by sport (NFL/MLB/NHL/NBA/CFB/Soccer/MMA)
 /search                 First-party ranked article search
-/articles/[slug]        Article detail — broadcast slug, body, share, first-party comments, related
+/articles/[slug]        Article detail — body, share, first-party comments, related, rankings-impact callout
+/rankings               Franchise rankings — top-25 per league (NFL/MLB/NHL/NBA) with auto-demotion engine
 /about                  Brad's bio
 /podcast                Audio show — coming-soon
 /videos                 Vertical clips grid + live reactions — coming-soon
@@ -51,6 +52,7 @@ A production-ready Next.js 14 site for Brad Benson's personal sports-media brand
 /admin/articles         No-code article roster
 /admin/articles/new     Article editor + live markdown preview
 /admin/comments         First-party comment moderation queue
+/admin/rankings         Rankings control room — directive log + live state + cheat-sheet
 /admin/site             No-code site copy controls
 /admin/audience         Newsletter / contact / donation-intent ledger
 /admin/access-wall      Blank white site-wall password control
@@ -76,6 +78,21 @@ A production-ready Next.js 14 site for Brad Benson's personal sports-media brand
 - **Color tokens:** navy `#0A1F44`, navy deep `#06122A`, breaking red `#D7263D`, bone `#F5F2EC`, charcoal `#1A1A1A`.
 
 See `/docs/00-BRADLEY-STRATEGY-BRIEF.md` for the full strategy synthesis from Brad's voice memos and `/docs/BB-SPORTS-PERFECTION-ENGINE-v1.0.md` for the master operating directive.
+
+## Franchise rankings
+
+`/rankings` ranks Brad's top-25 in every league with full opinions on every team. The list is *not* a power-ranking algorithm — it's Brad's stated opinion, with two mechanisms:
+
+1. **Baseline order** lives in `lib/rankings.ts`. Editing the array changes the starting position of every team on the page.
+2. **Demotion engine.** When Brad publishes a column that trashes a team, he drops an HTML-comment directive in the article body:
+
+   ```
+   <!-- bb:trash league=mlb team=yankees drop=8 reason="The roster build is broken." -->
+   ```
+
+   The team drops the requested number of slots on `/rankings`, the column shows up under "Why they moved" with a link, and the article page itself renders a red "this take moved the rankings" callout above the share row.
+
+Full spec: [`docs/RANKINGS-DEMOTION-DIRECTIVE.md`](docs/RANKINGS-DEMOTION-DIRECTIVE.md). Live state for Brad: `/admin/rankings`.
 
 ## House rules
 
