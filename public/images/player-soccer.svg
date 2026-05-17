@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 500" role="img" aria-label="Stylized soccer player striking a ball silhouette">
+  <defs>
+    <linearGradient id="socBg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#0A1F44"/>
+      <stop offset="1" stop-color="#06122A"/>
+    </linearGradient>
+  </defs>
+  <rect width="400" height="500" fill="url(#socBg)"/>
+  <!-- grass line -->
+  <path d="M0 430 L400 430" stroke="#1B5E20" stroke-width="2" opacity="0.5"/>
+  <g fill="#F5F2EC">
+    <!-- head -->
+    <circle cx="195" cy="90" r="28"/>
+    <!-- torso -->
+    <path d="M155 120 q40 -10 80 0 l25 140 q-65 -10 -130 0z" fill="#D7263D"/>
+    <text x="190" y="200" font-family="Georgia, serif" font-size="46" font-weight="900" fill="#F5F2EC" text-anchor="middle">10</text>
+    <!-- arm out balance -->
+    <path d="M155 160 q-40 10 -55 50 q-4 14 6 18 q12 4 22 -8 q15 -22 27 -42z"/>
+    <!-- planted leg -->
+    <path d="M180 260 l-12 160 l24 0 l8 -130z"/>
+    <!-- kicking leg -->
+    <path d="M225 260 q40 30 60 100 q4 16 -10 18 q-14 0 -22 -16 q-20 -36 -34 -68z"/>
+    <!-- ball -->
+    <circle cx="305" cy="395" r="22" fill="#F5F2EC"/>
+    <polygon points="305,378 318,388 313,402 297,402 292,388" fill="#0A1F44"/>
+  </g>
+</svg>

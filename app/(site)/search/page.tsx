@@ -15,10 +15,11 @@ export const dynamic = 'force-dynamic';
 const SPORTS: { value: SportSlug | 'all'; label: string }[] = [
   { value: 'all', label: 'All' },
   { value: 'nfl', label: 'NFL' },
+  { value: 'mlb', label: 'MLB' },
   { value: 'nhl', label: 'NHL' },
+  { value: 'nba', label: 'NBA' },
   { value: 'college-football', label: 'College' },
   { value: 'soccer', label: 'Soccer' },
-  { value: 'nba', label: 'NBA' },
   { value: 'mma', label: 'MMA' },
 ];
 

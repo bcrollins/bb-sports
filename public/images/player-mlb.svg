@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 500" role="img" aria-label="Stylized MLB batter silhouette">
+  <defs>
+    <linearGradient id="mlbBg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#0A1F44"/>
+      <stop offset="1" stop-color="#06122A"/>
+    </linearGradient>
+  </defs>
+  <rect width="400" height="500" fill="url(#mlbBg)"/>
+  <!-- horizon -->
+  <path d="M0 380 L400 380" stroke="#1B7F3B" stroke-width="2" opacity="0.4"/>
+  <!-- player silhouette -->
+  <g fill="#F5F2EC">
+    <!-- batting helmet -->
+    <path d="M155 110 q0 -45 55 -45 t55 45 v25 q0 18 -18 22 l-74 0 q-18 -4 -18 -22z"/>
+    <!-- ear flap -->
+    <path d="M145 120 q-10 5 -8 25 q2 12 15 12 l8 0 z"/>
+    <!-- torso -->
+    <path d="M150 165 q40 -10 110 0 l30 110 q-90 -10 -170 0z" fill="#D7263D"/>
+    <!-- arms holding bat back -->
+    <path d="M180 200 q-50 -10 -65 -45 q-5 -15 8 -22 q12 -6 24 4 q15 12 33 39z"/>
+    <path d="M220 200 q40 -5 50 -30 q4 -12 -6 -18 q-10 -6 -22 4 q-12 12 -22 24z"/>
+    <!-- bat -->
+    <rect x="78" y="42" width="14" height="170" rx="6" fill="#8B5A2B" transform="rotate(-32 85 127)"/>
+    <!-- legs -->
+    <path d="M170 270 l-15 145 l30 0 l10 -100 z"/>
+    <path d="M220 270 l15 145 l-30 0 l-10 -100 z"/>
+    <!-- baseball -->
+    <circle cx="310" cy="290" r="14" fill="#F5F2EC"/>
+    <path d="M299 285 q11 6 22 0" stroke="#D7263D" stroke-width="1.6" fill="none"/>
+    <path d="M299 295 q11 -6 22 0" stroke="#D7263D" stroke-width="1.6" fill="none"/>
+  </g>
+</svg>

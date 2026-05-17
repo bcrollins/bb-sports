@@ -19,12 +19,12 @@ interface ConfigShape {
   footer_tagline?: string;
 }
 
-const SPORT_OPTIONS = ['BREAKING', 'NFL', 'NHL', 'CFB', 'NBA', 'PL', 'MMA', 'OPED'];
+const SPORT_OPTIONS = ['BREAKING', 'NFL', 'MLB', 'NHL', 'NBA', 'CFB', 'PL', 'MMA', 'OPED'];
 const DEFAULT_HERO: HeroShape = {
   version: 2,
   eyebrow: 'SOFT LAUNCH',
-  headline: "Sports from\nthe fan's view.\nNo bullshit.",
-  sub: 'Opinion-led NFL, NHL, college football, soccer, NBA, and MMA — written like a fan, sourced like a reporter. Founded and edited by',
+  headline: "Sports from\nthe fan's view.\nNo BS.",
+  sub: 'Opinion-led NFL, MLB, NHL, NBA, college football, soccer, and MMA — bias turned all the way up. Founded and edited by',
   cta_primary: { label: 'Read the takes', href: '/articles' },
   cta_secondary: { label: 'Get the newsletter', href: '/#newsletter' },
 };

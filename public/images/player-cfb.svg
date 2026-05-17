@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 500" role="img" aria-label="Stylized college football running back silhouette">
+  <defs>
+    <linearGradient id="cfbBg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#0A1F44"/>
+      <stop offset="1" stop-color="#06122A"/>
+    </linearGradient>
+  </defs>
+  <rect width="400" height="500" fill="url(#cfbBg)"/>
+  <!-- yard line -->
+  <path d="M0 410 L400 410" stroke="#FF6B00" stroke-width="2" opacity="0.5"/>
+  <g fill="#F5F2EC">
+    <!-- helmet (forward-leaning) -->
+    <path d="M155 95 q0 -40 55 -40 t55 40 v25 q0 22 -22 26 l-66 0 q-22 -4 -22 -26z"/>
+    <rect x="170" y="105" width="80" height="14" rx="3" fill="#FF6B00"/>
+    <!-- shoulders forward -->
+    <path d="M115 170 q60 -16 130 -10 q40 4 60 30 l-25 35 q-90 -25 -175 -10z"/>
+    <!-- arm carrying ball -->
+    <path d="M250 225 q35 -10 60 5 q15 10 0 22 q-20 14 -55 6z"/>
+    <ellipse cx="295" cy="240" rx="34" ry="20" fill="#8B5A2B" transform="rotate(20 295 240)"/>
+    <path d="M285 238 q10 -4 22 0" stroke="#F5F2EC" stroke-width="1.6" fill="none"/>
+    <!-- jersey -->
+    <path d="M125 215 q40 -10 130 0 l25 110 q-90 -10 -180 5z" fill="#FF6B00"/>
+    <text x="200" y="295" font-family="Georgia, serif" font-size="50" font-weight="900" fill="#F5F2EC" text-anchor="middle">7</text>
+    <!-- legs in stride -->
+    <path d="M150 320 l-25 100 l28 0 l8 -75z"/>
+    <path d="M225 320 l35 80 l-22 14 l-35 -70z"/>
+  </g>
+</svg>

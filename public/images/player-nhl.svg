@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 500" role="img" aria-label="Stylized NHL skater silhouette">
+  <defs>
+    <linearGradient id="nhlBg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#0A1F44"/>
+      <stop offset="1" stop-color="#06122A"/>
+    </linearGradient>
+  </defs>
+  <rect width="400" height="500" fill="url(#nhlBg)"/>
+  <!-- ice line -->
+  <path d="M0 420 L400 420" stroke="#7BB3FF" stroke-width="1" opacity="0.5"/>
+  <g fill="#F5F2EC">
+    <!-- helmet -->
+    <path d="M150 85 q0 -40 55 -40 t55 40 v25 q0 18 -18 22 l-74 0 q-18 -4 -18 -22z"/>
+    <!-- face cage -->
+    <path d="M165 115 q40 18 80 0" fill="none" stroke="#D7263D" stroke-width="2.5"/>
+    <!-- shoulder pads -->
+    <path d="M115 165 q40 -10 90 -10 t90 10 l15 35 q-100 -20 -210 0z"/>
+    <!-- jersey -->
+    <path d="M120 195 q40 -10 170 0 l-15 130 q-60 -8 -140 0z" fill="#D7263D"/>
+    <text x="200" y="285" font-family="Georgia, serif" font-size="48" font-weight="900" fill="#F5F2EC" text-anchor="middle">19</text>
+    <!-- arms + stick -->
+    <path d="M295 220 q35 12 50 0 q5 -4 0 -10 l-50 -6z"/>
+    <rect x="282" y="160" width="10" height="180" fill="#8B5A2B" transform="rotate(40 287 250)"/>
+    <path d="M380 320 l30 18 l-6 -16 l-30 -8z" fill="#8B5A2B"/>
+    <!-- legs/skates -->
+    <path d="M150 325 l-20 95 l30 0 l8 -70z"/>
+    <path d="M225 325 l25 95 l-30 0 l-8 -70z"/>
+    <!-- skate blades -->
+    <path d="M118 425 l45 0 l-3 6 l-39 0z" fill="#7BB3FF"/>
+    <path d="M212 425 l45 0 l-3 6 l-39 0z" fill="#7BB3FF"/>
+  </g>
+</svg>

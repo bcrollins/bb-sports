@@ -2,7 +2,7 @@ import Link from 'next/link';
 import Logo from './Logo';
 import { getConfig } from '@/lib/queries';
 
-const DEFAULT_TAGLINE = "Sports from the fan's view. No bullshit.";
+const DEFAULT_TAGLINE = "Sports from the fan's view. No BS.";
 
 export default async function SiteFooter() {
   const year = new Date().getFullYear();
@@ -59,11 +59,8 @@ export default async function SiteFooter() {
           <h3 className="text-bone uppercase text-[10.5px] tracking-[0.22em] font-bold mb-3">Read</h3>
           <ul className="space-y-2 text-bone/85 text-[15px]">
             <li><Link href="/articles" className="hover:text-breaking">All articles</Link></li>
+            <li><Link href="/rankings" className="hover:text-breaking">Franchise rankings</Link></li>
             <li><Link href="/search" className="hover:text-breaking">Search</Link></li>
-            <li><Link href="/articles?sport=nfl" className="hover:text-breaking">NFL</Link></li>
-            <li><Link href="/articles?sport=nhl" className="hover:text-breaking">NHL</Link></li>
-            <li><Link href="/articles?sport=college-football" className="hover:text-breaking">College football</Link></li>
-            <li><Link href="/articles?sport=soccer" className="hover:text-breaking">Soccer</Link></li>
             <li><Link href="/podcast" className="hover:text-breaking">Podcast</Link></li>
             <li><Link href="/videos" className="hover:text-breaking">Videos</Link></li>
             <li><Link href="/support" className="hover:text-breaking">Support</Link></li>

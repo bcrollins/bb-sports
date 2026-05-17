@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 500" role="img" aria-label="Stylized MMA fighter silhouette">
+  <defs>
+    <linearGradient id="mmaBg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#0E0E10"/>
+      <stop offset="1" stop-color="#1A1A1A"/>
+    </linearGradient>
+  </defs>
+  <rect width="400" height="500" fill="url(#mmaBg)"/>
+  <!-- cage hash marks -->
+  <g stroke="#F5F2EC" stroke-width="1" opacity="0.18">
+    <path d="M0 60 L400 60"/>
+    <path d="M0 460 L400 460"/>
+    <path d="M40 0 L40 500"/>
+    <path d="M360 0 L360 500"/>
+  </g>
+  <g fill="#F5F2EC">
+    <!-- head -->
+    <circle cx="200" cy="100" r="32"/>
+    <!-- torso (low fight stance) -->
+    <path d="M150 130 q50 -15 100 0 l30 130 q-80 -10 -160 0z"/>
+    <!-- lead arm gloved -->
+    <path d="M150 165 q-50 0 -80 30 q-12 12 0 22 q14 10 30 -2 q28 -20 60 -34z"/>
+    <ellipse cx="60" cy="195" rx="26" ry="22" fill="#D7263D"/>
+    <!-- back arm gloved -->
+    <path d="M255 175 q35 5 50 30 q5 12 -5 18 q-14 8 -28 -4 q-15 -16 -30 -32z"/>
+    <ellipse cx="320" cy="225" rx="22" ry="20" fill="#D7263D"/>
+    <!-- legs spread stance -->
+    <path d="M155 265 l-25 145 l30 0 l8 -110z"/>
+    <path d="M245 265 l25 145 l-30 0 l-8 -110z"/>
+  </g>
+</svg>

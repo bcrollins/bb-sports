@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 500" role="img" aria-label="Stylized NFL quarterback silhouette">
+  <defs>
+    <linearGradient id="nflBg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#0A1F44"/>
+      <stop offset="1" stop-color="#06122A"/>
+    </linearGradient>
+  </defs>
+  <rect width="400" height="500" fill="url(#nflBg)"/>
+  <g fill="#F5F2EC">
+    <!-- helmet -->
+    <path d="M120 95 q0 -55 80 -55 t80 55 v55 q0 30 -25 38 l-110 0 q-25 -8 -25 -38z"/>
+    <rect x="135" y="135" width="130" height="16" rx="4" fill="#D7263D"/>
+    <!-- shoulder pads -->
+    <path d="M70 200 q40 -10 130 -10 t130 10 l25 60 q-90 -25 -155 -25 t-155 25z"/>
+    <!-- throwing arm + ball -->
+    <path d="M270 200 q60 30 80 10 q15 -20 -5 -40 q-12 -10 -30 -2 l-45 32z"/>
+    <ellipse cx="350" cy="175" rx="34" ry="20" fill="#8B5A2B" transform="rotate(-15 350 175)"/>
+    <path d="M338 175 q12 -4 24 0" stroke="#F5F2EC" stroke-width="2" fill="none"/>
+    <!-- torso/jersey -->
+    <path d="M120 250 l30 200 l100 0 l30 -200 q-80 25 -160 0z" fill="#D7263D"/>
+    <text x="200" y="360" font-family="Georgia, serif" font-size="58" font-weight="900" fill="#F5F2EC" text-anchor="middle">12</text>
+  </g>
+</svg>

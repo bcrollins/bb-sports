@@ -1,8 +1,8 @@
 # BB Sports
 
-> **Sports from the fan's view. No bullshit.**
+> **Sports from the fan's view. No BS.**
 >
-> Opinion-led NFL, NHL, college football, soccer, NBA, and MMA — written like a fan, sourced like a reporter. Founded and edited by **Brad Benson** (University of Florida journalism &amp; sports media, class of 2027).
+> Opinion-led NFL, MLB, NHL, NBA, college football, soccer, and MMA — written like a fan, sourced like a reporter, bias turned all the way up. Founded and edited by **Brad Benson** (University of Florida journalism &amp; sports media, class of 2027).
 
 A production-ready Next.js 14 site for Brad Benson's personal sports-media brand, built to broadcast-network polish (ESPN / Sky Sports / Fox Sports caliber) on a one-person operation.
 

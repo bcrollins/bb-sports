@@ -1,0 +1,71 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" role="img" aria-label="Composite silhouettes of players across NFL, MLB, NHL, NBA, college football and soccer on a navy field">
+  <defs>
+    <linearGradient id="heroBg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#06122A"/>
+      <stop offset="0.5" stop-color="#0A1F44"/>
+      <stop offset="1" stop-color="#06122A"/>
+    </linearGradient>
+    <radialGradient id="spot" cx="0.5" cy="0.45" r="0.7">
+      <stop offset="0" stop-color="#1A3F7E" stop-opacity="0.7"/>
+      <stop offset="1" stop-color="#06122A" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1600" height="900" fill="url(#heroBg)"/>
+  <rect width="1600" height="900" fill="url(#spot)"/>
+
+  <!-- subtle field rule -->
+  <path d="M0 720 L1600 720" stroke="#F5F2EC" stroke-width="1" opacity="0.08"/>
+
+  <!-- NHL skater far left -->
+  <g fill="#F5F2EC" opacity="0.85">
+    <path d="M140 220 q0 -38 50 -38 t50 38 v22 q0 16 -16 20 l-68 0 q-16 -4 -16 -20z"/>
+    <path d="M156 260 q34 14 68 0" fill="none" stroke="#D7263D" stroke-width="2"/>
+    <path d="M115 305 q40 -10 150 0 l-12 130 q-60 -8 -130 0z" fill="#D7263D"/>
+    <rect x="262" y="290" width="9" height="180" fill="#8B5A2B" transform="rotate(35 266 380)"/>
+    <path d="M140 445 l-12 90 l28 0 l4 -70z"/>
+    <path d="M222 445 l16 90 l-28 0 l-4 -70z"/>
+  </g>
+
+  <!-- NFL QB left center -->
+  <g fill="#F5F2EC" opacity="0.9">
+    <path d="M360 200 q0 -50 75 -50 t75 50 v50 q0 28 -22 36 l-106 0 q-22 -8 -22 -36z"/>
+    <rect x="378" y="240" width="116" height="14" rx="3" fill="#D7263D"/>
+    <path d="M310 320 q40 -10 130 -10 t130 10 l22 56 q-90 -22 -150 -22 t-150 22z"/>
+    <path d="M512 320 q56 28 76 8 q14 -18 -4 -36 q-12 -10 -28 -2 l-44 30z"/>
+    <ellipse cx="600" cy="296" rx="32" ry="18" fill="#8B5A2B" transform="rotate(-12 600 296)"/>
+    <path d="M360 380 l28 220 l100 0 l28 -220 q-78 24 -156 0z" fill="#D7263D"/>
+  </g>
+
+  <!-- NBA driver center -->
+  <g fill="#F5F2EC" opacity="0.92">
+    <circle cx="800" cy="220" r="40"/>
+    <path d="M800 260 q-14 -34 -52 -64 q-18 -14 -32 0 q-10 14 6 30 q48 44 60 70z"/>
+    <circle cx="700" cy="170" r="30" fill="#E66B2A"/>
+    <path d="M674 170 q26 9 52 0" stroke="#0A1F44" stroke-width="2" fill="none"/>
+    <path d="M699 142 v54" stroke="#0A1F44" stroke-width="2"/>
+    <path d="M758 270 q42 -8 96 0 l30 150 q-78 -10 -156 0z" fill="#D7263D"/>
+  </g>
+
+  <!-- MLB batter right center -->
+  <g fill="#F5F2EC" opacity="0.9">
+    <path d="M1075 215 q0 -50 65 -50 t65 50 v28 q0 18 -20 22 l-86 0 q-24 -4 -24 -22z"/>
+    <path d="M1060 248 q-12 6 -10 28 q2 14 18 14 l8 0 z"/>
+    <path d="M1066 280 q44 -10 132 0 l32 130 q-110 -10 -200 0z" fill="#D7263D"/>
+    <path d="M1098 322 q-58 -8 -78 -54 q-6 -16 8 -24 q14 -8 28 4 q18 14 38 46z"/>
+    <rect x="975" y="40" width="14" height="200" rx="6" fill="#8B5A2B" transform="rotate(-30 982 140)"/>
+  </g>
+
+  <!-- Soccer striker right -->
+  <g fill="#F5F2EC" opacity="0.88">
+    <circle cx="1370" cy="220" r="34"/>
+    <path d="M1322 250 q44 -10 96 0 l28 160 q-78 -10 -156 0z" fill="#1B5E20"/>
+    <path d="M1322 290 q-50 14 -64 60 q-4 14 8 18 q14 4 24 -10 q14 -22 32 -42z"/>
+    <path d="M1350 410 l-12 180 l24 0 l8 -148z"/>
+    <path d="M1400 410 q44 30 64 110 q4 16 -10 18 q-14 0 -22 -16 q-22 -40 -36 -76z"/>
+    <circle cx="1500" cy="555" r="22" fill="#F5F2EC"/>
+    <polygon points="1500,540 1512,548 1508,560 1492,560 1488,548" fill="#0A1F44"/>
+  </g>
+
+  <!-- ground glow accent -->
+  <rect x="0" y="828" width="1600" height="4" fill="#D7263D"/>
+</svg>

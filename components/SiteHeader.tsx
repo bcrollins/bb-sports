@@ -3,17 +3,12 @@ import { UserCircle } from 'lucide-react';
 import Logo from './Logo';
 
 // Every link is a named, discoverable home — no hamburger / "More" bucket.
-// On mobile the nav scrolls horizontally (same broadcast-strip pattern the
-// homepage score ticker uses); on desktop it justifies center.
+// Front page is a chronological feed, so the nav is not split by sport.
+// Sport filtering still lives on /articles for archive browsing.
 const NAV = [
   { href: '/articles', label: 'Articles' },
+  { href: '/rankings', label: 'Rankings' },
   { href: '/search', label: 'Search' },
-  { href: '/articles?sport=nfl', label: 'NFL' },
-  { href: '/articles?sport=nhl', label: 'NHL' },
-  { href: '/articles?sport=college-football', label: 'College' },
-  { href: '/articles?sport=soccer', label: 'Soccer' },
-  { href: '/articles?sport=nba', label: 'NBA' },
-  { href: '/articles?sport=mma', label: 'MMA' },
   { href: '/podcast', label: 'Podcast' },
   { href: '/videos', label: 'Videos' },
   { href: '/support', label: 'Support' },
@@ -70,7 +65,7 @@ export default function SiteHeader() {
         <div className="mx-auto mt-3 flex max-w-[calc(100vw-2rem)] flex-wrap justify-center gap-x-2 gap-y-1 text-[9.5px] sm:text-xs uppercase tracking-[0.18em] sm:tracking-[0.28em] text-navy/80 font-semibold leading-relaxed">
           <span>Sports from the fan&rsquo;s view</span>
           <span className="text-navy/30">·</span>
-          <span className="basis-full text-breaking font-extrabold sm:basis-auto">No bullshit.</span>
+          <span className="basis-full text-breaking font-extrabold sm:basis-auto">No BS.</span>
         </div>
       </div>
 

@@ -5,7 +5,7 @@ import { getAllArticles, sportLabel, type SportSlug } from '@/lib/articles';
 export const metadata = {
   title: 'Articles',
   description:
-    'Every BB Sports take, organized by sport. NFL, NHL, college football, soccer, NBA, MMA — written like a fan, sourced like a reporter.'
+    'Every BB Sports take, organized by sport. NFL, MLB, NHL, NBA, college football, soccer, MMA — bias turned all the way up.'
 };
 
 // Revalidate every 60s so newly published articles appear without a redeploy
@@ -15,10 +15,11 @@ export const revalidate = 60;
 const SPORTS: { value: SportSlug | 'all'; label: string }[] = [
   { value: 'all', label: 'All' },
   { value: 'nfl', label: 'NFL' },
+  { value: 'mlb', label: 'MLB' },
   { value: 'nhl', label: 'NHL' },
+  { value: 'nba', label: 'NBA' },
   { value: 'college-football', label: 'College Football' },
   { value: 'soccer', label: 'Soccer' },
-  { value: 'nba', label: 'NBA' },
   { value: 'mma', label: 'MMA' }
 ];
 
