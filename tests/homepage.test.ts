@@ -4,11 +4,11 @@ import type { Article } from '../lib/articles';
 import {
   buildHomepageDesk,
   HOME_PRIMARY_ACTIONS,
-  SPORT_DESK_ORDER,
   isLiveScoreProviderApproved,
 } from '../lib/homepage';
 import { SUPPORT_AMOUNTS } from '../lib/support';
 import { normalizeSearchQuery, searchArticles } from '../lib/search';
+import { buildLeagueRanking } from '../lib/rankings';
 
 function article(input: Partial<Article> & Pick<Article, 'slug' | 'title' | 'sport' | 'date'>): Article {
   return {
@@ -23,7 +23,7 @@ function article(input: Partial<Article> & Pick<Article, 'slug' | 'title' | 'spo
   };
 }
 
-test('homepage desk orders stories by date and preserves sport priority rails', () => {
+test('homepage desk orders stories by date with no sport categorisation', () => {
   const desk = buildHomepageDesk([
     article({ slug: 'old-nfl', title: 'Old NFL', sport: 'nfl', date: '2026-05-01T12:00:00.000Z' }),
     article({ slug: 'new-nhl', title: 'New NHL', sport: 'nhl', date: '2026-05-03T12:00:00.000Z' }),
@@ -31,8 +31,24 @@ test('homepage desk orders stories by date and preserves sport priority rails', 
   ], {});
 
   assert.equal(desk.lead?.slug, 'new-nhl');
-  assert.deepEqual(desk.sportHubs.map((hub) => hub.sport), SPORT_DESK_ORDER);
-  assert.equal(desk.sportHubs.find((hub) => hub.sport === 'nfl')?.lead?.slug, 'old-nfl');
+  assert.deepEqual(desk.latest.map((a) => a.slug), ['cfb', 'old-nfl']);
+});
+
+test('franchise rankings apply demotions from articles', () => {
+  const ranking = buildLeagueRanking('mlb', [
+    article({
+      slug: 'yankees-window-closed',
+      title: 'The Yankees window slammed shut',
+      sport: 'mlb',
+      date: '2026-05-10T12:00:00.000Z',
+      body: '<!-- bb:trash league=mlb team=yankees drop=4 reason="The roster build is broken." -->\n\nbody copy',
+    }),
+  ]);
+  const yankees = ranking.ranked.find((r) => r.id === 'yankees');
+  assert.ok(yankees, 'yankees row exists');
+  assert.equal(yankees!.demotions.length, 1);
+  assert.equal(yankees!.demotions[0]?.articleSlug, 'yankees-window-closed');
+  assert.ok(yankees!.currentRank > yankees!.baseRank, 'rank moved down');
 });
 
 test('homepage score-style board fails closed without commercial live-score approval', () => {

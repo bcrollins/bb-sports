@@ -10,7 +10,7 @@ import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
-const SPORTS = ['NFL', 'NHL', 'CFB', 'Soccer', 'NBA', 'MMA', 'Op-Ed'];
+const SPORTS = ['NFL', 'MLB', 'NHL', 'NBA', 'CFB', 'Soccer', 'MMA', 'Op-Ed'];
 
 function slugify(s: string): string {
   return s

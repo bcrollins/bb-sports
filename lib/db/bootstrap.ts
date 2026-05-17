@@ -270,17 +270,17 @@ async function bootstrap(): Promise<void> {
     hero: {
       version: 2,
       eyebrow: 'SOFT LAUNCH',
-      headline: "Sports from\nthe fan's view.\nNo bullshit.",
-      sub: 'Opinion-led NFL, NHL, college football, soccer, NBA, and MMA — written like a fan, sourced like a reporter. Founded and edited by',
+      headline: "Sports from\nthe fan's view.\nNo BS.",
+      sub: 'Opinion-led NFL, MLB, NHL, NBA, college football, soccer, and MMA — bias turned all the way up. Founded and edited by',
       cta_primary: { label: 'Read the takes', href: '/articles' },
       cta_secondary: { label: 'Get the newsletter', href: '/#newsletter' },
     },
     about_bio: [
       "I'm Brad Benson, a journalism &amp; sports media major at the University of Florida (class of '27). I grew up in Chicago — where you bleed Bears, Bulls, Hawks, Cubs, and yelling at the TV is a love language.",
       "BB Sports is the place I write the way I'd talk to my friends about the game last night — but with the homework done. I do the research. I read the depth charts. I watch the All-22 if it matters. And then I tell you what I actually think.",
-      "No bullshit means I won't give you fence-sitting takes to be safe. I'll be wrong sometimes. When I am, I say so on /corrections. That's the deal.",
+      "No BS means I won't give you fence-sitting takes to be safe. I'll be wrong sometimes. When I am, I say so on /corrections. That's the deal.",
     ],
-    footer_tagline: "Sports from the fan's view. No bullshit.",
+    footer_tagline: "Sports from the fan's view. No BS.",
   };
   for (const [key, value] of Object.entries(defaults)) {
     await db

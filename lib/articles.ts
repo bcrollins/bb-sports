@@ -42,19 +42,21 @@ export type Article = {
 
 export type SportSlug =
   | 'nfl'
+  | 'mlb'
   | 'nhl'
+  | 'nba'
   | 'college-football'
   | 'soccer'
-  | 'nba'
   | 'mma'
   | 'general';
 
 const SPORT_LABELS: Record<SportSlug, string> = {
   nfl: 'NFL',
+  mlb: 'MLB',
   nhl: 'NHL',
+  nba: 'NBA',
   'college-football': 'College Football',
   soccer: 'Soccer',
-  nba: 'NBA',
   mma: 'MMA',
   general: 'General',
 };
@@ -67,10 +69,11 @@ export function sportLabel(s: SportSlug): string {
 function toSportSlug(input: string | null | undefined): SportSlug {
   const s = String(input ?? '').toLowerCase().trim();
   if (s === 'nfl') return 'nfl';
+  if (s === 'mlb' || s === 'baseball') return 'mlb';
   if (s === 'nhl') return 'nhl';
+  if (s === 'nba') return 'nba';
   if (s === 'cfb' || s === 'college football' || s === 'college-football') return 'college-football';
   if (s === 'soccer' || s === 'pl' || s === 'football') return 'soccer';
-  if (s === 'nba') return 'nba';
   if (s === 'mma' || s === 'ufc') return 'mma';
   return 'general';
 }
@@ -216,10 +219,11 @@ export async function getRelatedArticles(article: Article, limit = 3): Promise<A
 function mapSportSlugToTag(slug: SportSlug): string {
   switch (slug) {
     case 'nfl': return 'NFL';
+    case 'mlb': return 'MLB';
     case 'nhl': return 'NHL';
+    case 'nba': return 'NBA';
     case 'college-football': return 'CFB';
     case 'soccer': return 'Soccer';
-    case 'nba': return 'NBA';
     case 'mma': return 'MMA';
     default: return 'Op-Ed';
   }

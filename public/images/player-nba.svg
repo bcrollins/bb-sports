@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 500" role="img" aria-label="Stylized NBA player driving to the rim silhouette">
+  <defs>
+    <linearGradient id="nbaBg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#0A1F44"/>
+      <stop offset="1" stop-color="#06122A"/>
+    </linearGradient>
+  </defs>
+  <rect width="400" height="500" fill="url(#nbaBg)"/>
+  <!-- hoop -->
+  <rect x="320" y="120" width="60" height="50" fill="none" stroke="#F5F2EC" stroke-width="3"/>
+  <ellipse cx="328" cy="178" rx="14" ry="4" fill="#D7263D"/>
+  <path d="M314 178 q14 30 28 0" fill="none" stroke="#F5F2EC" stroke-width="1.5"/>
+  <g fill="#F5F2EC">
+    <!-- head -->
+    <circle cx="170" cy="110" r="32"/>
+    <!-- arm raised holding ball -->
+    <path d="M170 140 q-10 -30 -40 -55 q-15 -12 -25 0 q-8 12 5 24 q40 38 50 60z"/>
+    <!-- ball -->
+    <circle cx="98" cy="68" r="26" fill="#E66B2A"/>
+    <path d="M75 65 q22 8 46 0" stroke="#0A1F44" stroke-width="2" fill="none"/>
+    <path d="M97 42 v52" stroke="#0A1F44" stroke-width="2"/>
+    <!-- torso (jersey #23) -->
+    <path d="M140 150 q35 -8 80 0 l25 130 q-65 -12 -130 0z" fill="#D7263D"/>
+    <text x="180" y="240" font-family="Georgia, serif" font-size="52" font-weight="900" fill="#F5F2EC" text-anchor="middle">23</text>
+    <!-- legs in motion -->
+    <path d="M150 285 l-20 145 l28 0 l8 -100z"/>
+    <path d="M210 285 l40 90 l-20 14 l-40 -70z"/>
+  </g>
+</svg>
