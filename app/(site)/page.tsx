@@ -8,9 +8,12 @@ import {
   getAllArticles,
   formatDate,
   type Article,
+  type SportSlug,
 } from '@/lib/articles';
 import { buildHomepageDesk } from '@/lib/homepage';
 import { getConfig } from '@/lib/queries';
+import { buildAllRankings, type LeagueRanking, type RankedFranchise } from '@/lib/rankings';
+import { sportMeta } from '@/lib/sport-meta';
 
 export const revalidate = 60;
 
@@ -34,6 +37,7 @@ export default async function HomePage() {
   ]);
   const desk = buildHomepageDesk(articles);
   const hero = normalizeHero(heroConfig);
+  const recentMovements = pickRecentMovements(articles);
 
   return (
     <div className="min-h-[60vh] bg-bone">
@@ -132,6 +136,46 @@ export default async function HomePage() {
         <section className="bg-bone">
           <div className="mx-auto max-w-3xl px-4 py-16 sm:px-6">
             <EmptyFrontPage summary={hero.sub} />
+          </div>
+        </section>
+      )}
+
+      {/* RANKINGS MOVEMENT RAIL
+          Surfaces the demotion engine directly on the homepage so a first-
+          time visitor sees the franchise rankings working immediately —
+          not just a CTA card. Renders only when there's actual movement
+          to show; the sidebar Rankings card below stays as the evergreen
+          entrypoint. */}
+      {recentMovements.length > 0 && (
+        <section className="border-y border-navy/15 bg-navy text-bone">
+          <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-12">
+            <div className="mb-6 flex items-end justify-between gap-3">
+              <div>
+                <p className="bb-eyebrow !text-breaking !tracking-[0.32em]">
+                  Franchise rankings · live
+                </p>
+                <h2 className="mt-2 font-display text-3xl italic uppercase leading-tight sm:text-4xl">
+                  Teams Brad just moved
+                </h2>
+              </div>
+              <Link
+                href="/rankings"
+                className="hidden min-h-[44px] items-center border border-bone/30 px-4 text-[11px] font-black uppercase tracking-[0.18em] text-bone transition-colors hover:border-breaking hover:bg-breaking sm:inline-flex"
+              >
+                Top 25 in every league
+              </Link>
+            </div>
+            <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {recentMovements.map((m) => (
+                <MovementCard key={`${m.league}-${m.team.id}-${m.article.slug}`} movement={m} />
+              ))}
+            </ul>
+            <Link
+              href="/rankings"
+              className="mt-6 inline-flex min-h-[44px] items-center border border-bone/30 px-4 text-[11px] font-black uppercase tracking-[0.18em] text-bone transition-colors hover:border-breaking hover:bg-breaking sm:hidden"
+            >
+              Top 25 in every league
+            </Link>
           </div>
         </section>
       )}
@@ -306,4 +350,72 @@ function normalizeHero(config: HomepageHeroConfig | null) {
     eyebrow: config.eyebrow || DEFAULT_HERO.eyebrow,
     sub: config.sub || DEFAULT_HERO.sub,
   };
+}
+
+type HomepageMovement = {
+  league: LeagueRanking['league'];
+  leagueLabel: string;
+  team: RankedFranchise;
+  article: { slug: string; title: string; date: string };
+  reason: string;
+};
+
+/**
+ * Surface the most recent rankings movements (by article date) across all
+ * four leagues so the homepage can show "teams Brad just moved" without
+ * the reader having to navigate to /rankings.
+ *
+ * Limit is 3 (one homepage rail row on lg). Returns [] when no team has
+ * been demoted yet — caller hides the rail.
+ */
+function pickRecentMovements(articles: Article[]): HomepageMovement[] {
+  const leagues = buildAllRankings(articles);
+  const out: HomepageMovement[] = [];
+  for (const league of leagues) {
+    for (const team of league.movements) {
+      const top = team.demotions[0];
+      if (!top) continue;
+      out.push({
+        league: league.league,
+        leagueLabel: league.label,
+        team,
+        article: { slug: top.articleSlug, title: top.articleTitle, date: top.date },
+        reason: top.reason,
+      });
+    }
+  }
+  return out.sort((a, b) => +new Date(b.article.date) - +new Date(a.article.date)).slice(0, 3);
+}
+
+function MovementCard({ movement }: { movement: HomepageMovement }) {
+  const meta = sportMeta(movement.league as SportSlug);
+  const moved = movement.team.currentRank - movement.team.baseRank;
+  return (
+    <li className="group border-l-[3px] bg-bone-50 text-charcoal transition-colors hover:bg-white" style={{ borderColor: meta.accent }}>
+      <Link href={`/articles/${movement.article.slug}`} className="block p-4 sm:p-5">
+        <div className="flex items-center justify-between gap-3 text-xs">
+          <span className="font-mono font-black uppercase tracking-[0.18em]" style={{ color: meta.accent }}>
+            {movement.leagueLabel}
+          </span>
+          <span className="font-bold text-charcoal/70">
+            #{movement.team.baseRank} → #{movement.team.currentRank}
+            {moved > 0 && (
+              <span className="ml-1 text-breaking">▼ {moved}</span>
+            )}
+          </span>
+        </div>
+        <p className="mt-2 font-serif text-xl font-bold leading-tight text-navy-900 group-hover:text-breaking">
+          {movement.team.city} {movement.team.name}
+        </p>
+        {movement.reason && (
+          <p className="mt-2 line-clamp-3 text-sm leading-snug text-charcoal/80">
+            &ldquo;{movement.reason}&rdquo;
+          </p>
+        )}
+        <p className="mt-3 text-[11px] font-black uppercase tracking-[0.18em] text-navy group-hover:text-breaking">
+          Read the column →
+        </p>
+      </Link>
+    </li>
+  );
 }
