@@ -5,6 +5,7 @@ import {
   buildAllRankings,
   buildLeagueRanking,
   getDemotionImpacts,
+  getRecentMovements,
   LEAGUE_ORDER,
   readTrashedTeams,
   searchFranchises,
@@ -211,4 +212,49 @@ test('searchFranchises returns empty for queries under 2 characters', () => {
 test('searchFranchises caps results to the limit argument', () => {
   const hits = searchFranchises('s', [], 3);
   assert.ok(hits.length <= 3);
+});
+
+test('getRecentMovements returns newest demotion first across all leagues', () => {
+  const articles = [
+    article({
+      slug: 'older-mlb',
+      title: 'older mlb',
+      date: '2026-05-10T00:00:00Z',
+      body: '<!-- bb:trash league=mlb team=yankees drop=4 reason="older" -->',
+    }),
+    article({
+      slug: 'newer-nba',
+      title: 'newer nba',
+      date: '2026-05-13T00:00:00Z',
+      body: '<!-- bb:trash league=nba team=lakers drop=5 reason="newer" -->',
+    }),
+    article({
+      slug: 'newest-nfl',
+      title: 'newest nfl',
+      date: '2026-05-16T00:00:00Z',
+      body: '<!-- bb:trash league=nfl team=cowboys drop=6 reason="newest" -->',
+    }),
+  ];
+  const out = getRecentMovements(articles);
+  assert.equal(out.length, 3);
+  assert.equal(out[0]?.article.slug, 'newest-nfl');
+  assert.equal(out[1]?.article.slug, 'newer-nba');
+  assert.equal(out[2]?.article.slug, 'older-mlb');
+});
+
+test('getRecentMovements respects the limit and returns [] when no demotions exist', () => {
+  assert.deepEqual(getRecentMovements([]), []);
+
+  const heavy = Array.from({ length: 6 }, (_, i) =>
+    article({
+      slug: `hit-${i}`,
+      title: 't',
+      date: `2026-05-0${i + 1}T00:00:00Z`,
+      body: `<!-- bb:trash league=nba team=lakers drop=1 reason="r${i}" -->`,
+    }),
+  );
+  // Same team demoted 6 times → only one movement entry (the latest).
+  const out = getRecentMovements(heavy, 4);
+  assert.equal(out.length, 1);
+  assert.equal(out[0]?.article.slug, 'hit-5', 'newest article wins');
 });

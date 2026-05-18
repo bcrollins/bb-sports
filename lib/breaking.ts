@@ -19,6 +19,18 @@ export function getBreakingItems(): BreakingItem[] {
       href: '/articles/welcome-to-bb-sports'
     },
     {
+      id: 'rankings-1',
+      sport: 'RANKINGS',
+      text: "Top 25 in every league. When Brad trashes a team, the ranking moves.",
+      href: '/rankings'
+    },
+    {
+      id: 'mlb-1',
+      sport: 'MLB',
+      text: "Yankees just dropped 8 slots on the franchise rankings — read why.",
+      href: '/articles/yankees-window-just-slammed'
+    },
+    {
       id: 'cfb-1',
       sport: 'CFB',
       text: 'Florida-Georgia preview drops next month. Yes, I’m biased.',
