@@ -356,12 +356,16 @@ function MovementCard({ movement }: { movement: RecentMovement }) {
   const meta = sportMeta(movement.league as SportSlug);
   const moved = movement.team.currentRank - movement.team.baseRank;
   return (
-    <li className="group border-l-[3px] bg-bone-50 text-charcoal transition-colors hover:bg-white" style={{ borderColor: meta.accent }}>
-      <Link href={`/articles/${movement.article.slug}`} className="block p-4 sm:p-5">
+    <li className="border-l-[3px] bg-bone-50 text-charcoal transition-colors hover:bg-white" style={{ borderColor: meta.accent }}>
+      <div className="p-4 sm:p-5">
         <div className="flex items-center justify-between gap-3 text-xs">
-          <span className="font-mono font-black uppercase tracking-[0.18em]" style={{ color: meta.accent }}>
+          <Link
+            href={`/rankings/${movement.league}/${movement.team.id}`}
+            className="font-mono font-black uppercase tracking-[0.18em] hover:opacity-80"
+            style={{ color: meta.accent }}
+          >
             {movement.leagueLabel}
-          </span>
+          </Link>
           <span className="font-bold text-charcoal/70">
             #{movement.team.baseRank} → #{movement.team.currentRank}
             {moved > 0 && (
@@ -369,18 +373,24 @@ function MovementCard({ movement }: { movement: RecentMovement }) {
             )}
           </span>
         </div>
-        <p className="mt-2 font-serif text-xl font-bold leading-tight text-navy-900 group-hover:text-breaking">
+        <Link
+          href={`/rankings/${movement.league}/${movement.team.id}`}
+          className="mt-2 block font-serif text-xl font-bold leading-tight text-navy-900 hover:text-breaking"
+        >
           {movement.team.city} {movement.team.name}
-        </p>
+        </Link>
         {movement.reason && (
           <p className="mt-2 line-clamp-3 text-sm leading-snug text-charcoal/80">
             &ldquo;{movement.reason}&rdquo;
           </p>
         )}
-        <p className="mt-3 text-[11px] font-black uppercase tracking-[0.18em] text-navy group-hover:text-breaking">
+        <Link
+          href={`/articles/${movement.article.slug}`}
+          className="mt-3 inline-block text-[11px] font-black uppercase tracking-[0.18em] text-navy hover:text-breaking"
+        >
           Read the column →
-        </p>
-      </Link>
+        </Link>
+      </div>
     </li>
   );
 }
