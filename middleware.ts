@@ -28,6 +28,7 @@ const GATE_BYPASS_EXACT = new Set<string>([
   '/api/health',
   '/api/analytics',
   '/api/newsletter',
+  '/api/rankings',
   '/api/stripe/webhook',
   '/api/newsletter/unsubscribe',
   '/newsletter/unsubscribe',

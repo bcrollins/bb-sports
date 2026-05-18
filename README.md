@@ -58,6 +58,7 @@ A production-ready Next.js 14 site for Brad Benson's personal sports-media brand
 /admin/access-wall      Blank white site-wall password control
 /admin/launch           Launch-readiness and provider posture
 /api/health             Health probe (Railway healthcheck)
+/api/rankings           Public machine-readable franchise rankings (?league=mlb optional)
 /api/newsletter         Email capture endpoint (rate-limited)
 /api/articles/[slug]/comments  Public comments load/post endpoint with moderation
 /api/search                    Ranked article search API
