@@ -13,7 +13,12 @@ import {
 } from '@/lib/articles';
 import { buildHomepageDesk } from '@/lib/homepage';
 import { getConfig } from '@/lib/queries';
-import { getRecentMovements, type RecentMovement } from '@/lib/rankings';
+import {
+  buildAllRankings,
+  getRecentMovements,
+  LEAGUE_LABELS,
+  type RecentMovement,
+} from '@/lib/rankings';
 import { sportMeta } from '@/lib/sport-meta';
 
 export const revalidate = 60;
@@ -39,6 +44,11 @@ export default async function HomePage() {
   const desk = buildHomepageDesk(articles);
   const hero = normalizeHero(heroConfig);
   const recentMovements = getRecentMovements(articles, 3);
+  const leagueLeaders = buildAllRankings(articles).map((ranking) => ({
+    league: ranking.league,
+    label: LEAGUE_LABELS[ranking.league],
+    leader: ranking.ranked.find((t) => t.currentRank === 1) ?? null,
+  }));
 
   return (
     <div className="min-h-[60vh] bg-bone">
@@ -118,6 +128,64 @@ export default async function HomePage() {
                 </Link>
               </li>
             ))}
+          </ul>
+        </div>
+      </section>
+
+      {/* LEAGUE-LEADER TEASE
+          Four #1s, one per league, with the team page link. The same
+          baseline that powers /rankings. Bias is on full display
+          because three of four #1s are Brad's own teams — house rule
+          #1 made hilarious in the corner of the homepage. */}
+      <section className="border-b border-navy/15 bg-navy text-bone">
+        <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8">
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <p className="bb-eyebrow !text-breaking !tracking-[0.3em]">
+                Brad&rsquo;s #1 in every league
+              </p>
+              <p className="mt-1 text-sm text-bone/70">
+                Yes the bias is showing. Yes the case is on the page.
+              </p>
+            </div>
+            <Link
+              href="/rankings"
+              className="inline-flex min-h-[40px] items-center border border-bone/30 px-3 text-[11px] font-black uppercase tracking-[0.18em] text-bone transition-colors hover:border-breaking hover:bg-breaking"
+            >
+              See the top 25 →
+            </Link>
+          </div>
+          <ul className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+            {leagueLeaders.map(({ league, label, leader }) => {
+              const accent = sportMeta(league as SportSlug).accent;
+              return (
+                <li key={league}>
+                  {leader ? (
+                    <Link
+                      href={`/rankings/${league}/${leader.id}`}
+                      className="group flex items-center gap-3 border border-bone/15 bg-bone/5 px-3 py-3 transition-colors hover:bg-bone/10"
+                    >
+                      <span className="font-mono text-[11px] font-black uppercase tracking-[0.18em]" style={{ color: accent }}>
+                        {label}
+                      </span>
+                      <span className="font-display text-xl italic font-black text-bone">#1</span>
+                      <span className="min-w-0 flex-1 truncate font-serif text-base font-bold text-bone group-hover:text-breaking">
+                        {leader.city} {leader.name}
+                      </span>
+                      {leader.bradTeam && (
+                        <span className="font-mono text-[9px] font-black uppercase tracking-[0.18em] text-bone/55" title="House rule #1: bias disclosed.">
+                          ⚑
+                        </span>
+                      )}
+                    </Link>
+                  ) : (
+                    <div className="border border-dashed border-bone/20 px-3 py-3 text-[11px] uppercase tracking-[0.18em] text-bone/55">
+                      {label} ranking pending
+                    </div>
+                  )}
+                </li>
+              );
+            })}
           </ul>
         </div>
       </section>
