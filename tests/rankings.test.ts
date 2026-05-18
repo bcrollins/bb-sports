@@ -153,3 +153,34 @@ test('demotion does not push a team below #25 even with extreme cumulative drops
   assert.ok(celtics.currentRank > 1, 'celtics dropped from #1');
   assert.ok(celtics.currentRank <= 25, 'celtics still in the top 25');
 });
+
+test('demotion engine is league-scoped — a directive for one league never mutates another', () => {
+  const articles = [
+    article({
+      slug: 'mlb-trash',
+      title: 'mlb',
+      date: '2026-05-15T00:00:00Z',
+      body: '<!-- bb:trash league=mlb team=yankees drop=8 reason="x" -->',
+    }),
+  ];
+  const nba = buildLeagueRanking('nba', articles);
+  assert.equal(nba.movements.length, 0, 'nba untouched by mlb directive');
+
+  const mlb = buildLeagueRanking('mlb', articles);
+  // Yankees with a directive get the demotions[] entry; the teams above
+  // the Yankees' new position also shift (their currentRank changes) so
+  // movements[] is longer than 1. The directive ownership we care about
+  // is: only the Yankees has a recorded demotion entry on its row.
+  const teamsWithDemotions = mlb.ranked.filter((r) => r.demotions.length > 0);
+  assert.equal(teamsWithDemotions.length, 1, 'only one team has a demotion entry');
+  assert.equal(teamsWithDemotions[0]?.id, 'yankees');
+  assert.ok(mlb.movements.length >= 1, 'at least the yankees moved');
+});
+
+test('buildAllRankings returns the four leagues in canonical order', () => {
+  const all = buildAllRankings([]);
+  assert.deepEqual(
+    all.map((r) => r.league),
+    ['nfl', 'mlb', 'nhl', 'nba'],
+  );
+});

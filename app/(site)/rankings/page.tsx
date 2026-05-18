@@ -37,9 +37,15 @@ export const metadata: Metadata = {
 export default async function RankingsPage() {
   const articles = await getAllArticles();
   const leagues = buildAllRankings(articles);
-  const allMovements = leagues.flatMap((l) =>
-    l.movements.map((m) => ({ ...m, leagueLabel: l.label })),
-  );
+  // Sort the "Recent movement" rail by the newest demotion's article date,
+  // not by drop size — the rail is labelled "Recent", readers expect chrono.
+  const allMovements = leagues
+    .flatMap((l) => l.movements.map((m) => ({ ...m, leagueLabel: l.label })))
+    .sort((a, b) => {
+      const aDate = a.demotions[0]?.date ?? '';
+      const bDate = b.demotions[0]?.date ?? '';
+      return +new Date(bDate) - +new Date(aDate);
+    });
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://bbsports.fans';
   const itemListJsonLd = {
