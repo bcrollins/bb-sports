@@ -86,7 +86,10 @@ sections · #30 homepage rankings rail · #31 sort + scope tests ·
 #38 `getRecentMovements` lib + ticker copy · #39 rankings rail dedup ·
 #40 RSS + API tests · #41 per-team pages · #42 team-page wiring ·
 #43 team JSON-LD · #44 team-page generator tests · #45 changelog +
-v0.3.0 bump.
+v0.3.0 bump · #46 Brad's-team disclosure badge · #47 sitemap
+freshness + JSON alternate · #48 sitemap tests · #49 shared
+RankingsImpactPill on homepage Latest · #50 per-league pages
+(`/rankings/[league]`) · #51 footer + CHANGELOG sync.
 
 ## [0.2.0] — pre-launch
 

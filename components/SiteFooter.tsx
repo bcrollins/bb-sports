@@ -59,11 +59,18 @@ export default async function SiteFooter() {
           <h3 className="text-bone uppercase text-[10.5px] tracking-[0.22em] font-bold mb-3">Read</h3>
           <ul className="space-y-2 text-bone/85 text-[15px]">
             <li><Link href="/articles" className="hover:text-breaking">All articles</Link></li>
-            <li><Link href="/rankings" className="hover:text-breaking">Franchise rankings</Link></li>
             <li><Link href="/search" className="hover:text-breaking">Search</Link></li>
             <li><Link href="/podcast" className="hover:text-breaking">Podcast</Link></li>
             <li><Link href="/videos" className="hover:text-breaking">Videos</Link></li>
             <li><Link href="/support" className="hover:text-breaking">Support</Link></li>
+          </ul>
+          <h3 className="mt-6 text-bone uppercase text-[10.5px] tracking-[0.22em] font-bold mb-3">Franchise rankings</h3>
+          <ul className="space-y-2 text-bone/85 text-[15px]">
+            <li><Link href="/rankings" className="hover:text-breaking">All four leagues</Link></li>
+            <li><Link href="/rankings/nfl" className="hover:text-breaking">NFL top 25</Link></li>
+            <li><Link href="/rankings/mlb" className="hover:text-breaking">MLB top 25</Link></li>
+            <li><Link href="/rankings/nhl" className="hover:text-breaking">NHL top 25</Link></li>
+            <li><Link href="/rankings/nba" className="hover:text-breaking">NBA top 25</Link></li>
           </ul>
         </div>
 
