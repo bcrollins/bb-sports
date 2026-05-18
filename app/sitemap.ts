@@ -1,5 +1,6 @@
 import type { MetadataRoute } from 'next';
 import { getAllArticles } from '@/lib/articles';
+import { LEAGUE_ORDER, buildLeagueRanking } from '@/lib/rankings';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://bbsports.fans';
@@ -34,5 +35,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.8
   }));
 
-  return [...staticRoutes, ...articleRoutes];
+  // 100 franchise pages — every team in every league.
+  const teamRoutes: MetadataRoute.Sitemap = LEAGUE_ORDER.flatMap((league) =>
+    buildLeagueRanking(league, []).ranked.map((team) => ({
+      url: `${baseUrl}/rankings/${league}/${team.id}`,
+      lastModified: new Date(),
+      changeFrequency: 'weekly' as const,
+      priority: 0.6,
+    })),
+  );
+
+  return [...staticRoutes, ...articleRoutes, ...teamRoutes];
 }
