@@ -174,7 +174,7 @@ function FranchiseHitCard({ hit }: { hit: FranchiseSearchHit }) {
   return (
     <li>
       <Link
-        href={`/rankings#${hit.league}`}
+        href={`/rankings/${hit.league}/${hit.team.id}`}
         className="group block border border-navy/15 border-l-[3px] bg-white p-4 transition-colors hover:bg-bone-50"
         style={{ borderLeftColor: meta.accent }}
       >
@@ -198,7 +198,7 @@ function FranchiseHitCard({ hit }: { hit: FranchiseSearchHit }) {
           {hit.team.brad}
         </p>
         <p className="mt-3 text-[11px] font-black uppercase tracking-[0.18em] text-navy group-hover:text-breaking">
-          Open the ranking →
+          Open the team page →
         </p>
       </Link>
     </li>

@@ -298,17 +298,24 @@ function RecentMovementCard({ movement }: { movement: RecentMovement }) {
   return (
     <li className="border border-navy/15 border-l-[3px] bg-white p-4" style={{ borderLeftColor: meta.accent }}>
       <div className="flex items-center justify-between text-xs">
-        <span className="font-mono font-black uppercase tracking-[0.18em]" style={{ color: meta.accent }}>
+        <Link
+          href={`/rankings/${movement.league}/${movement.team.id}`}
+          className="font-mono font-black uppercase tracking-[0.18em] hover:opacity-80"
+          style={{ color: meta.accent }}
+        >
           {movement.leagueLabel}
-        </span>
+        </Link>
         <span className="font-bold text-charcoal/70">
           #{movement.team.baseRank} → #{movement.team.currentRank}
           {moved > 0 && <span className="ml-1 text-breaking">▼ {moved}</span>}
         </span>
       </div>
-      <p className="mt-2 font-serif text-xl font-bold text-navy-900">
+      <Link
+        href={`/rankings/${movement.league}/${movement.team.id}`}
+        className="mt-2 block font-serif text-xl font-bold text-navy-900 hover:text-breaking"
+      >
         {movement.team.city} {movement.team.name}
-      </p>
+      </Link>
       <p className="mt-2 text-sm leading-snug text-charcoal/80">
         {movement.reason || 'See linked column for the case.'}
       </p>

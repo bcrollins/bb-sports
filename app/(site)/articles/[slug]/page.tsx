@@ -264,9 +264,12 @@ function RankingsImpact({ impacts }: { impacts: DemotionImpact[] }) {
           return (
             <li key={`${impact.league}-${impact.team.id}`} className="px-4 py-4">
               <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-                <div className="font-serif text-xl font-bold text-navy-900">
+                <Link
+                  href={`/rankings/${impact.league}/${impact.team.id}`}
+                  className="font-serif text-xl font-bold text-navy-900 hover:text-breaking"
+                >
                   {impact.team.city} {impact.team.name}
-                </div>
+                </Link>
                 <div className="font-mono text-xs font-black uppercase tracking-[0.18em] text-charcoal/70">
                   {impact.leagueLabel} · #{impact.team.baseRank} → #{impact.team.currentRank}
                   {moved > 0 && (
