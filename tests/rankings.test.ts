@@ -242,6 +242,19 @@ test('getRecentMovements returns newest demotion first across all leagues', () =
   assert.equal(out[2]?.article.slug, 'older-mlb');
 });
 
+test('Brad\'s teams across the four major leagues carry the bradTeam flag', () => {
+  const all = buildAllRankings([]);
+  const flagged = new Map<string, string[]>();
+  for (const ranking of all) {
+    const teams = ranking.ranked.filter((t) => t.bradTeam).map((t) => t.id);
+    if (teams.length) flagged.set(ranking.league, teams);
+  }
+  assert.deepEqual(flagged.get('nfl'), ['bears'], 'Bears flagged in NFL');
+  assert.deepEqual(flagged.get('mlb'), ['cubs'], 'Cubs flagged in MLB');
+  assert.deepEqual(flagged.get('nhl'), ['panthers'], 'Panthers flagged in NHL');
+  assert.deepEqual(flagged.get('nba'), ['bulls'], 'Bulls flagged in NBA');
+});
+
 test('getRecentMovements respects the limit and returns [] when no demotions exist', () => {
   assert.deepEqual(getRecentMovements([]), []);
 

@@ -163,6 +163,12 @@ export default async function TeamPage({ params }: Props) {
           <h1 className="mt-3 font-display text-5xl italic uppercase leading-[0.95] sm:text-7xl">
             {row.city} <span className="text-breaking">{row.name}</span>
           </h1>
+          {row.bradTeam && (
+            <p className="mt-3 inline-flex w-fit items-center gap-2 border border-bone/30 bg-bone/10 px-3 py-1 text-[11px] font-black uppercase tracking-[0.2em] text-bone">
+              <span aria-hidden="true">⚑</span>
+              Bias disclosed · Brad&rsquo;s team
+            </p>
+          )}
           <div className="mt-5 flex flex-wrap items-end gap-6">
             <div>
               <p className="text-[10px] font-black uppercase tracking-[0.22em] text-bone/60">
