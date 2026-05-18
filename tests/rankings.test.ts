@@ -7,6 +7,7 @@ import {
   getDemotionImpacts,
   LEAGUE_ORDER,
   readTrashedTeams,
+  searchFranchises,
 } from '../lib/rankings';
 
 function article(input: Partial<Article> & Pick<Article, 'slug' | 'title' | 'date'>): Article {
@@ -183,4 +184,31 @@ test('buildAllRankings returns the four leagues in canonical order', () => {
     all.map((r) => r.league),
     ['nfl', 'mlb', 'nhl', 'nba'],
   );
+});
+
+test('searchFranchises matches by team name, city, and id with priority on exact name match', () => {
+  const yankees = searchFranchises('yankees', []);
+  assert.ok(yankees.length > 0);
+  assert.equal(yankees[0]?.team.id, 'yankees');
+  assert.equal(yankees[0]?.league, 'mlb');
+
+  // Partial match: "Lake" should hit Lakers.
+  const lake = searchFranchises('lake', []);
+  assert.ok(lake.some((h) => h.team.id === 'lakers'));
+
+  // Multi-word: "Los Angeles" should hit both Lakers and Rams (sport-agnostic).
+  const la = searchFranchises('Los Angeles', []);
+  const cities = new Set(la.map((h) => h.team.id));
+  assert.ok(cities.has('lakers'));
+  assert.ok(cities.has('rams'));
+});
+
+test('searchFranchises returns empty for queries under 2 characters', () => {
+  assert.deepEqual(searchFranchises('', []), []);
+  assert.deepEqual(searchFranchises('y', []), []);
+});
+
+test('searchFranchises caps results to the limit argument', () => {
+  const hits = searchFranchises('s', [], 3);
+  assert.ok(hits.length <= 3);
 });

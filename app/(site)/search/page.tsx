@@ -4,6 +4,8 @@ import { AnalyticsEventBeacon } from '@/components/AnalyticsTracker';
 import ArticleCard from '@/components/ArticleCard';
 import { getAllArticles, sportLabel, type SportSlug } from '@/lib/articles';
 import { normalizeSearchQuery, searchArticles, SEARCH_MIN_QUERY_LENGTH } from '@/lib/search';
+import { searchFranchises, type FranchiseSearchHit } from '@/lib/rankings';
+import { sportMeta } from '@/lib/sport-meta';
 
 export const metadata = {
   title: 'Search',
@@ -32,6 +34,11 @@ export default async function SearchPage({ searchParams }: Props) {
   const articles = await getAllArticles();
   const results = query.length >= SEARCH_MIN_QUERY_LENGTH
     ? searchArticles(articles, query, sport).slice(0, 24)
+    : [];
+  // Franchise hits surface alongside article hits; ignored when a sport
+  // filter is set to one that isn't a ranked league.
+  const franchiseHits = query.length >= SEARCH_MIN_QUERY_LENGTH
+    ? searchFranchises(query, articles).filter((hit) => sport === 'all' || hit.league === sport)
     : [];
 
   return (
@@ -100,32 +107,55 @@ export default async function SearchPage({ searchParams }: Props) {
             title="Start with two characters."
             text="Search by team, league, article title, or whatever phrase is stuck in your head."
           />
-        ) : results.length === 0 ? (
+        ) : results.length === 0 && franchiseHits.length === 0 ? (
           <EmptyState
             title="No take matched that."
-            text={`No published BB Sports article matched "${query}"${sport !== 'all' ? ` in ${sportLabel(sport)}` : ''}.`}
+            text={`No published BB Sports article or ranked franchise matched "${query}"${sport !== 'all' ? ` in ${sportLabel(sport)}` : ''}.`}
           />
         ) : (
           <>
-            <div className="mb-6 flex flex-wrap items-end justify-between gap-3 border-b border-navy/15 pb-3">
-              <div>
-                <h2 className="font-display text-3xl italic text-navy">{results.length} result{results.length === 1 ? '' : 's'}</h2>
-                <p className="mt-1 text-sm text-charcoal/70">
-                  Ranked by title, dek, tags, sport, and recency.
-                </p>
-              </div>
-              <Link href="/articles" className="bb-link text-sm">Browse archive -&gt;</Link>
-            </div>
-            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-              {results.map((result) => (
-                <div key={result.article.slug}>
-                  <ArticleCard article={result.article} />
-                  <p className="mt-2 font-mono text-[10px] uppercase tracking-[0.18em] text-navy/50">
-                    Match: {result.matchedFields.join(', ')}
-                  </p>
+            {franchiseHits.length > 0 && (
+              <section className="mb-8">
+                <div className="mb-3 flex items-end justify-between gap-3 border-b border-navy/15 pb-2">
+                  <div>
+                    <p className="bb-eyebrow !text-breaking">Franchise rankings</p>
+                    <h2 className="font-display text-2xl italic text-navy">
+                      {franchiseHits.length} franchise{franchiseHits.length === 1 ? '' : 's'} matched
+                    </h2>
+                  </div>
+                  <Link href="/rankings" className="bb-link text-sm">All rankings -&gt;</Link>
                 </div>
-              ))}
-            </div>
+                <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                  {franchiseHits.map((hit) => (
+                    <FranchiseHitCard key={`${hit.league}-${hit.team.id}`} hit={hit} />
+                  ))}
+                </ul>
+              </section>
+            )}
+
+            {results.length > 0 && (
+              <>
+                <div className="mb-6 flex flex-wrap items-end justify-between gap-3 border-b border-navy/15 pb-3">
+                  <div>
+                    <h2 className="font-display text-3xl italic text-navy">{results.length} article{results.length === 1 ? '' : 's'}</h2>
+                    <p className="mt-1 text-sm text-charcoal/70">
+                      Ranked by title, dek, tags, sport, and recency.
+                    </p>
+                  </div>
+                  <Link href="/articles" className="bb-link text-sm">Browse archive -&gt;</Link>
+                </div>
+                <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                  {results.map((result) => (
+                    <div key={result.article.slug}>
+                      <ArticleCard article={result.article} />
+                      <p className="mt-2 font-mono text-[10px] uppercase tracking-[0.18em] text-navy/50">
+                        Match: {result.matchedFields.join(', ')}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
           </>
         )}
       </section>
@@ -136,6 +166,43 @@ export default async function SearchPage({ searchParams }: Props) {
 function normalizeSport(value: string | undefined): SportSlug | 'all' {
   const allowed = new Set(SPORTS.map((item) => item.value));
   return allowed.has(value as SportSlug | 'all') ? (value as SportSlug | 'all') : 'all';
+}
+
+function FranchiseHitCard({ hit }: { hit: FranchiseSearchHit }) {
+  const meta = sportMeta(hit.league as SportSlug);
+  const moved = hit.team.currentRank - hit.team.baseRank;
+  return (
+    <li>
+      <Link
+        href={`/rankings#${hit.league}`}
+        className="group block border border-navy/15 border-l-[3px] bg-white p-4 transition-colors hover:bg-bone-50"
+        style={{ borderLeftColor: meta.accent }}
+      >
+        <div className="flex items-center justify-between gap-3 text-xs">
+          <span className="font-mono font-black uppercase tracking-[0.18em]" style={{ color: meta.accent }}>
+            {hit.leagueLabel}
+          </span>
+          <span className="font-bold text-charcoal/70">
+            #{hit.team.currentRank}
+            {moved !== 0 && (
+              <span className={`ml-1 ${moved > 0 ? 'text-breaking' : 'text-emerald-700'}`}>
+                {moved > 0 ? '▼' : '▲'} {Math.abs(moved)}
+              </span>
+            )}
+          </span>
+        </div>
+        <p className="mt-2 font-serif text-xl font-bold leading-tight text-navy-900 group-hover:text-breaking">
+          {hit.team.city} {hit.team.name}
+        </p>
+        <p className="mt-2 line-clamp-2 text-sm leading-snug text-charcoal/80">
+          {hit.team.brad}
+        </p>
+        <p className="mt-3 text-[11px] font-black uppercase tracking-[0.18em] text-navy group-hover:text-breaking">
+          Open the ranking →
+        </p>
+      </Link>
+    </li>
+  );
 }
 
 function EmptyState({ title, text }: { title: string; text: string }) {

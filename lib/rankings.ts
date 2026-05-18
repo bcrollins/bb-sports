@@ -324,6 +324,58 @@ export function buildAllRankings(articles: Article[]): LeagueRanking[] {
   return LEAGUE_ORDER.map((l) => buildLeagueRanking(l, articles));
 }
 
+export type FranchiseSearchHit = {
+  league: RankingLeague;
+  leagueLabel: string;
+  team: RankedFranchise;
+  /** 0..1 — exact name match scores higher than partial. */
+  score: number;
+};
+
+/**
+ * Search the franchise universe by city, team name, or id. Surfaces on
+ * /search so that a reader who types "yankees" or "lakers" sees the
+ * franchise entry (with current rank + a /rankings deep link) alongside
+ * the article hits — not just articles that happen to mention the team.
+ */
+export function searchFranchises(
+  rawQuery: string,
+  articles: Article[],
+  limit = 6,
+): FranchiseSearchHit[] {
+  const query = rawQuery.trim().toLowerCase();
+  if (query.length < 2) return [];
+  const tokens = query.split(/\s+/).filter(Boolean);
+
+  const hits: FranchiseSearchHit[] = [];
+  for (const league of buildAllRankings(articles)) {
+    for (const team of league.ranked) {
+      const haystackParts = [team.name, team.city, team.id, `${team.city} ${team.name}`];
+      let score = 0;
+      for (const part of haystackParts) {
+        const lc = part.toLowerCase();
+        if (!lc) continue;
+        if (lc === query) score += 1;
+        if (lc.startsWith(query)) score += 0.7;
+        if (lc.includes(query)) score += 0.4;
+        for (const token of tokens) {
+          if (lc === token) score += 0.5;
+          else if (lc.startsWith(token)) score += 0.3;
+          else if (lc.includes(token)) score += 0.15;
+        }
+      }
+      if (score === 0) continue;
+      hits.push({
+        league: league.league,
+        leagueLabel: league.label,
+        team,
+        score: Math.round(score * 100) / 100,
+      });
+    }
+  }
+  return hits.sort((a, b) => b.score - a.score || a.team.currentRank - b.team.currentRank).slice(0, limit);
+}
+
 export type DemotionImpact = {
   league: RankingLeague;
   leagueLabel: string;
