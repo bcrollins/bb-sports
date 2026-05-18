@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import ArticleCard from '@/components/ArticleCard';
+import RankingsImpactPill from '@/components/RankingsImpactPill';
 import { getAllArticles, sportLabel, type SportSlug } from '@/lib/articles';
-import { readTrashedTeams, LEAGUE_LABELS, type RankingLeague } from '@/lib/rankings';
 
 export const metadata = {
   title: 'Articles',
@@ -106,24 +106,12 @@ export default async function ArticlesPage({ searchParams }: Props) {
           </div>
         ) : (
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filtered.map((a) => {
-              const trashed = readTrashedTeams(a);
-              return (
-                <div key={a.slug} className="relative">
-                  <ArticleCard article={a} />
-                  {trashed.length > 0 && (
-                    <p className="mt-2 inline-flex flex-wrap items-center gap-1.5 font-mono text-[10px] font-black uppercase tracking-[0.18em] text-breaking">
-                      <span aria-hidden="true">▼</span>
-                      Moved{' '}
-                      {trashed
-                        .map((t) => LEAGUE_LABELS[t.league as RankingLeague] ?? t.league.toUpperCase())
-                        .join(' · ')}{' '}
-                      ranking{trashed.length === 1 ? '' : 's'}
-                    </p>
-                  )}
-                </div>
-              );
-            })}
+            {filtered.map((a) => (
+              <div key={a.slug} className="relative">
+                <ArticleCard article={a} />
+                <RankingsImpactPill article={a} className="mt-2" />
+              </div>
+            ))}
           </div>
         )}
       </section>
