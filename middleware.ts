@@ -34,6 +34,7 @@ const GATE_BYPASS_EXACT = new Set<string>([
   '/newsletter/unsubscribe',
   '/robots.txt',
   '/sitemap.xml',
+  '/rss.xml',
   '/favicon.ico',
   '/og.png',
   '/icon.svg',

@@ -16,5 +16,6 @@ test('middleware bypasses gate for public read-only endpoints', async () => {
   assert.ok(source.includes("'/api/health'"));
   assert.ok(source.includes("'/api/rankings'"));
   assert.ok(source.includes("'/sitemap.xml'"));
+  assert.ok(source.includes("'/rss.xml'"));
   assert.ok(source.includes("'/robots.txt'"));
 });
