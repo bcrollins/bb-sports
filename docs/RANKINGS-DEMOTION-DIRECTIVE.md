@@ -87,21 +87,64 @@ message — fine for short news hits):
 <!-- bb:trash league=nhl team=leafs drop=4 -->
 ```
 
+## Surfaces
+
+The same demotion data renders across every reader-facing surface:
+
+| Surface | What appears |
+|---|---|
+| `/rankings` | The team's row drops, the demotion log inlines under the team's brad take, the "Recent movement" rail at the top surfaces the column. |
+| `/rankings/[league]` | Same row drop and inline log on the dedicated league page. |
+| `/rankings/[league]/[team]` | Full demotion history on the team's deep-link page (every column, newest first), sibling teams above/below in context, related sport coverage. |
+| `/articles/[slug]` | The column itself renders a red "This take moved the franchise rankings" callout above the share row with each demoted team. |
+| `/articles` | Each card whose article body contains a directive shows a `▼ Moved [LEAGUE] ranking` pill. |
+| Homepage | "Teams Brad just moved" rail, three newest demotions across all leagues. Articles in the Latest grid also carry the pill. |
+| `/search` | A query that matches a team name surfaces the franchise card with its current rank and link to the team page. |
+| `/admin/rankings` | Brad-facing control room: directive log (every published article touching the rankings, newest first), live league state with movement annotations, copy-pasteable cheat-sheet. |
+| `/api/rankings` | Public JSON, 5-minute cache, every team row carries `baseRank`, `currentRank`, `moved`, and the full `demotions[]` array. |
+| `/rss.xml` | The column appears in the feed like any other article. |
+
+## Disclosure
+
+Teams flagged with `bradTeam: true` in `lib/rankings.ts` carry a
+`⚑ Brad's team` pill on `/rankings` and a `⚑ Bias disclosed · Brad's
+team` badge on the team page. House rule #1 (bias disclosed, not
+hidden) is visible exactly where it matters — at the moment a reader
+encounters a team Brad openly roots for. The `/api/rankings` JSON
+exposes the same flag as a boolean on every row.
+
+Current flagged teams: Bears (NFL), Cubs (MLB), Panthers (NHL),
+Bulls (NBA). Manchester United (PL) and Florida Gators (NCAA) are
+disclosed in `/editorial-standards` and `/about` — those leagues
+aren't in the ranked set.
+
 ## Testing
 
-The directive engine is covered by `tests/rankings.test.ts` and tested
-against the live `/content/articles` set in CI builds (every published
-demotion must round-trip through `buildAllRankings()`). See:
+The directive engine is covered by `tests/rankings.test.ts` and the
+full corpus is checked by `tests/public-feeds.test.ts`. Every
+published demotion must round-trip through `buildAllRankings()`. See:
 
-- `tests/rankings.test.ts` — unit tests for the parser, clamp, compounding,
-  unknown-team safety, no-drop-below-25 invariant.
-- `tests/homepage.test.ts` — has one integration test that exercises the
-  demotion against the MLB baseline.
+- `tests/rankings.test.ts` — parser, clamp, compounding, unknown-team
+  safety, no-drop-below-25 invariant, `getRecentMovements`,
+  `searchFranchises`, the `bradTeam` flag set.
+- `tests/public-feeds.test.ts` — `/api/rankings` and `/rss.xml` route
+  handlers, including the bradTeam serialization contract.
+- `tests/homepage.test.ts` — one integration test against the MLB
+  baseline.
+- `tests/sitemap.test.ts` — team + league sitemap freshness logic.
+- `tests/team-pages.test.ts` — 100 team paths invariant.
+- `tests/league-pages.test.ts` — 4 league paths invariant + metadata.
 
 ## See also
 
-- `lib/rankings.ts` — baseline data + engine.
-- `app/(site)/rankings/page.tsx` — public page.
+- `lib/rankings.ts` — baseline data + engine (`buildLeagueRanking`,
+  `buildAllRankings`, `getRecentMovements`, `getDemotionImpacts`,
+  `searchFranchises`, `readTrashedTeams`).
+- `app/(site)/rankings/page.tsx` — public overview page.
+- `app/(site)/rankings/[league]/page.tsx` — per-league page.
+- `app/(site)/rankings/[league]/[team]/page.tsx` — per-team page.
 - `app/admin/rankings/page.tsx` — Brad-facing control room.
-- `app/(site)/articles/[slug]/page.tsx` — article-page "this take moved
-  the rankings" callout.
+- `app/(site)/articles/[slug]/page.tsx` — article-page "this take
+  moved the rankings" callout.
+- `app/api/rankings/route.ts` — public JSON endpoint.
+- `components/RankingsImpactPill.tsx` — shared "Moved X ranking" pill.
