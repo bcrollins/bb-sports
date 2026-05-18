@@ -3,6 +3,7 @@ import Link from 'next/link';
 import ArticleCard from '@/components/ArticleCard';
 import GeneratedMediaRail from '@/components/GeneratedMediaRail';
 import NewsletterSignup from '@/components/NewsletterSignup';
+import RankingsImpactPill from '@/components/RankingsImpactPill';
 import SportTag from '@/components/SportTag';
 import {
   getAllArticles,
@@ -205,7 +206,10 @@ export default async function HomePage() {
             {desk.latest.length > 0 ? (
               <div className="grid gap-6 sm:grid-cols-2">
                 {desk.latest.map((article) => (
-                  <ArticleCard key={article.slug} article={article} />
+                  <div key={article.slug}>
+                    <ArticleCard article={article} />
+                    <RankingsImpactPill article={article} className="mt-2" />
+                  </div>
                 ))}
               </div>
             ) : (
