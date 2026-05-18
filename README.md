@@ -81,6 +81,8 @@ A production-ready Next.js 14 site for Brad Benson's personal sports-media brand
 
 See `/docs/00-BRADLEY-STRATEGY-BRIEF.md` for the full strategy synthesis from Brad's voice memos and `/docs/BB-SPORTS-PERFECTION-ENGINE-v1.0.md` for the master operating directive.
 
+Release notes for every shipped change live in [`CHANGELOG.md`](CHANGELOG.md).
+
 ## Franchise rankings
 
 `/rankings` ranks Brad's top-25 in every league with full opinions on every team. The list is *not* a power-ranking algorithm — it's Brad's stated opinion, with two mechanisms:

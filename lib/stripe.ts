@@ -43,7 +43,7 @@ export function getStripeClient(env: EnvLike = process.env): Stripe | null {
     apiVersion: STRIPE_API_VERSION,
     appInfo: {
       name: 'BB Sports',
-      version: process.env.npm_package_version ?? '0.2.0',
+      version: process.env.npm_package_version ?? '0.3.0',
       url: process.env.NEXT_PUBLIC_SITE_URL ?? 'https://bbsports.fans',
     },
   });
