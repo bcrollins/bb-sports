@@ -50,7 +50,10 @@ export const metadata: Metadata = {
     follow: true,
     googleBot: { index: true, follow: true, 'max-image-preview': 'large' }
   },
-  alternates: { canonical: siteUrl },
+  alternates: {
+    canonical: siteUrl,
+    types: { 'application/rss+xml': `${siteUrl}/rss.xml` },
+  },
   icons: {
     icon: [
       { url: '/favicon.ico' },

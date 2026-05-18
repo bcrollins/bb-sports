@@ -67,6 +67,7 @@ A production-ready Next.js 14 site for Brad Benson's personal sports-media brand
 /api/contact            Tips / general contact endpoint (rate-limited)
 /api/donations          Stripe payment-link proxy + first-party supporter-interest ledger
 /sitemap.xml            Auto-generated
+/rss.xml                RSS 2.0 feed of latest 30 published articles
 /robots.txt             Disallows /admin and /api
 ```
 
