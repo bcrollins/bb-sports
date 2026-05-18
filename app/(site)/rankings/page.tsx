@@ -109,7 +109,7 @@ export default async function RankingsPage() {
           {LEAGUE_ORDER.map((l) => {
             const meta = sportMeta(l as SportSlug);
             return (
-              <li key={l}>
+              <li key={l} className="flex items-center">
                 <a
                   href={`#${l}`}
                   className="inline-flex min-h-[48px] items-center gap-2 border-b-2 border-transparent px-3 text-[11px] font-black uppercase tracking-[0.2em] text-navy transition-colors hover:text-breaking sm:px-4"
@@ -122,6 +122,13 @@ export default async function RankingsPage() {
                   />
                   {l.toUpperCase()}
                 </a>
+                <Link
+                  href={`/rankings/${l}`}
+                  className="ml-1 hidden text-[10px] font-black uppercase tracking-[0.18em] text-navy/55 underline decoration-breaking underline-offset-4 hover:text-breaking sm:inline-flex"
+                  aria-label={`Open dedicated ${l.toUpperCase()} rankings page`}
+                >
+                  page
+                </Link>
               </li>
             );
           })}
