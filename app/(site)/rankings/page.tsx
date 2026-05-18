@@ -6,10 +6,12 @@ import { sportMeta } from '@/lib/sport-meta';
 import NewsletterSignup from '@/components/NewsletterSignup';
 import {
   buildAllRankings,
+  getRecentMovements,
   LEAGUE_ORDER,
   type LeagueRanking,
   type RankedFranchise,
   type RankingLeague,
+  type RecentMovement,
 } from '@/lib/rankings';
 
 // Per-league silhouette + sport-meta accent. Used in both the sticky
@@ -38,15 +40,10 @@ export const metadata: Metadata = {
 export default async function RankingsPage() {
   const articles = await getAllArticles();
   const leagues = buildAllRankings(articles);
-  // Sort the "Recent movement" rail by the newest demotion's article date,
-  // not by drop size — the rail is labelled "Recent", readers expect chrono.
-  const allMovements = leagues
-    .flatMap((l) => l.movements.map((m) => ({ ...m, leagueLabel: l.label })))
-    .sort((a, b) => {
-      const aDate = a.demotions[0]?.date ?? '';
-      const bDate = b.demotions[0]?.date ?? '';
-      return +new Date(bDate) - +new Date(aDate);
-    });
+  // Recent movement rail shares its source-of-truth with the homepage rail
+  // via getRecentMovements (lib/rankings.ts). Same chronological sort, same
+  // shape — no inline transform, no drift between pages.
+  const recentMovements = getRecentMovements(articles, 6);
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://bbsports.fans';
   const itemListJsonLd = {
@@ -128,7 +125,7 @@ export default async function RankingsPage() {
         </ul>
       </nav>
 
-      {allMovements.length > 0 && (
+      {recentMovements.length > 0 && (
         <section className="border-b border-navy/15 bg-bone-50">
           <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
             <div className="bb-thin-rule mb-5 flex items-end gap-3 pb-3">
@@ -138,35 +135,9 @@ export default async function RankingsPage() {
               </h2>
             </div>
             <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {allMovements.slice(0, 6).map((m) => {
-                const top = m.demotions[0];
-                if (!top) return null;
-                return (
-                  <li key={`${m.league}-${m.id}`} className="border border-navy/15 bg-white p-4">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="font-mono font-black uppercase tracking-[0.18em] text-breaking">
-                        {m.leagueLabel}
-                      </span>
-                      <span className="font-bold text-charcoal/70">
-                        #{m.baseRank} → #{m.currentRank} ({m.moved > 0 ? '−' : '+'}
-                        {Math.abs(m.moved)})
-                      </span>
-                    </div>
-                    <p className="mt-2 font-serif text-xl font-bold text-navy-900">
-                      {m.city} {m.name}
-                    </p>
-                    <p className="mt-2 text-sm leading-snug text-charcoal/80">
-                      {top.reason || 'See linked column for the case.'}
-                    </p>
-                    <Link
-                      href={`/articles/${top.articleSlug}`}
-                      className="mt-3 inline-block text-[11px] font-black uppercase tracking-[0.18em] text-navy underline decoration-breaking underline-offset-4 hover:text-breaking"
-                    >
-                      Read the column →
-                    </Link>
-                  </li>
-                );
-              })}
+              {recentMovements.map((m) => (
+                <RecentMovementCard key={`${m.league}-${m.team.id}-${m.article.slug}`} movement={m} />
+              ))}
             </ul>
           </div>
         </section>
@@ -307,6 +278,36 @@ function FranchiseRow({ team, accent }: { team: RankedFranchise; accent: string 
           </div>
         )}
       </div>
+    </li>
+  );
+}
+
+function RecentMovementCard({ movement }: { movement: RecentMovement }) {
+  const meta = sportMeta(movement.league as SportSlug);
+  const moved = movement.team.currentRank - movement.team.baseRank;
+  return (
+    <li className="border border-navy/15 border-l-[3px] bg-white p-4" style={{ borderLeftColor: meta.accent }}>
+      <div className="flex items-center justify-between text-xs">
+        <span className="font-mono font-black uppercase tracking-[0.18em]" style={{ color: meta.accent }}>
+          {movement.leagueLabel}
+        </span>
+        <span className="font-bold text-charcoal/70">
+          #{movement.team.baseRank} → #{movement.team.currentRank}
+          {moved > 0 && <span className="ml-1 text-breaking">▼ {moved}</span>}
+        </span>
+      </div>
+      <p className="mt-2 font-serif text-xl font-bold text-navy-900">
+        {movement.team.city} {movement.team.name}
+      </p>
+      <p className="mt-2 text-sm leading-snug text-charcoal/80">
+        {movement.reason || 'See linked column for the case.'}
+      </p>
+      <Link
+        href={`/articles/${movement.article.slug}`}
+        className="mt-3 inline-block text-[11px] font-black uppercase tracking-[0.18em] text-navy underline decoration-breaking underline-offset-4 hover:text-breaking"
+      >
+        Read the column →
+      </Link>
     </li>
   );
 }
