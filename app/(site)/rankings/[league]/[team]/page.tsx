@@ -99,8 +99,43 @@ export default async function TeamPage({ params }: Props) {
     .filter((a) => a.sport === sportSlug && !demotionSlugs.has(a.slug))
     .slice(0, 3);
 
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://bbsports.fans';
+  const teamUrl = `${siteUrl}/rankings/${league}/${team}`;
+  const sportsTeamJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'SportsTeam',
+    name: `${row.city} ${row.name}`,
+    sport: LEAGUE_LABELS[league],
+    url: teamUrl,
+    location: { '@type': 'Place', name: row.city },
+    description: row.brad,
+  };
+  const breadcrumbJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Home', item: `${siteUrl}/` },
+      { '@type': 'ListItem', position: 2, name: 'Franchise rankings', item: `${siteUrl}/rankings` },
+      {
+        '@type': 'ListItem',
+        position: 3,
+        name: LEAGUE_LABELS[league],
+        item: `${siteUrl}/rankings#${league}`,
+      },
+      { '@type': 'ListItem', position: 4, name: `${row.city} ${row.name}`, item: teamUrl },
+    ],
+  };
+
   return (
     <article className="bg-bone">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(sportsTeamJsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
+      />
       <header className="relative isolate overflow-hidden bg-navy text-bone">
         <div className="absolute inset-0 opacity-20">
           <Image
