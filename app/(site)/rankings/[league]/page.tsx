@@ -20,7 +20,6 @@ import {
   buildLeagueRanking,
   LEAGUE_LABELS,
   LEAGUE_ORDER,
-  type LeagueRanking,
   type RankedFranchise,
   type RankingLeague,
 } from '@/lib/rankings';
@@ -254,6 +253,3 @@ function FranchiseRow({ team, accent }: { team: RankedFranchise; accent: string 
   );
 }
 
-// Avoid unused-import warnings — buildLeagueRanking is used above; LeagueRanking
-// type re-exported for consumers that import this page's helpers.
-export type { LeagueRanking };

@@ -10,11 +10,11 @@
  */
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { NextRequest } from 'next/server';
 import { GET as rssGET } from '../app/rss.xml/route';
 import { GET as rankingsGET } from '../app/api/rankings/route';
 
-function nextRequest(url: string): import('next/server').NextRequest {
-  const { NextRequest } = require('next/server'); // eslint-disable-line @typescript-eslint/no-require-imports
+function nextRequest(url: string): NextRequest {
   return new NextRequest(new Request(url));
 }
 
