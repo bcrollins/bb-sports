@@ -36,6 +36,15 @@ test('sitemap renders all 100 team pages (4 leagues × 25 teams)', async () => {
   assert.equal(teamEntries.length, 100, 'exactly 100 team URLs');
 });
 
+test('sitemap renders the four per-league rankings pages', async () => {
+  const entries = await sitemap();
+  const leagueEntries = entries.filter((e) => /\/rankings\/[a-z]+$/.test(e.url));
+  assert.equal(leagueEntries.length, 4);
+  for (const slug of ['nfl', 'mlb', 'nhl', 'nba']) {
+    assert.ok(leagueEntries.some((e) => e.url.endsWith(`/rankings/${slug}`)), `${slug} league page`);
+  }
+});
+
 test('demoted team pages get a priority bump in the sitemap', async () => {
   const entries = await sitemap();
   // Yankees were demoted by content/articles/yankees-window-just-slammed.md

@@ -35,12 +35,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.8
   }));
 
-  // 100 franchise pages — every team in every league. lastModified
-  // reflects the most-recent demotion on that specific team if it has
-  // one (so a team that was just trashed in a column shows fresh to
-  // Google); otherwise falls back to the most-recent article in that
-  // league so the page still has a meaningful freshness signal.
-  const teamRoutes: MetadataRoute.Sitemap = LEAGUE_ORDER.flatMap((league) => {
+  // 4 league pages + 100 franchise pages. Team lastModified reflects
+  // the most-recent demotion on that specific team if it has one (so a
+  // team just trashed in a column shows fresh to Google); otherwise
+  // falls back to the most-recent article in that league.
+  const leagueRoutes: MetadataRoute.Sitemap = [];
+  const teamRoutes: MetadataRoute.Sitemap = [];
+
+  for (const league of LEAGUE_ORDER) {
     const ranking = buildLeagueRanking(league, articles);
     const leagueLatestArticle = articles
       .filter((a) => a.sport === league)
@@ -48,19 +50,30 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         const d = new Date(a.date);
         return !latest || d > latest ? d : latest;
       }, null);
-    return ranking.ranked.map((team) => {
+    const leagueLatestDemotion = ranking.ranked
+      .flatMap((t) => t.demotions.map((d) => new Date(d.date)))
+      .reduce<Date | null>((latest, d) => (!latest || d > latest ? d : latest), null);
+
+    leagueRoutes.push({
+      url: `${baseUrl}/rankings/${league}`,
+      lastModified: leagueLatestDemotion ?? leagueLatestArticle ?? new Date(),
+      changeFrequency: 'weekly',
+      priority: 0.75,
+    });
+
+    for (const team of ranking.ranked) {
       const teamLatestDemotion = team.demotions[0]?.date
         ? new Date(team.demotions[0]!.date)
         : null;
       const lastModified = teamLatestDemotion ?? leagueLatestArticle ?? new Date();
-      return {
+      teamRoutes.push({
         url: `${baseUrl}/rankings/${league}/${team.id}`,
         lastModified,
-        changeFrequency: 'weekly' as const,
+        changeFrequency: 'weekly',
         priority: teamLatestDemotion ? 0.7 : 0.6,
-      };
-    });
-  });
+      });
+    }
+  }
 
-  return [...staticRoutes, ...articleRoutes, ...teamRoutes];
+  return [...staticRoutes, ...articleRoutes, ...leagueRoutes, ...teamRoutes];
 }
