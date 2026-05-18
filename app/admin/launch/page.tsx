@@ -1,6 +1,8 @@
 import Link from 'next/link';
 import { CheckCircle2, CircleAlert, CircleDashed } from 'lucide-react';
-import { getAllArticles, getAudienceSnapshot, getCommentModerationCounts } from '@/lib/queries';
+import { getAudienceSnapshot, getCommentModerationCounts } from '@/lib/queries';
+import { getAllArticles } from '@/lib/articles';
+import { buildAllRankings, readTrashedTeams } from '@/lib/rankings';
 
 export const dynamic = 'force-dynamic';
 
@@ -26,6 +28,14 @@ export default async function LaunchPage() {
   const published = articles.length;
   const aiLabelOk = articles.every((a) => !a.aiAssisted || Boolean(a.bradsTake));
   const commentsUnderControl = Boolean(process.env.DATABASE_URL);
+  // Franchise rankings sanity: baseline is wired (4 leagues × 25 teams)
+  // and at least one published demotion directive exercises the engine.
+  const rankings = buildAllRankings(articles);
+  const rankingsBaselineOk = rankings.length === 4 && rankings.every((r) => r.ranked.length === 25);
+  const totalDirectives = articles.reduce(
+    (sum, a) => sum + readTrashedTeams(a).length,
+    0,
+  );
 
   const checks = [
     {
@@ -57,6 +67,14 @@ export default async function LaunchPage() {
       ok: true,
       detail: 'Site wall is active before public launch.',
       href: '/admin/access-wall',
+    },
+    {
+      label: 'Franchise rankings engine',
+      ok: rankingsBaselineOk && totalDirectives >= 1,
+      detail: rankingsBaselineOk
+        ? `Baseline loaded: 4 leagues × 25 teams. ${totalDirectives} demotion directive${totalDirectives === 1 ? '' : 's'} live across published articles.`
+        : 'Baseline ranking failed to load 4 leagues × 25 teams.',
+      href: '/admin/rankings',
     },
   ];
 
