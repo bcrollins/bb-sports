@@ -89,7 +89,10 @@ sections · #30 homepage rankings rail · #31 sort + scope tests ·
 v0.3.0 bump · #46 Brad's-team disclosure badge · #47 sitemap
 freshness + JSON alternate · #48 sitemap tests · #49 shared
 RankingsImpactPill on homepage Latest · #50 per-league pages
-(`/rankings/[league]`) · #51 footer + CHANGELOG sync.
+(`/rankings/[league]`) · #51 footer + CHANGELOG sync · #52 league-page
+generator tests · #53 homepage league-leader tease · #54 bradTeam API
+test · #55 demotion directive spec refresh · #56 metadata.keywords
+expansion · #57 require-shim cleanup · #58 final CHANGELOG sync.
 
 ## [0.2.0] — pre-launch
 
