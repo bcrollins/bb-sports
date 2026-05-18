@@ -220,6 +220,7 @@ function LeagueBlock({ league }: { league: LeagueRanking }) {
 
 function FranchiseRow({ team, accent }: { team: RankedFranchise; accent: string }) {
   const moved = team.currentRank - team.baseRank;
+  const teamHref = `/rankings/${team.league}/${team.id}`;
   return (
     <li
       className="grid gap-3 border border-navy/15 border-l-[3px] bg-white p-4 sm:grid-cols-[80px_minmax(0,1fr)] sm:p-5"
@@ -242,9 +243,12 @@ function FranchiseRow({ team, accent }: { team: RankedFranchise; accent: string 
       </div>
       <div>
         <div className="flex items-baseline flex-wrap gap-x-2">
-          <span className="font-serif text-xl font-bold text-navy-900 sm:text-2xl">
+          <Link
+            href={teamHref}
+            className="font-serif text-xl font-bold text-navy-900 hover:text-breaking sm:text-2xl"
+          >
             {team.city} {team.name}
-          </span>
+          </Link>
           {moved > 0 && (
             <span className="text-[10px] font-black uppercase tracking-[0.18em] text-breaking">
               Demoted from #{team.baseRank}
@@ -277,6 +281,12 @@ function FranchiseRow({ team, accent }: { team: RankedFranchise; accent: string 
             </ul>
           </div>
         )}
+        <Link
+          href={teamHref}
+          className="mt-3 inline-flex items-center text-[11px] font-black uppercase tracking-[0.18em] text-navy hover:text-breaking"
+        >
+          Open team page →
+        </Link>
       </div>
     </li>
   );
