@@ -249,6 +249,12 @@ function FranchiseRow({ team, accent }: { team: RankedFranchise; accent: string 
           >
             {team.city} {team.name}
           </Link>
+          {team.bradTeam && (
+            <span className="inline-flex items-center gap-1 rounded-sm border border-navy/25 bg-bone-50 px-1.5 py-0.5 text-[10px] font-black uppercase tracking-[0.18em] text-navy" title="House rule #1: bias disclosed.">
+              <span aria-hidden="true">⚑</span>
+              Brad&rsquo;s team
+            </span>
+          )}
           {moved > 0 && (
             <span className="text-[10px] font-black uppercase tracking-[0.18em] text-breaking">
               Demoted from #{team.baseRank}

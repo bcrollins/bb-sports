@@ -38,6 +38,7 @@ function serialize(ranking: LeagueRanking) {
       city: t.city,
       name: t.name,
       brad: t.brad,
+      bradTeam: Boolean(t.bradTeam),
       baseRank: t.baseRank,
       currentRank: t.currentRank,
       moved: t.currentRank - t.baseRank,

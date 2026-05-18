@@ -31,6 +31,12 @@ export type FranchiseBase = {
   city: string;
   /** Brad's one-line take, baseline. */
   brad: string;
+  /**
+   * True when Brad is openly a fan of this franchise. Surfaces a "Bias
+   * disclosed: Brad's team" badge anywhere the team appears. House rule
+   * #1: bias is disclosed, not hidden.
+   */
+  bradTeam?: boolean;
 };
 
 export type Demotion = {
@@ -64,7 +70,7 @@ export type LeagueRanking = {
  * page next to the team.
  */
 const NFL_BASELINE: FranchiseBase[] = [
-  { id: 'bears',       city: 'Chicago',       name: 'Bears',       brad: "Best chance the franchise has had in decades. Yes I'm a homer. Yes the case stands up." },
+  { id: 'bears',       city: 'Chicago',       name: 'Bears',       brad: "Best chance the franchise has had in decades. Yes I'm a homer. Yes the case stands up.", bradTeam: true },
   { id: 'chiefs',      city: 'Kansas City',   name: 'Chiefs',      brad: 'Until somebody actually beats them in a January game where it counts, they sit here.' },
   { id: 'eagles',      city: 'Philadelphia',  name: 'Eagles',      brad: 'O-line, D-line, real quarterback. The formula nobody else has all three of.' },
   { id: 'lions',       city: 'Detroit',       name: 'Lions',       brad: 'Most fun roster in the league. Defensive injuries are the only thing keeping them out of the top 2.' },
@@ -99,7 +105,7 @@ const MLB_BASELINE: FranchiseBase[] = [
   { id: 'orioles',     city: 'Baltimore',     name: 'Orioles',     brad: 'Cheapest, deepest, most exciting young core in baseball. Ownership has to actually spend now.' },
   { id: 'astros',      city: 'Houston',       name: 'Astros',      brad: "Window is open until Altuve's body says it isn't. Pitching depth is the test." },
   { id: 'guardians',   city: 'Cleveland',     name: 'Guardians',   brad: 'Best development pipeline outside of Atlanta. Ownership ceiling is the asterisk.' },
-  { id: 'cubs',        city: 'Chicago',       name: 'Cubs',        brad: 'Yes, full disclosure, fan. PCA changes the franchise outlook. They need one bat and one arm.' },
+  { id: 'cubs',        city: 'Chicago',       name: 'Cubs',        brad: 'Yes, full disclosure, fan. PCA changes the franchise outlook. They need one bat and one arm.', bradTeam: true },
   { id: 'brewers',     city: 'Milwaukee',     name: 'Brewers',     brad: 'Win 92 every year, lose in the wild card every year. The pattern has to break eventually.' },
   { id: 'mariners',    city: 'Seattle',       name: 'Mariners',    brad: "Best rotation in the AL. Hitting still feels like it's stuck in 2012." },
   { id: 'mets',        city: 'New York',      name: 'Mets',        brad: 'Cohen money plus a real baseball ops department is finally producing real baseball results.' },
@@ -120,7 +126,7 @@ const MLB_BASELINE: FranchiseBase[] = [
 ];
 
 const NHL_BASELINE: FranchiseBase[] = [
-  { id: 'panthers',    city: 'Florida',       name: 'Panthers',    brad: 'Repeat Cup champions. Until somebody knocks them off, they sit at the top. (Yes I am a fan.)' },
+  { id: 'panthers',    city: 'Florida',       name: 'Panthers',    brad: 'Repeat Cup champions. Until somebody knocks them off, they sit at the top. (Yes I am a fan.)', bradTeam: true },
   { id: 'oilers',      city: 'Edmonton',      name: 'Oilers',      brad: 'McDavid + Draisaitl is the most lethal duo in the sport. Goaltending is finally not a five-alarm fire.' },
   { id: 'avalanche',   city: 'Colorado',      name: 'Avalanche',   brad: 'MacKinnon-Makar core. Defensive structure is the swing variable in any series.' },
   { id: 'stars',       city: 'Dallas',        name: 'Stars',       brad: 'Most complete roster top to bottom outside the top 2. Window stays open another two years.' },
@@ -167,7 +173,7 @@ const NBA_BASELINE: FranchiseBase[] = [
   { id: 'pistons',     city: 'Detroit',       name: 'Pistons',     brad: 'Cunningham extension worth it. The supporting cast has to actually contribute.' },
   { id: 'spurs',       city: 'San Antonio',   name: 'Spurs',       brad: 'Wembanyama plus Pop is must-watch. Front office has to give him a guard.' },
   { id: 'hawks',       city: 'Atlanta',       name: 'Hawks',       brad: 'Trae plus Risacher is fine. The defensive identity is the real problem.' },
-  { id: 'bulls',       city: 'Chicago',       name: 'Bulls',       brad: 'Yes I\'m a fan and yes I have to put them here. Half-rebuilds with no plan get you 20th.' },
+  { id: 'bulls',       city: 'Chicago',       name: 'Bulls',       brad: 'Yes I\'m a fan and yes I have to put them here. Half-rebuilds with no plan get you 20th.', bradTeam: true },
   { id: 'raptors',     city: 'Toronto',       name: 'Raptors',     brad: 'Barnes extension is the bet. Everything else is a question mark.' },
   { id: 'grizzlies',   city: 'Memphis',       name: 'Grizzlies',   brad: 'Healthy Ja and Jaren is a top-6 team. Injuries decided last year.' },
   { id: 'blazers',     city: 'Portland',      name: 'Trail Blazers',brad: 'Lottery year. The kids are intriguing — kids alone do not win games.' },
