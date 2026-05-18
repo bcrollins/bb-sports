@@ -35,15 +35,32 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.8
   }));
 
-  // 100 franchise pages — every team in every league.
-  const teamRoutes: MetadataRoute.Sitemap = LEAGUE_ORDER.flatMap((league) =>
-    buildLeagueRanking(league, []).ranked.map((team) => ({
-      url: `${baseUrl}/rankings/${league}/${team.id}`,
-      lastModified: new Date(),
-      changeFrequency: 'weekly' as const,
-      priority: 0.6,
-    })),
-  );
+  // 100 franchise pages — every team in every league. lastModified
+  // reflects the most-recent demotion on that specific team if it has
+  // one (so a team that was just trashed in a column shows fresh to
+  // Google); otherwise falls back to the most-recent article in that
+  // league so the page still has a meaningful freshness signal.
+  const teamRoutes: MetadataRoute.Sitemap = LEAGUE_ORDER.flatMap((league) => {
+    const ranking = buildLeagueRanking(league, articles);
+    const leagueLatestArticle = articles
+      .filter((a) => a.sport === league)
+      .reduce<Date | null>((latest, a) => {
+        const d = new Date(a.date);
+        return !latest || d > latest ? d : latest;
+      }, null);
+    return ranking.ranked.map((team) => {
+      const teamLatestDemotion = team.demotions[0]?.date
+        ? new Date(team.demotions[0]!.date)
+        : null;
+      const lastModified = teamLatestDemotion ?? leagueLatestArticle ?? new Date();
+      return {
+        url: `${baseUrl}/rankings/${league}/${team.id}`,
+        lastModified,
+        changeFrequency: 'weekly' as const,
+        priority: teamLatestDemotion ? 0.7 : 0.6,
+      };
+    });
+  });
 
   return [...staticRoutes, ...articleRoutes, ...teamRoutes];
 }
