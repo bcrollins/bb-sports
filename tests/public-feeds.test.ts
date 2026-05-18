@@ -105,3 +105,29 @@ test('/api/rankings payload exposes baseline + currentRank + demotions', async (
   assert.equal(typeof yankees!.currentRank, 'number');
   assert.equal(yankees!.moved, yankees!.currentRank - yankees!.baseRank);
 });
+
+test('/api/rankings exposes the bradTeam disclosure flag on every team row', async () => {
+  const res = await rankingsGET(nextRequest('https://example.com/api/rankings'));
+  const payload = (await res.json()) as {
+    leagues: Array<{ league: string; teams: Array<{ id: string; bradTeam: boolean }> }>;
+  };
+
+  // Every row must have an explicit boolean (not undefined) so consumers
+  // can render a disclosure pill without null-checking the field.
+  for (const league of payload.leagues) {
+    for (const team of league.teams) {
+      assert.equal(typeof team.bradTeam, 'boolean', `${league.league}/${team.id} has boolean bradTeam`);
+    }
+  }
+
+  // Brad's four major-league franchises specifically.
+  const flagged: Record<string, string[]> = {};
+  for (const league of payload.leagues) {
+    const ids = league.teams.filter((t) => t.bradTeam).map((t) => t.id);
+    if (ids.length) flagged[league.league] = ids;
+  }
+  assert.deepEqual(flagged.nfl, ['bears']);
+  assert.deepEqual(flagged.mlb, ['cubs']);
+  assert.deepEqual(flagged.nhl, ['panthers']);
+  assert.deepEqual(flagged.nba, ['bulls']);
+});
