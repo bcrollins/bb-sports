@@ -3,6 +3,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { getAllArticles, formatDate, type SportSlug } from '@/lib/articles';
 import { sportMeta } from '@/lib/sport-meta';
+import NewsletterSignup from '@/components/NewsletterSignup';
 import {
   buildAllRankings,
   LEAGUE_ORDER,
@@ -178,15 +179,27 @@ export default async function RankingsPage() {
       </div>
 
       <section className="border-t border-navy/15 bg-bone-50">
-        <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6">
-          <h2 className="font-display text-2xl italic uppercase text-navy-900">How the list moves</h2>
-          <p className="mt-3 text-charcoal/85 leading-relaxed">
-            Baseline is my opinion the day this page shipped. When I publish a
-            column that trashes a team on the list, that team drops a few slots and
-            the reason — with a link to the column — appears next to its name. No
-            secret algorithm. No power-ranking committee. The list is the receipt
-            of every take I&rsquo;ve published.
-          </p>
+        <div className="mx-auto grid max-w-6xl gap-8 px-4 py-12 sm:px-6 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
+          <div>
+            <h2 className="font-display text-2xl italic uppercase text-navy-900">How the list moves</h2>
+            <p className="mt-3 text-charcoal/85 leading-relaxed">
+              Baseline is my opinion the day this page shipped. When I publish a
+              column that trashes a team on the list, that team drops a few slots and
+              the reason — with a link to the column — appears next to its name. No
+              secret algorithm. No power-ranking committee. The list is the receipt
+              of every take I&rsquo;ve published.
+            </p>
+            <p className="mt-3 text-charcoal/85 leading-relaxed">
+              Want the machine-readable version? The same data is on{' '}
+              <Link href="/api/rankings" className="font-bold text-navy underline decoration-breaking underline-offset-4 hover:text-breaking">
+                /api/rankings
+              </Link>
+              {' '}for the newsletter generator and anyone else who wants to embed it.
+            </p>
+          </div>
+          <aside>
+            <NewsletterSignup variant="block" />
+          </aside>
         </div>
       </section>
     </div>
