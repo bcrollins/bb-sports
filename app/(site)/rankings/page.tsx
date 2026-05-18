@@ -29,7 +29,10 @@ export const metadata: Metadata = {
   title: 'Franchise rankings',
   description:
     "Brad Benson's top-25 franchise rankings across the NFL, MLB, NHL and NBA. Bias turned all the way up — when a team gets trashed in a column, the ranking moves and the reason is on the page.",
-  alternates: { canonical: '/rankings' },
+  alternates: {
+    canonical: '/rankings',
+    types: { 'application/json': '/api/rankings' },
+  },
   openGraph: {
     title: 'BB Sports — Franchise rankings',
     description:
