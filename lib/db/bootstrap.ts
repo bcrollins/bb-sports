@@ -263,6 +263,7 @@ async function bootstrap(): Promise<void> {
   const defaults: Record<string, unknown> = {
     breaking_ticker: [
       { sport: 'NFL', text: "Bears 24, Vikings 17 — Caleb's first real road win." },
+      { sport: 'MLB', text: 'Yankees just dropped 8 slots on the franchise rankings. Read why.' },
       { sport: 'CFB', text: "Florida-Georgia preview drops next month. Yes, I'm biased." },
       { sport: 'NHL', text: 'Wild-Avs Game 1 was a 9–6 firework show.' },
       { sport: 'PL', text: "Man United's 'rebuild' is the longest-running take from Brad." },

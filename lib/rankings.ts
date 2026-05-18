@@ -376,6 +376,46 @@ export function searchFranchises(
   return hits.sort((a, b) => b.score - a.score || a.team.currentRank - b.team.currentRank).slice(0, limit);
 }
 
+export type RecentMovement = {
+  league: RankingLeague;
+  leagueLabel: string;
+  team: RankedFranchise;
+  /** Top (most-recent) demotion's article slug / title / date. */
+  article: { slug: string; title: string; date: string };
+  /** Top (most-recent) demotion's reason. */
+  reason: string;
+};
+
+/**
+ * Surface the most-recent rankings movements across all four leagues,
+ * newest first by article date. Used by the homepage rail, the
+ * /rankings "Recent movement" rail, and the newsletter generator.
+ *
+ * Lives in lib (not in any page) so a single source of truth defines
+ * "what does Recent Movement mean" — sort key, fallback for missing
+ * top demotion, what the consumer sees.
+ */
+export function getRecentMovements(articles: Article[], limit = 6): RecentMovement[] {
+  const leagues = buildAllRankings(articles);
+  const out: RecentMovement[] = [];
+  for (const league of leagues) {
+    for (const team of league.movements) {
+      const top = team.demotions[0];
+      if (!top) continue;
+      out.push({
+        league: league.league,
+        leagueLabel: league.label,
+        team,
+        article: { slug: top.articleSlug, title: top.articleTitle, date: top.date },
+        reason: top.reason,
+      });
+    }
+  }
+  return out
+    .sort((a, b) => +new Date(b.article.date) - +new Date(a.article.date))
+    .slice(0, limit);
+}
+
 export type DemotionImpact = {
   league: RankingLeague;
   leagueLabel: string;

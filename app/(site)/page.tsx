@@ -12,7 +12,7 @@ import {
 } from '@/lib/articles';
 import { buildHomepageDesk } from '@/lib/homepage';
 import { getConfig } from '@/lib/queries';
-import { buildAllRankings, type LeagueRanking, type RankedFranchise } from '@/lib/rankings';
+import { getRecentMovements, type RecentMovement } from '@/lib/rankings';
 import { sportMeta } from '@/lib/sport-meta';
 
 export const revalidate = 60;
@@ -37,7 +37,7 @@ export default async function HomePage() {
   ]);
   const desk = buildHomepageDesk(articles);
   const hero = normalizeHero(heroConfig);
-  const recentMovements = pickRecentMovements(articles);
+  const recentMovements = getRecentMovements(articles, 3);
 
   return (
     <div className="min-h-[60vh] bg-bone">
@@ -352,42 +352,7 @@ function normalizeHero(config: HomepageHeroConfig | null) {
   };
 }
 
-type HomepageMovement = {
-  league: LeagueRanking['league'];
-  leagueLabel: string;
-  team: RankedFranchise;
-  article: { slug: string; title: string; date: string };
-  reason: string;
-};
-
-/**
- * Surface the most recent rankings movements (by article date) across all
- * four leagues so the homepage can show "teams Brad just moved" without
- * the reader having to navigate to /rankings.
- *
- * Limit is 3 (one homepage rail row on lg). Returns [] when no team has
- * been demoted yet — caller hides the rail.
- */
-function pickRecentMovements(articles: Article[]): HomepageMovement[] {
-  const leagues = buildAllRankings(articles);
-  const out: HomepageMovement[] = [];
-  for (const league of leagues) {
-    for (const team of league.movements) {
-      const top = team.demotions[0];
-      if (!top) continue;
-      out.push({
-        league: league.league,
-        leagueLabel: league.label,
-        team,
-        article: { slug: top.articleSlug, title: top.articleTitle, date: top.date },
-        reason: top.reason,
-      });
-    }
-  }
-  return out.sort((a, b) => +new Date(b.article.date) - +new Date(a.article.date)).slice(0, 3);
-}
-
-function MovementCard({ movement }: { movement: HomepageMovement }) {
+function MovementCard({ movement }: { movement: RecentMovement }) {
   const meta = sportMeta(movement.league as SportSlug);
   const moved = movement.team.currentRank - movement.team.baseRank;
   return (
