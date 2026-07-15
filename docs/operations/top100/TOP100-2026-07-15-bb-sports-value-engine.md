@@ -459,7 +459,7 @@ Verification: Multi-browser test; revoke/replay; keyboard/mobile sweep; audit ev
 Customizability added: Session names and “sign out everywhere”; security details fixed.
 Surfaces: web
 Risk & rollback: Accidental self-revocation; require confirmation and preserve login/recovery.
-Status: Pending
+Status: Complete — /admin/account/sessions lists safe device/network summaries, revoke one/current/others, audit events, no raw IP/token; nav Sessions entry.
 
 #31 — Make comment availability follow the canonical catalog
 Area: Comments data integrity Anchor: publishing-reliability benchmark

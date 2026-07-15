@@ -19,6 +19,7 @@ import {
   Radio,
   Rocket,
   Settings,
+  Shield,
   Users,
 } from 'lucide-react';
 import { getCurrentUser } from '@/lib/auth';
@@ -41,6 +42,7 @@ const NAV = [
   { href: '/admin/catalog', label: 'Catalog', icon: ListOrdered },
   { href: '/admin/rankings', label: 'Rankings', icon: ListOrdered },
   { href: '/admin/site', label: 'Site', icon: Settings },
+  { href: '/admin/account/sessions', label: 'Sessions', icon: Shield },
   { href: '/admin/access-wall', label: 'Access wall', icon: LockKeyhole },
   { href: '/admin/audit', label: 'Audit', icon: LockKeyhole },
   { href: '/admin/launch', label: 'Launch', icon: Rocket },
