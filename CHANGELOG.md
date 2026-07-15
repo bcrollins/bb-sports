@@ -15,6 +15,7 @@ All notable changes to BB Sports. Format loosely follows
 
 ### Added
 
+- IP/UA retention policy with dry-run SQL (`lib/ip-retention.ts`, `docs/operations/IP-RETENTION.md`).
 - Crash-safe local draft autosave in article editor (browser only, never publishes).
 - Audience analytics privacy posture banner; backup/restore operator runbook.
 - Admin citation extract/probe API (SSRF-safe, no body copy).
