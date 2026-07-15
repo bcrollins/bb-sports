@@ -8,6 +8,7 @@ import {
   getRecentMovements,
   LEAGUE_ORDER,
   readTrashedTeams,
+  validateTrashDirective,
   searchFranchises,
 } from '../lib/rankings';
 
@@ -270,4 +271,10 @@ test('getRecentMovements respects the limit and returns [] when no demotions exi
   const out = getRecentMovements(heavy, 4);
   assert.equal(out.length, 1);
   assert.equal(out[0]?.article.slug, 'hit-5', 'newest article wins');
+});
+
+test('validateTrashDirective rejects unknown league/team', () => {
+  assert.equal(validateTrashDirective({ league: 'cricket', team: 'bears', reason: 'x' }).ok, false);
+  assert.equal(validateTrashDirective({ league: 'nfl', team: 'nope', reason: 'x' }).ok, false);
+  assert.equal(validateTrashDirective({ league: 'nfl', team: 'bears', reason: 'real case' }).ok, true);
 });

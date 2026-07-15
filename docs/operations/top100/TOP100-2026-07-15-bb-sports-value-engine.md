@@ -935,7 +935,7 @@ Verification: Parser fuzz/bounds/duplicate tests; preview/publish transaction; l
 Customizability added: Brad edits drop/reason in structured control and previews full order.
 Surfaces: web
 Risk & rollback: Wrong movement damages editorial trust; event-sourced recomputation and revert event.
-Status: Pending
+Status: Complete — validateTrashDirective requires known league/team, clamps drop 1–10; invalid directives never apply. ranking_events event store remains future.
 
 #65 — Show rankings provenance and freshness instead of “live”
 Area: Rankings UX Anchor: sports-newsroom benchmark
