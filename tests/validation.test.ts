@@ -70,7 +70,7 @@ test('analytics payloads are first-party and privacy-filtered', () => {
 
 test('access wall update requires a durable password length', () => {
   assert.equal(accessWallUpdateSchema.safeParse({ password: 'short' }).success, false);
-  assert.equal(accessWallUpdateSchema.safeParse({ password: 'calebwilliamsMVP' }).success, true);
+  assert.equal(accessWallUpdateSchema.safeParse({ password: 'a-durable-wall-password' }).success, true);
 });
 
 test('article payload blocks publish when AI-assisted piece lacks Brad take', () => {

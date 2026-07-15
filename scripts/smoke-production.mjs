@@ -7,7 +7,8 @@ const REQUIRED_SEARCH_TEXT =
 const ARTICLE_SLUG = process.env.BB_SMOKE_ARTICLE_SLUG || 'why-the-bears-finally-have-a-real-shot';
 const ARTICLE_TITLE =
   process.env.BB_SMOKE_ARTICLE_TITLE || 'Why the Bears finally have a real shot';
-const GATE_COOKIE = process.env.BB_PRODUCTION_GATE_COOKIE || 'bb_gate=1';
+let gateCookie = process.env.BB_PRODUCTION_GATE_COOKIE || '';
+const GATE_PASSWORD = process.env.BB_PRODUCTION_GATE_PASSWORD || process.env.GATE_PASSWORD || '';
 const TIMEOUT_MS = Number(process.env.BB_SMOKE_TIMEOUT_MS || 12_000);
 const SMOKE_IP =
   process.env.BB_SMOKE_IP || `198.51.100.${Math.max(1, Math.floor(Date.now() / 1000) % 254)}`;
@@ -28,6 +29,7 @@ async function main() {
 
   await runCheck('health endpoint', checkHealth);
   await runCheck('soft-launch gate redirect', checkGateRedirect);
+  await runCheck('signed access-wall credential', establishGateCookie);
   await runCheck('gated search page', checkGatedSearchPage);
   await runCheck('search API JSON', checkSearchApi);
   await runCheck('article page render', checkArticlePage);
@@ -52,6 +54,24 @@ async function main() {
   }
 
   console.log(`\nProduction smoke passed: ${results.length}/${results.length} checks.`);
+}
+
+async function establishGateCookie() {
+  if (gateCookie) return 'provided cookie accepted for downstream checks';
+  invariant(GATE_PASSWORD, 'set BB_PRODUCTION_GATE_PASSWORD or BB_PRODUCTION_GATE_COOKIE');
+
+  const response = await request('/api/gate', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ password: GATE_PASSWORD }),
+  });
+  assertStatus(response, 200, '/api/gate');
+  const setCookie = response.headers.get('set-cookie') || '';
+  const match = setCookie.match(/(?:^|,\s*)(bb_gate=[^;]+)/i);
+  invariant(match?.[1], '/api/gate did not return the signed bb_gate cookie');
+  gateCookie = match[1];
+  invariant(gateCookie !== 'bb_gate=1', 'access wall returned the retired boolean cookie');
+  return 'signed cookie issued';
 }
 
 async function runCheck(name, fn) {
@@ -100,7 +120,7 @@ async function checkGateRedirect() {
 
 async function checkGatedSearchPage() {
   const response = await request(`/search?q=${encodeURIComponent(SEARCH_QUERY)}`, {
-    headers: { Cookie: GATE_COOKIE },
+    headers: { Cookie: gateCookie },
   });
   assertStatus(response, 200, '/search');
   const html = await response.text();
@@ -112,7 +132,7 @@ async function checkGatedSearchPage() {
 
 async function checkSearchApi() {
   const response = await request(`/api/search?q=${encodeURIComponent(SEARCH_QUERY)}`, {
-    headers: { Cookie: GATE_COOKIE },
+    headers: { Cookie: gateCookie },
   });
   assertStatus(response, 200, '/api/search');
   const body = await parseJson(response, '/api/search');
@@ -127,7 +147,7 @@ async function checkSearchApi() {
 
 async function checkArticlePage() {
   const response = await request(`/articles/${ARTICLE_SLUG}`, {
-    headers: { Cookie: GATE_COOKIE },
+    headers: { Cookie: gateCookie },
   });
   assertStatus(response, 200, `/articles/${ARTICLE_SLUG}`);
   const html = await response.text();
@@ -140,7 +160,7 @@ async function checkArticlePage() {
 
 async function checkCommentsReadPath() {
   const response = await request(`/api/articles/${ARTICLE_SLUG}/comments`, {
-    headers: { Cookie: GATE_COOKIE },
+    headers: { Cookie: gateCookie },
   });
   if (response.status === 503 && healthSnapshot?.db?.configured === false) {
     const body = await parseJson(response, `/api/articles/${ARTICLE_SLUG}/comments`);
@@ -165,7 +185,7 @@ async function checkSitemap() {
 
 async function checkDonationReadiness() {
   const response = await request('/api/donations', {
-    headers: { Cookie: GATE_COOKIE },
+    headers: { Cookie: gateCookie },
   });
   invariant([200, 503].includes(response.status), `/api/donations returned ${response.status}`);
   const payload = await parseJson(response, '/api/donations');
@@ -274,7 +294,7 @@ async function expectRejectedPost(path, body) {
     redirect: 'manual',
     headers: {
       'Content-Type': 'application/json',
-      Cookie: GATE_COOKIE,
+      Cookie: gateCookie,
       'X-Forwarded-For': SMOKE_IP,
     },
     body: JSON.stringify(body),

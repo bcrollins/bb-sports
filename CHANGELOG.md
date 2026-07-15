@@ -3,6 +3,19 @@
 All notable changes to BB Sports. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [Unreleased]
+
+### Security
+
+- Removed the committed access-wall fallback credential. The operator recovery password now lives only in Railway.
+- Replaced the forgeable `bb_gate=1` access cookie with an HS256-signed, expiring cookie whose secret can be rotated to revoke every existing wall session.
+- Kept the public access wall and newsroom authentication as separate security boundaries.
+
+### Fixed
+
+- Isolated `/coming-soon` from the public site layout so the hidden header, ticker, footer, analytics, and links no longer remain in the DOM or keyboard focus order behind the white wall.
+- Taught the production smoke gate to obtain and use a fresh signed access cookie instead of relying on a hard-coded boolean cookie.
+
 ## [0.3.0] — 2026-05-18 · "V1 launch reset"
 
 Brad's nine-directive launch reset. Stripped the homepage of sport
