@@ -2,12 +2,14 @@
  * /admin/articles — full article roster.
  */
 import Link from 'next/link';
+import { requireAdminPage } from '@/lib/admin-auth';
 import { getAllArticles } from '@/lib/queries';
 import { ArticleRowActions } from './_components/ArticleRowActions';
 
 export const dynamic = 'force-dynamic';
 
 export default async function ArticlesIndex() {
+  await requireAdminPage('/admin/articles');
   const all = await getAllArticles();
   return (
     <div>

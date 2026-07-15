@@ -77,6 +77,15 @@ async function bootstrap(): Promise<void> {
       updated_by uuid REFERENCES users(id) ON DELETE SET NULL
     );
   `);
+  // A historical admin route stored access_wall as a JSON-encoded string
+  // inside JSONB. That malformed row contains a retired credential hash and
+  // must never remain an alternate way through the wall. Correct object rows
+  // created by the current dedicated endpoint are preserved.
+  await db.execute(sql`
+    DELETE FROM site_config
+    WHERE key = 'access_wall'
+      AND jsonb_typeof(value) = 'string';
+  `);
   await db.execute(sql`
     CREATE TABLE IF NOT EXISTS sessions (
       id uuid PRIMARY KEY DEFAULT gen_random_uuid(),

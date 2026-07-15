@@ -1,10 +1,12 @@
 import { ACCESS_WALL_CONFIG_KEY, type AccessWallConfig } from '@/lib/access-wall';
+import { requireAdminPage } from '@/lib/admin-auth';
 import { getConfig } from '@/lib/queries';
 import AccessWallForm from './AccessWallForm';
 
 export const dynamic = 'force-dynamic';
 
 export default async function AccessWallPage() {
+  await requireAdminPage('/admin/access-wall');
   const config = await getConfig<AccessWallConfig | null>(ACCESS_WALL_CONFIG_KEY, null);
   const mode = config?.passwordHash ? 'admin + operator managed' : 'operator managed';
 

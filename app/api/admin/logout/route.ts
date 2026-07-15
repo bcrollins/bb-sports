@@ -13,7 +13,9 @@ export async function POST() {
     try {
       await revokeSession(s.jti);
     } catch {
-      // ignore — audit only
+      // Keep the cookie so the operator can retry. Clearing it after a failed
+      // revocation would make a copied token difficult to invalidate safely.
+      return NextResponse.json({ error: 'Logout could not be completed safely.' }, { status: 503 });
     }
   }
   await clearSessionCookie();

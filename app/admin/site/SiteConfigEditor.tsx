@@ -1,23 +1,14 @@
 'use client';
 
 import { useState } from 'react';
+import type {
+  BreakingTickerItem,
+  EditableSiteConfig,
+  HeroConfig,
+} from '@/lib/editable-site-config';
 
-interface BumpItem { sport: string; text: string }
-interface HeroShape {
-  version?: number;
-  eyebrow?: string;
-  headline?: string;
-  sub?: string;
-  cta_primary?: { label?: string; href?: string };
-  cta_secondary?: { label?: string; href?: string };
-}
-
-interface ConfigShape {
-  breaking_ticker?: BumpItem[];
-  hero?: HeroShape;
-  about_bio?: string[];
-  footer_tagline?: string;
-}
+type BumpItem = BreakingTickerItem;
+type HeroShape = HeroConfig;
 
 const SPORT_OPTIONS = ['BREAKING', 'NFL', 'MLB', 'NHL', 'NBA', 'CFB', 'PL', 'MMA', 'OPED'];
 const DEFAULT_HERO: HeroShape = {
@@ -29,13 +20,13 @@ const DEFAULT_HERO: HeroShape = {
   cta_secondary: { label: 'Get the newsletter', href: '/#newsletter' },
 };
 
-export default function SiteConfigEditor({ initial }: { initial: ConfigShape }) {
-  const [config, setConfig] = useState<ConfigShape>(initial);
+export default function SiteConfigEditor({ initial }: { initial: EditableSiteConfig }) {
+  const [config, setConfig] = useState<EditableSiteConfig>(initial);
   const [saving, setSaving] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [savedKey, setSavedKey] = useState<string | null>(null);
 
-  async function save(key: keyof ConfigShape, value: unknown) {
+  async function save(key: keyof EditableSiteConfig, value: unknown) {
     setSaving(key);
     setError(null);
     setSavedKey(null);

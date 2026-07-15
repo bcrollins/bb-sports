@@ -8,11 +8,18 @@
  */
 import { cookies } from 'next/headers';
 import { SignJWT, jwtVerify } from 'jose';
-import { eq } from 'drizzle-orm';
+import { and, eq, gt, isNull } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
 import { randomUUID } from 'node:crypto';
 import { db } from './db/client';
 import { users, sessions, type User } from './db/schema';
+import { ensureBootstrapped } from './db/bootstrap';
+import {
+  ADMIN_SESSION_AUDIENCE,
+  ADMIN_SESSION_ISSUER,
+  ADMIN_SESSION_PURPOSE,
+  isAdminRole,
+} from './admin-session-contract';
 
 const COOKIE = 'bb_session';
 const SESSION_DAYS = 7;
@@ -37,8 +44,11 @@ export interface SessionPayload {
 export async function signSession(payload: Omit<SessionPayload, 'jti'>): Promise<{ token: string; jti: string; exp: Date }> {
   const jti = randomUUID();
   const exp = new Date(Date.now() + SESSION_DAYS * 24 * 60 * 60 * 1000);
-  const token = await new SignJWT({ ...payload, jti })
+  const token = await new SignJWT({ ...payload, jti, purpose: ADMIN_SESSION_PURPOSE })
     .setProtectedHeader({ alg: 'HS256', typ: 'JWT' })
+    .setIssuer(ADMIN_SESSION_ISSUER)
+    .setAudience(ADMIN_SESSION_AUDIENCE)
+    .setSubject(payload.sub)
     .setIssuedAt()
     .setExpirationTime(exp)
     .setJti(jti)
@@ -49,8 +59,12 @@ export async function signSession(payload: Omit<SessionPayload, 'jti'>): Promise
 /** Verify a JWT and return the payload, or null. */
 export async function verifySession(token: string): Promise<SessionPayload | null> {
   try {
-    const { payload } = await jwtVerify(token, secret(), { algorithms: ['HS256'] });
-    if (!payload.sub || !payload.jti) return null;
+    const { payload } = await jwtVerify(token, secret(), {
+      algorithms: ['HS256'],
+      issuer: ADMIN_SESSION_ISSUER,
+      audience: ADMIN_SESSION_AUDIENCE,
+    });
+    if (!payload.sub || !payload.jti || payload.purpose !== ADMIN_SESSION_PURPOSE) return null;
     return {
       sub: String(payload.sub),
       jti: String(payload.jti),
@@ -74,8 +88,24 @@ export async function getSession(): Promise<SessionPayload | null> {
 export async function getCurrentUser(): Promise<User | null> {
   const session = await getSession();
   if (!session || !db) return null;
-  const rows = await db.select().from(users).where(eq(users.id, session.sub)).limit(1);
-  return rows[0] ?? null;
+  await ensureBootstrapped();
+  const rows = await db
+    .select({ user: users })
+    .from(sessions)
+    .innerJoin(users, eq(users.id, sessions.userId))
+    .where(
+      and(
+        eq(sessions.jwtId, session.jti),
+        eq(sessions.userId, session.sub),
+        isNull(sessions.revokedAt),
+        gt(sessions.expiresAt, new Date()),
+      ),
+    )
+    .limit(1);
+  const user = rows[0]?.user ?? null;
+  // Accepted newsroom roles are super_admin, admin, and editor. The current
+  // database role is authoritative; the token's copied role is not.
+  return user && isAdminRole(user.role) ? user : null;
 }
 
 /** Verify a password against a bcrypt hash. */
@@ -135,7 +165,7 @@ export async function recordSession(opts: {
   ua?: string | null;
   exp: Date;
 }) {
-  if (!db) return;
+  if (!db) throw new Error('Database unavailable while recording session.');
   await db.insert(sessions).values({
     userId: opts.userId,
     jwtId: opts.jti,
@@ -147,7 +177,7 @@ export async function recordSession(opts: {
 
 /** Mark a session as revoked. */
 export async function revokeSession(jti: string) {
-  if (!db) return;
+  if (!db) throw new Error('Database unavailable while revoking session.');
   await db
     .update(sessions)
     .set({ revokedAt: new Date() })

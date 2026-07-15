@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { MessageSquareWarning, ShieldCheck } from 'lucide-react';
+import { requireAdminPage } from '@/lib/admin-auth';
 import { getAdminComments, getCommentModerationCounts } from '@/lib/queries';
 import type { CommentStatus } from '@/lib/comment-validation';
 import { CommentModerationActions } from './_components/CommentModerationActions';
@@ -15,6 +16,7 @@ const STATUS_LABELS: Record<CommentStatus, string> = {
 };
 
 export default async function AdminCommentsPage() {
+  await requireAdminPage('/admin/comments');
   const [comments, counts] = await Promise.all([getAdminComments(), getCommentModerationCounts()]);
   const reviewCount = counts.pending + counts.flagged;
 

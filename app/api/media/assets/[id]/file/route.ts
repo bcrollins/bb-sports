@@ -1,17 +1,17 @@
 import { NextResponse } from 'next/server';
-import { getSession } from '@/lib/auth';
+import { getCurrentUser } from '@/lib/auth';
 import { getMediaAssetById } from '@/lib/queries';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 export async function GET(_: Request, { params }: { params: Promise<{ id: string }> }) {
+  const user = await getCurrentUser();
   const { id } = await params;
   const asset = await getMediaAssetById(id);
   if (!asset) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
-  const session = await getSession();
-  if (!asset.approved && !session) {
+  if (!asset.approved && !user) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 });
   }
 

@@ -9,39 +9,16 @@
  * Server-renders the current values, hands them to a client component for editing.
  */
 import Image from 'next/image';
-import { sql } from 'drizzle-orm';
+import { requireAdminPage } from '@/lib/admin-auth';
 import { BRADLEY_BRAND_ASSETS } from '@/lib/brandAssets';
-import { db } from '@/lib/db/client';
-import { ensureBootstrapped } from '@/lib/db/bootstrap';
+import { getEditableSiteConfig } from '@/lib/editable-site-config';
 import SiteConfigEditor from './SiteConfigEditor';
 
 export const dynamic = 'force-dynamic';
 
-interface ConfigShape {
-  breaking_ticker?: { sport: string; text: string }[];
-  hero?: {
-    version?: number;
-    eyebrow?: string;
-    headline?: string;
-    sub?: string;
-    cta_primary?: { label?: string; href?: string };
-    cta_secondary?: { label?: string; href?: string };
-  };
-  about_bio?: string[];
-  footer_tagline?: string;
-}
-
-async function loadConfig(): Promise<ConfigShape> {
-  if (!db) return {};
-  await ensureBootstrapped();
-  const rows = (await db.execute(sql`SELECT key, value FROM site_config`)) as unknown as { key: string; value: ConfigShape[keyof ConfigShape] }[];
-  const out: ConfigShape = {};
-  for (const r of rows) (out as Record<string, unknown>)[r.key] = r.value;
-  return out;
-}
-
 export default async function SiteConfigPage() {
-  const config = await loadConfig();
+  await requireAdminPage('/admin/site');
+  const config = await getEditableSiteConfig();
   return (
     <div>
       <header className="border-b border-navy/15 pb-3 mb-6">

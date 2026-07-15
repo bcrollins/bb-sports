@@ -20,7 +20,7 @@ import {
   Settings,
   Users,
 } from 'lucide-react';
-import { getSession } from '@/lib/auth';
+import { getCurrentUser } from '@/lib/auth';
 import { LogoutButton } from './_components/LogoutButton';
 
 export const metadata = {
@@ -42,9 +42,9 @@ const NAV = [
 ];
 
 export default async function AdminLayout({ children }: { children: ReactNode }) {
-  const session = await getSession();
+  const user = await getCurrentUser();
 
-  if (!session) {
+  if (!user) {
     return (
       <div className="fixed inset-0 z-[9998] overflow-y-auto bg-bone text-navy">
         {children}
@@ -88,8 +88,8 @@ export default async function AdminLayout({ children }: { children: ReactNode })
             <div className="hidden border-t border-navy/10 p-4 lg:block">
               <div className="rounded-lg bg-bone-50 p-3">
                 <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-navy/50">Signed in</div>
-                <div className="mt-1 truncate font-serif font-bold text-navy">{session?.name ?? 'Bradley'}</div>
-                <div className="mt-0.5 truncate text-xs text-navy/55">{session?.role ?? 'admin'}</div>
+                <div className="mt-1 truncate font-serif font-bold text-navy">{user.name}</div>
+                <div className="mt-0.5 truncate text-xs text-navy/55">{user.role}</div>
               </div>
             </div>
           </div>

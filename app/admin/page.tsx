@@ -33,7 +33,7 @@ import {
 } from '@/lib/admin-command-center';
 import { db } from '@/lib/db/client';
 import { ensureBootstrapped } from '@/lib/db/bootstrap';
-import { getSession } from '@/lib/auth';
+import { requireAdminPage } from '@/lib/admin-auth';
 import { getAllArticles, getAudienceSnapshot, getCommentModerationCounts } from '@/lib/queries';
 
 export const dynamic = 'force-dynamic';
@@ -60,8 +60,8 @@ async function loadCounts(): Promise<Counts> {
 }
 
 export default async function AdminOverview() {
-  const [session, counts, articles, audience, commentCounts, analytics] = await Promise.all([
-    getSession(),
+  const user = await requireAdminPage('/admin');
+  const [counts, articles, audience, commentCounts, analytics] = await Promise.all([
     loadCounts(),
     getAllArticles(),
     getAudienceSnapshot(),
@@ -94,7 +94,7 @@ export default async function AdminOverview() {
               Command center
             </p>
             <h1 className="mt-2 max-w-3xl font-display text-4xl italic leading-tight text-navy sm:text-5xl">
-              {session?.name?.split(' ')[0] ?? 'Brad'}, this is the board.
+              {user.name.split(' ')[0] ?? 'Brad'}, this is the board.
             </h1>
             <p className="mt-3 max-w-2xl text-sm leading-6 text-charcoal/75">
               Editorial, audience, comments, provider gates, and launch risk in one operator view. The top
