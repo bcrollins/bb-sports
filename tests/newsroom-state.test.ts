@@ -6,6 +6,7 @@ import {
   assertNewsEventTransition,
   canTransitionNewsEventState,
   newsEventStateAfterEvidenceAdded,
+  newsEventStateAfterSubstantiveEdit,
 } from '../lib/newsroom-state';
 
 test('newsroom states deliberately exclude publication', () => {
@@ -23,6 +24,12 @@ test('new evidence atomically reopens a verified event for investigation', () =>
   assert.equal(newsEventStateAfterEvidenceAdded('verified'), 'investigating');
   assert.equal(newsEventStateAfterEvidenceAdded('verification_ready'), 'verification_ready');
   assert.equal(canTransitionNewsEventState('verified', newsEventStateAfterEvidenceAdded('verified')), true);
+});
+
+test('substantive edits invalidate an exact verified claim but true no-ops do not', () => {
+  assert.equal(newsEventStateAfterSubstantiveEdit('verified', true), 'investigating');
+  assert.equal(newsEventStateAfterSubstantiveEdit('verified', false), 'verified');
+  assert.equal(newsEventStateAfterSubstantiveEdit('verification_ready', true), 'verification_ready');
 });
 
 test('workflow transition map is explicit and supports auditable reopening', () => {

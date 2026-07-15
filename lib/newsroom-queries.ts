@@ -33,6 +33,7 @@ import {
 } from './newsroom-clustering';
 import {
   assertNewsEventTransition,
+  newsEventStateAfterSubstantiveEdit,
   isNewsEventState,
   newsEventStateAfterEvidenceAdded,
   type NewsEventState,
@@ -630,7 +631,15 @@ export async function updateNewsEvent(
       throw new NewsroomError('CONFLICT', 409, 'The event changed; refresh before saving.');
     }
     const fromState = asEventState(existing.state);
-    const toState = parsed.targetState ?? fromState;
+    const detailsChanged =
+      (parsed.headline !== undefined && parsed.headline !== existing.headline) ||
+      (parsed.summary !== undefined && parsed.summary !== existing.summary) ||
+      (parsed.sport !== undefined && parsed.sport !== existing.sport) ||
+      (parsed.urgency !== undefined && parsed.urgency !== existing.urgency);
+    const requestedState = parsed.targetState ?? fromState;
+    const toState = parsed.targetState === undefined
+      ? newsEventStateAfterSubstantiveEdit(requestedState, detailsChanged)
+      : requestedState;
     try {
       assertNewsEventTransition(fromState, toState);
     } catch {
@@ -661,7 +670,11 @@ export async function updateNewsEvent(
       summary: stateChanged
         ? `Event moved from ${fromState} to ${toState}: ${event.headline}`
         : `Event details updated: ${event.headline}`,
-      metadata: { version: event.version },
+      metadata: {
+        version: event.version,
+        verificationReopened: fromState === 'verified' && toState === 'investigating',
+        substantiveEdit: detailsChanged,
+      },
     });
     return { event, activity };
   });

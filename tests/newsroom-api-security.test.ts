@@ -79,11 +79,23 @@ test('live desk exposes truthful fallback, accessible review, and append-only co
   assert.match(page, /automationEnabled/);
   assert.match(ui, /new EventSource/);
   assert.match(ui, /5_000/);
-  assert.match(ui, /Automated alerts off/);
+  assert.match(ui, /Activity stream off/);
   assert.match(ui, /aria-modal="true"/);
   assert.match(ui, /event\.key !== 'Tab'/);
   assert.match(ui, /previousFocusRef/);
   assert.match(ui, /supersedesEvidenceId/);
   assert.match(ui, /Decision history/);
   assert.match(ui, /Notification\.requestPermission/);
+  assert.match(ui, /const breakingEvents = next\.events\.filter/);
+  assert.match(ui, /notifiedRef\.current\.has\(event\.id\)/);
+  assert.match(ui, /five-second polling fallback/);
+});
+
+test('desk transport health never masquerades as external source monitoring', () => {
+  const desk = source('app/admin/news-desk/_components/NewsDesk.tsx');
+  assert.match(desk, /Desk live/);
+  assert.match(desk, /Activity stream connected/);
+  assert.match(desk, /Sources: Manual only/);
+  assert.match(desk, /external X, Bluesky, and RSS monitoring is not active/);
+  assert.doesNotMatch(desk, /label: 'Live', detail: 'Stream connected'/);
 });

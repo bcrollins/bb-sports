@@ -15,6 +15,7 @@ ENV NEXT_TELEMETRY_DISABLED=1
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 RUN npm run build
+RUN npm run ops:bundle:publication-db
 
 # ---------- 3. runtime stage ----------
 FROM node:20-alpine AS runner
@@ -34,8 +35,10 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 # Articles are read at runtime via fs — make sure content/ ships
 COPY --from=builder --chown=nextjs:nodejs /app/content ./content
+# Self-contained disposable-Postgres verifier for explicit Railway SSH use.
+COPY --from=builder --chown=nextjs:nodejs /app/.ops ./ops
 # Defensive: ensure traversal/read perms across the runtime filesystem
-RUN chmod -R a+rX ./public ./.next ./content ./node_modules 2>/dev/null || true
+RUN chmod -R a+rX ./public ./.next ./content ./ops ./node_modules 2>/dev/null || true
 
 USER nextjs
 EXPOSE 3000

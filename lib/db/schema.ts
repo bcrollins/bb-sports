@@ -30,6 +30,7 @@ import {
   type AnyPgColumn,
 } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
+import type { ArticlePublicationSnapshot } from '../article-publication';
 
 // ---------- users ----------
 export const users = pgTable('users', {
@@ -64,7 +65,32 @@ export const articles = pgTable('articles', {
   bradsTake: text('brads_take').notNull().default(''),
   published: boolean('published').notNull().default(false),
   publishedAt: timestamp('published_at', { withTimezone: true }),
+  // Reader-visible content is served exclusively from this immutable,
+  // content-addressed snapshot while `published` is true. Editors can keep
+  // changing the working columns without silently changing the live story.
+  publishedSnapshot: jsonb('published_snapshot').$type<ArticlePublicationSnapshot>(),
+  publishedContentHash: varchar('published_content_hash', { length: 64 }),
+  // Deliberately declared without an inline FK because article_revisions is
+  // declared later. Bootstrap creates and validates the pointer atomically.
+  publishedRevisionId: uuid('published_revision_id'),
+  // False for every pre-gate/imported row. Only the modern draft-create path
+  // sets this immutable provenance bit, so absence of newer ledgers can never
+  // misclassify a legacy article as safe to hard-delete.
+  createdUnderApprovalGate: boolean('created_under_approval_gate').notNull().default(false),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+// ---------- publication_runtime_controls ----------
+// Release-operator gate for published working-copy edits. Bootstrap installs
+// the guarded transition trigger; application requests can read this state but
+// cannot enable or disable it without the operational activation contract.
+export const publicationRuntimeControls = pgTable('publication_runtime_controls', {
+  controlKey: varchar('control_key', { length: 80 }).primaryKey(),
+  enabled: boolean('enabled').notNull().default(false),
+  deploymentSha: varchar('deployment_sha', { length: 64 }),
+  changedAt: timestamp('changed_at', { withTimezone: true }),
+  changedBy: varchar('changed_by', { length: 160 }).notNull().default(''),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
@@ -306,8 +332,11 @@ export const newsEvidence = pgTable(
   {
     id: uuid('id').primaryKey().defaultRandom(),
     eventId: uuid('event_id').notNull().references(() => newsEvents.id),
-    sourceId: uuid('source_id').references(() => newsSources.id, { onDelete: 'set null' }),
-    signalId: uuid('signal_id').references(() => newsSignals.id, { onDelete: 'set null' }),
+    // Evidence is immutable. Referenced provenance and actors therefore use
+    // RESTRICT: a parent delete must never masquerade as a permitted ledger
+    // UPDATE through ON DELETE SET NULL.
+    sourceId: uuid('source_id').references(() => newsSources.id, { onDelete: 'restrict' }),
+    signalId: uuid('signal_id').references(() => newsSignals.id, { onDelete: 'restrict' }),
     supersedesEvidenceId: uuid('supersedes_evidence_id').references(
       (): AnyPgColumn => newsEvidence.id,
     ),
@@ -321,7 +350,7 @@ export const newsEvidence = pgTable(
     excerpt: text('excerpt').notNull().default(''),
     notes: text('notes').notNull().default(''),
     capturedAt: timestamp('captured_at', { withTimezone: true }).notNull().defaultNow(),
-    addedBy: uuid('added_by').references(() => users.id, { onDelete: 'set null' }),
+    addedBy: uuid('added_by').references(() => users.id, { onDelete: 'restrict' }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [
@@ -342,7 +371,7 @@ export const newsVerificationReviews = pgTable(
   {
     id: uuid('id').primaryKey().defaultRandom(),
     eventId: uuid('event_id').notNull().references(() => newsEvents.id),
-    reviewerId: uuid('reviewer_id').references(() => users.id, { onDelete: 'set null' }),
+    reviewerId: uuid('reviewer_id').references(() => users.id, { onDelete: 'restrict' }),
     reviewerLabel: varchar('reviewer_label', { length: 160 }).notNull(),
     decision: varchar('decision', { length: 24 }).notNull(),
     rationale: text('rationale').notNull(),
@@ -365,7 +394,7 @@ export const newsroomActivity = pgTable(
     sequence: bigserial('sequence', { mode: 'number' }).notNull().unique(),
     eventId: uuid('event_id').references(() => newsEvents.id),
     signalId: uuid('signal_id').references(() => newsSignals.id),
-    actorUserId: uuid('actor_user_id').references(() => users.id, { onDelete: 'set null' }),
+    actorUserId: uuid('actor_user_id').references(() => users.id, { onDelete: 'restrict' }),
     actorLabel: varchar('actor_label', { length: 160 }).notNull(),
     action: varchar('action', { length: 64 }).notNull(),
     fromState: varchar('from_state', { length: 32 }),
@@ -382,11 +411,108 @@ export const newsroomActivity = pgTable(
   ],
 );
 
+// ---------- immutable article publication ----------
+// Revisions are content-addressed, append-only snapshots of the complete
+// reader-visible surface. Creating a revision does not make it public.
+export const articleRevisions = pgTable(
+  'article_revisions',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    articleId: uuid('article_id')
+      .notNull()
+      .references(() => articles.id, { onDelete: 'restrict' }),
+    revisionNumber: integer('revision_number').notNull(),
+    contentHash: varchar('content_hash', { length: 64 }).notNull(),
+    snapshot: jsonb('snapshot').$type<ArticlePublicationSnapshot>().notNull(),
+    createdBy: uuid('created_by').references(() => users.id, { onDelete: 'restrict' }),
+    sourceEventId: uuid('source_event_id').references(() => newsEvents.id, {
+      onDelete: 'restrict',
+    }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex('idx_article_revisions_article_number').on(
+      table.articleId,
+      table.revisionNumber,
+    ),
+    uniqueIndex('idx_article_revisions_article_hash').on(table.articleId, table.contentHash),
+    uniqueIndex('idx_article_revisions_article_id_id').on(table.articleId, table.id),
+    uniqueIndex('idx_article_revisions_article_id_id_hash').on(
+      table.articleId,
+      table.id,
+      table.contentHash,
+    ),
+    index('idx_article_revisions_created_by').on(table.createdBy),
+    index('idx_article_revisions_source_event').on(table.sourceEventId),
+  ],
+);
+
+// Every publish, unpublish, and legacy migration is an immutable audit event.
+// Explicit approval text is stored only for a publish event and is bound to
+// the exact revision/hash pair that Brad approved.
+export const articlePublicationEvents = pgTable(
+  'article_publication_events',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    articleId: uuid('article_id')
+      .notNull()
+      .references(() => articles.id, { onDelete: 'restrict' }),
+    revisionId: uuid('revision_id')
+      .notNull()
+      .references(() => articleRevisions.id, { onDelete: 'restrict' }),
+    contentHash: varchar('content_hash', { length: 64 }).notNull(),
+    action: varchar('action', { length: 24 }).notNull(),
+    actorUserId: uuid('actor_user_id').references(() => users.id, { onDelete: 'restrict' }),
+    actorLabel: varchar('actor_label', { length: 160 }).notNull(),
+    exactConfirmation: text('exact_confirmation').notNull().default(''),
+    rationale: text('rationale').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index('idx_article_publication_events_article_time').on(table.articleId, table.createdAt),
+    index('idx_article_publication_events_revision').on(table.revisionId),
+    index('idx_article_publication_events_actor').on(table.actorUserId),
+    uniqueIndex('idx_article_publication_events_legacy_once')
+      .on(table.articleId)
+      .where(sql`${table.action} = 'legacy_backfill'`),
+  ],
+);
+
+// A newsroom event can seed a draft, but never publishes it. The source link
+// captures which immutable revision was generated from which verified event.
+export const newsEventArticles = pgTable(
+  'news_event_articles',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    eventId: uuid('event_id')
+      .notNull()
+      .references(() => newsEvents.id, { onDelete: 'restrict' }),
+    articleId: uuid('article_id')
+      .notNull()
+      .references(() => articles.id, { onDelete: 'restrict' }),
+    revisionId: uuid('revision_id')
+      .notNull()
+      .references(() => articleRevisions.id, { onDelete: 'restrict' }),
+    relation: varchar('relation', { length: 24 }).notNull().default('source'),
+    actorUserId: uuid('actor_user_id').references(() => users.id, { onDelete: 'restrict' }),
+    actorLabel: varchar('actor_label', { length: 160 }).notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex('idx_news_event_articles_event_relation').on(table.eventId, table.relation),
+    uniqueIndex('idx_news_event_articles_article_event').on(table.articleId, table.eventId),
+    index('idx_news_event_articles_article').on(table.articleId),
+    index('idx_news_event_articles_revision').on(table.revisionId),
+    index('idx_news_event_articles_actor').on(table.actorUserId),
+  ],
+);
+
 // ---------- type exports ----------
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
 export type Article = typeof articles.$inferSelect;
 export type NewArticle = typeof articles.$inferInsert;
+export type PublicationRuntimeControl = typeof publicationRuntimeControls.$inferSelect;
 export type SiteConfigRow = typeof siteConfig.$inferSelect;
 export type Session = typeof sessions.$inferSelect;
 export type NewsletterSubscriber = typeof newsletterSubscribers.$inferSelect;
@@ -407,3 +533,7 @@ export type NewsEvidence = typeof newsEvidence.$inferSelect;
 export type NewNewsEvidence = typeof newsEvidence.$inferInsert;
 export type NewsVerificationReview = typeof newsVerificationReviews.$inferSelect;
 export type NewsroomActivity = typeof newsroomActivity.$inferSelect;
+export type ArticleRevision = typeof articleRevisions.$inferSelect;
+export type NewArticleRevision = typeof articleRevisions.$inferInsert;
+export type ArticlePublicationEvent = typeof articlePublicationEvents.$inferSelect;
+export type NewsEventArticle = typeof newsEventArticles.$inferSelect;

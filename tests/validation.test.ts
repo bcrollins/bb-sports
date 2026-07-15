@@ -97,6 +97,25 @@ test('article payload requires image alt text and credit when hero is set', () =
   assert.equal(result.success, false);
 });
 
+test('article create and patch payloads reject heroes that next/image cannot render', () => {
+  const valid = {
+    slug: 'renderable-hero',
+    title: 'Renderable hero',
+    hero: '/images/hero-bears.svg',
+    heroAlt: 'Chicago football players on the field',
+    heroCredit: 'BB Sports illustration',
+  };
+  assert.equal(articlePayloadSchema.safeParse(valid).success, true);
+  assert.equal(
+    articlePayloadSchema.safeParse({ ...valid, hero: 'https://evil.example/hero.jpg' }).success,
+    false,
+  );
+  assert.equal(
+    articlePatchSchema.safeParse({ hero: '/images/../secrets.txt' }).success,
+    false,
+  );
+});
+
 test('redirect helpers reject external and non-admin targets', () => {
   assert.equal(safeInternalPath('/admin/articles'), '/admin/articles');
   assert.equal(safeInternalPath('//evil.example'), '/');

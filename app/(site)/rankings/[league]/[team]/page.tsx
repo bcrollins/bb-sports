@@ -16,6 +16,7 @@ import Image from 'next/image';
 import type { Metadata } from 'next';
 import { getAllArticles, formatDate, sportLabel, type SportSlug } from '@/lib/articles';
 import { sportMeta } from '@/lib/sport-meta';
+import { serializeJsonLd } from '@/lib/json-ld';
 import ArticleCard from '@/components/ArticleCard';
 import {
   buildLeagueRanking,
@@ -130,11 +131,11 @@ export default async function TeamPage({ params }: Props) {
     <article className="bg-bone">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(sportsTeamJsonLd) }}
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(sportsTeamJsonLd) }}
       />
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(breadcrumbJsonLd) }}
       />
       <header className="relative isolate overflow-hidden bg-navy text-bone">
         <div className="absolute inset-0 opacity-20">

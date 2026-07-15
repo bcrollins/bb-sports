@@ -178,7 +178,7 @@ export default function SiteConfigEditor({ initial }: { initial: EditableSiteCon
       <section className="bg-white border border-navy/10 rounded p-5">
         <SectionHeader
           title="About-page bio"
-          hint="Paragraph list rendered on /about."
+          hint="Markdown paragraphs rendered safely on /about; raw HTML is ignored."
           saving={saving === 'about_bio'}
           saved={savedKey === 'about_bio'}
           onSave={() => save('about_bio', bio)}

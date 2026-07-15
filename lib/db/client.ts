@@ -34,4 +34,16 @@ export const db = client ? drizzle(client, { schema }) : null;
 /** True when the database is reachable in this environment. */
 export const dbAvailable = Boolean(db);
 
+/**
+ * Close this process's database pool for short-lived operational commands.
+ * The web server never calls this; disposable verification children use it so
+ * their parent can immediately drop the temporary database without waiting for
+ * idle pool connections to expire.
+ */
+export async function closeDatabaseClient(): Promise<void> {
+  if (!client) return;
+  await client.end({ timeout: 5 });
+  if (globalThis.__bbsportsPg === client) globalThis.__bbsportsPg = undefined;
+}
+
 export { schema };

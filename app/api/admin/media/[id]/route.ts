@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
-import { getMediaAssetById, updateMediaAsset } from '@/lib/queries';
+import {
+  getMediaAssetById,
+  MediaAssetConflictError,
+  updateMediaAsset,
+} from '@/lib/queries';
 import { mediaPatchSchema, validationErrorMessage } from '@/lib/media-validation';
 import { serializeMediaAsset } from '@/lib/media-assets';
 
@@ -23,7 +27,14 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   }
   const current = await getMediaAssetById(id);
   if (!current) return NextResponse.json({ error: 'Not found' }, { status: 404 });
-  const updated = await updateMediaAsset(id, parsed.data);
-  if (!updated) return NextResponse.json({ error: 'Not found' }, { status: 404 });
-  return NextResponse.json({ ok: true, asset: serializeMediaAsset(updated) });
+  try {
+    const updated = await updateMediaAsset(id, parsed.data);
+    if (!updated) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+    return NextResponse.json({ ok: true, asset: serializeMediaAsset(updated) });
+  } catch (error) {
+    if (error instanceof MediaAssetConflictError) {
+      return NextResponse.json({ error: error.message, code: 'MEDIA_IN_USE' }, { status: 409 });
+    }
+    return NextResponse.json({ error: 'Media update failed.' }, { status: 500 });
+  }
 }

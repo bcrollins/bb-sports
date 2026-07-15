@@ -6,7 +6,6 @@
  */
 import Link from 'next/link';
 import type { ReactNode } from 'react';
-import { sql } from 'drizzle-orm';
 import {
   ArrowUpRight,
   CheckCircle2,
@@ -32,10 +31,13 @@ import {
   type ProviderCheck,
   type ReadinessGate,
 } from '@/lib/admin-command-center';
-import { db } from '@/lib/db/client';
-import { ensureBootstrapped } from '@/lib/db/bootstrap';
 import { requireAdminPage } from '@/lib/admin-auth';
-import { getAllArticles, getAudienceSnapshot, getCommentModerationCounts } from '@/lib/queries';
+import {
+  getAllArticlesForAdmin,
+  getAudienceSnapshot,
+  getCommentModerationCounts,
+  type AdminArticleRosterRow,
+} from '@/lib/queries';
 
 export const dynamic = 'force-dynamic';
 
@@ -46,30 +48,42 @@ interface Counts {
   aiAssisted: number;
 }
 
-async function loadCounts(): Promise<Counts> {
-  if (!db) return { total: 0, published: 0, drafts: 0, aiAssisted: 0 };
-  await ensureBootstrapped();
-  const r = (await db.execute(sql`
-    SELECT
-      COUNT(*)::int AS total,
-      COUNT(*) FILTER (WHERE published)::int AS published,
-      COUNT(*) FILTER (WHERE NOT published)::int AS drafts,
-      COUNT(*) FILTER (WHERE ai_assisted)::int AS "aiAssisted"
-    FROM articles
-  `)) as unknown as Counts[];
-  return r[0] ?? { total: 0, published: 0, drafts: 0, aiAssisted: 0 };
+function loadCounts(rows: AdminArticleRosterRow[]): Counts {
+  return {
+    total: rows.length,
+    published: rows.filter((row) => row.liveArticle !== null).length,
+    drafts: rows.filter((row) => row.liveArticle === null).length,
+    aiAssisted: rows.filter((row) => (row.liveArticle ?? row.article).aiAssisted).length,
+  };
+}
+
+function draftDiffersFromLive({ article, liveArticle }: AdminArticleRosterRow): boolean {
+  if (!liveArticle) return false;
+  return (
+    article.slug !== liveArticle.slug ||
+    article.title !== liveArticle.title ||
+    article.dek !== liveArticle.dek ||
+    article.body !== liveArticle.body ||
+    article.sport !== liveArticle.sport ||
+    article.hero !== liveArticle.hero ||
+    article.heroAlt !== liveArticle.heroAlt ||
+    article.heroCredit !== liveArticle.heroCredit ||
+    article.authorName !== liveArticle.authorName ||
+    article.aiAssisted !== liveArticle.aiAssisted ||
+    article.bradsTake !== liveArticle.bradsTake
+  );
 }
 
 export default async function AdminOverview() {
   const user = await requireAdminPage('/admin');
-  const [counts, articles, audience, commentCounts, analytics] = await Promise.all([
-    loadCounts(),
-    getAllArticles(),
+  const [articleRows, audience, commentCounts, analytics] = await Promise.all([
+    getAllArticlesForAdmin(),
     getAudienceSnapshot(),
     getCommentModerationCounts(),
     getAnalyticsSnapshot(),
   ]);
-  const recent = articles.slice(0, 7);
+  const counts = loadCounts(articleRows);
+  const recent = articleRows.slice(0, 7);
   const command = buildAdminCommandCenter({
     articles: counts,
     audience: audience.counts,
@@ -194,27 +208,40 @@ export default async function AdminOverview() {
             </div>
           ) : (
             <ul className="divide-y divide-navy/10">
-              {recent.map((a) => (
-                <li key={a.id} className="grid gap-3 px-5 py-4 lg:grid-cols-[minmax(0,1fr)_220px] lg:items-center">
-                  <div className="min-w-0">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <Pill tone={a.published ? 'red' : 'navy'}>{a.published ? 'Live' : 'Draft'}</Pill>
-                      <Pill>{a.sport}</Pill>
-                      {a.aiAssisted ? <Pill tone={a.bradsTake ? 'green' : 'red'}>AI-assisted</Pill> : null}
-                      {a.hero ? <Pill tone={a.heroAlt && a.heroCredit ? 'green' : 'yellow'}>Hero</Pill> : null}
+              {recent.map((row) => {
+                const { article: draft, liveArticle: live } = row;
+                const shown = live ?? draft;
+                const integrityHold = draft.published && !live;
+                const unpublishedChanges = draftDiffersFromLive(row);
+                return (
+                  <li key={draft.id} className="grid gap-3 px-5 py-4 lg:grid-cols-[minmax(0,1fr)_220px] lg:items-center">
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Pill tone={live ? 'red' : integrityHold ? 'yellow' : 'navy'}>
+                          {live ? 'Live snapshot' : integrityHold ? 'Integrity hold' : 'Draft'}
+                        </Pill>
+                        <Pill>{integrityHold ? 'Working draft' : shown.sport}</Pill>
+                        {shown.aiAssisted ? <Pill tone={shown.bradsTake ? 'green' : 'red'}>AI-assisted</Pill> : null}
+                        {shown.hero ? <Pill tone={shown.heroAlt && shown.heroCredit ? 'green' : 'yellow'}>Hero</Pill> : null}
+                        {unpublishedChanges ? <Pill tone="yellow">Unpublished changes</Pill> : null}
+                      </div>
+                      <Link href={`/admin/articles/${draft.id}/edit`} className="mt-2 block min-w-0 font-serif text-lg font-bold leading-snug text-navy hover:text-broadcast-red">
+                        {integrityHold ? `Working draft (not live): ${draft.title}` : shown.title}
+                      </Link>
+                      <p className="mt-1 line-clamp-2 text-sm leading-5 text-navy/58">
+                        {integrityHold
+                          ? 'Public delivery is blocked because the approved snapshot failed its integrity check.'
+                          : shown.dek || 'No dek written yet.'}
+                      </p>
                     </div>
-                    <Link href={`/admin/articles/${a.id}/edit`} className="mt-2 block min-w-0 font-serif text-lg font-bold leading-snug text-navy hover:text-broadcast-red">
-                      {a.title}
-                    </Link>
-                    <p className="mt-1 line-clamp-2 text-sm leading-5 text-navy/58">{a.dek || 'No dek written yet.'}</p>
-                  </div>
-                  <div className="grid gap-2 text-xs text-navy/55 sm:grid-cols-3 lg:grid-cols-1 lg:text-right">
-                    <span>Updated {formatDate(a.updatedAt)}</span>
-                    <span>{a.publishedAt ? `Published ${formatDate(a.publishedAt)}` : 'Not published'}</span>
-                    <span>{a.authorName}</span>
-                  </div>
-                </li>
-              ))}
+                    <div className="grid gap-2 text-xs text-navy/55 sm:grid-cols-3 lg:grid-cols-1 lg:text-right">
+                      <span>Updated {formatDate(draft.updatedAt)}</span>
+                      <span>{live?.publishedAt ? `Published ${formatDate(live.publishedAt)}` : 'Not verifiably live'}</span>
+                      <span>{integrityHold ? 'Approved author withheld' : shown.authorName}</span>
+                    </div>
+                  </li>
+                );
+              })}
             </ul>
           )}
         </div>

@@ -7,6 +7,9 @@
  *
  * If DATABASE_URL is missing (e.g. local dev with no Postgres), this falls back
  * to reading the filesystem directly so the site still renders end-to-end.
+ * Once Postgres is configured, public reads fail closed to that canonical
+ * catalog: a missing row or database error must never resurrect an unapproved
+ * filesystem draft or bypass the immutable publication snapshot.
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -79,6 +82,15 @@ function toSportSlug(input: string | null | undefined): SportSlug {
 }
 
 const ARTICLES_DIR = path.join(process.cwd(), 'content', 'articles');
+
+/**
+ * Filesystem articles exist only to keep local development and unit tests
+ * usable without Postgres. A production process with a missing DATABASE_URL
+ * must render no articles rather than treating repository files as approved.
+ */
+function filesystemArticlesAllowed(): boolean {
+  return process.env.NODE_ENV !== 'production';
+}
 
 function estimateReadingTime(markdown: string): number {
   const words = markdown.trim().split(/\s+/).length;
@@ -153,31 +165,22 @@ async function fromFilesystem(): Promise<Article[]> {
 }
 
 export async function getAllArticles(): Promise<Article[]> {
-  if (dbAvailable) {
-    try {
-      const rows = await dbGetPublished();
-      const out = await Promise.all(rows.map(fromDb));
-      // If DB is empty (e.g., bootstrap hadn't seeded yet), fall back to filesystem so
-      // public pages aren't blank.
-      if (out.length > 0) return out;
-    } catch {
-      // fall through to filesystem
-    }
+  if (!dbAvailable) {
+    return filesystemArticlesAllowed() ? fromFilesystem() : [];
   }
-  return fromFilesystem();
+  const rows = await dbGetPublished();
+  return Promise.all(rows.map(fromDb));
 }
 
 export async function getArticleBySlug(slug: string): Promise<Article | null> {
-  if (dbAvailable) {
-    try {
-      const row = await dbGetBySlug(slug);
-      if (row) return await fromDb(row);
-    } catch {
-      // fall through
-    }
+  if (!dbAvailable) {
+    if (!filesystemArticlesAllowed()) return null;
+    const fs = await fromFilesystem();
+    return fs.find((a) => a.slug === slug) ?? null;
   }
-  const fs = await fromFilesystem();
-  return fs.find((a) => a.slug === slug) ?? null;
+
+  const row = await dbGetBySlug(slug);
+  return row ? fromDb(row) : null;
 }
 
 /**
@@ -189,23 +192,23 @@ export async function getArticleBySlug(slug: string): Promise<Article | null> {
  */
 export async function getRelatedArticles(article: Article, limit = 3): Promise<Article[]> {
   if (dbAvailable && article.id) {
-    try {
-      const sameSport = await dbGetRelatedBySport(article.id, mapSportSlugToTag(article.sport), limit);
-      if (sameSport.length >= limit) {
-        return Promise.all(sameSport.map(fromDb));
-      }
-      // Top up with most-recent across all sports if same-sport is thin.
-      const recent = await dbGetPublished();
-      const need = limit - sameSport.length;
-      const sameIds = new Set(sameSport.map((a) => a.id));
-      const filler = recent
-        .filter((a) => a.id !== article.id && !sameIds.has(a.id))
-        .slice(0, need);
-      const out = [...sameSport, ...filler];
-      return Promise.all(out.map(fromDb));
-    } catch {
-      // fall through to filesystem
+    const sameSport = await dbGetRelatedBySport(
+      article.id,
+      mapSportSlugToTag(article.sport),
+      limit,
+    );
+    if (sameSport.length >= limit) {
+      return Promise.all(sameSport.map(fromDb));
     }
+    // Top up with most-recent across all sports if same-sport is thin.
+    const recent = await dbGetPublished();
+    const need = limit - sameSport.length;
+    const sameIds = new Set(sameSport.map((a) => a.id));
+    const filler = recent
+      .filter((a) => a.id !== article.id && !sameIds.has(a.id))
+      .slice(0, need);
+    const out = [...sameSport, ...filler];
+    return Promise.all(out.map(fromDb));
   }
   const all = await getAllArticles();
   const same = all.filter((a) => a.slug !== article.slug && a.sport === article.sport);

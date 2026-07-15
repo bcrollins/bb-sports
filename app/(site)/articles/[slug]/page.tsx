@@ -5,6 +5,7 @@ import type { Metadata } from 'next';
 import { getAllArticles, getArticleBySlug, getRelatedArticles, formatDate, sportLabel } from '@/lib/articles';
 import { sportMeta } from '@/lib/sport-meta';
 import { getDemotionImpacts, type DemotionImpact } from '@/lib/rankings';
+import { serializeJsonLd } from '@/lib/json-ld';
 import ArticleCard from '@/components/ArticleCard';
 import ArticleComments from '@/components/ArticleComments';
 import NewsletterSignup from '@/components/NewsletterSignup';
@@ -12,8 +13,8 @@ import SportTag from '@/components/SportTag';
 
 type Props = { params: Promise<{ slug: string }> };
 
-// Revalidate every 60s so admin edits to a published article surface live and
-// the layout's BreakingNewsBar / footer tagline don't go stale.
+// Revalidate every 60s as a safety net; an explicitly approved publication or
+// unpublication also invalidates this surface immediately. Draft edits remain private.
 export const revalidate = 60;
 
 export async function generateStaticParams() {
@@ -25,6 +26,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   const article = await getArticleBySlug(slug);
   if (!article) return {};
+  const authorName = article.authorName?.trim() || 'Brad Benson';
   return {
     title: article.title,
     description: article.dek ?? article.excerpt,
@@ -33,7 +35,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       title: article.title,
       description: article.dek ?? article.excerpt,
       publishedTime: article.date,
-      authors: ['Brad Benson'],
+      authors: [authorName],
       tags: article.tags,
       images: article.hero ? [{ url: article.hero, alt: article.heroAlt ?? article.title }] : undefined
     },
@@ -49,6 +51,7 @@ export default async function ArticleDetail({ params }: Props) {
   const { slug } = await params;
   const article = await getArticleBySlug(slug);
   if (!article) return notFound();
+  const authorName = article.authorName?.trim() || 'Brad Benson';
   const [related, allArticles] = await Promise.all([
     getRelatedArticles(article, 3),
     getAllArticles(),
@@ -75,8 +78,8 @@ export default async function ArticleDetail({ params }: Props) {
     mainEntityOfPage: { '@type': 'WebPage', '@id': articleUrl },
     author: {
       '@type': 'Person',
-      name: 'Brad Benson',
-      url: `${siteUrl}/about`,
+      name: authorName,
+      ...(authorName === 'Brad Benson' ? { url: `${siteUrl}/about` } : {}),
     },
     publisher: {
       '@type': 'NewsMediaOrganization',
@@ -92,7 +95,7 @@ export default async function ArticleDetail({ params }: Props) {
     <article className="bg-bone">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(articleJsonLd) }}
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(articleJsonLd) }}
       />
 
       {/* Article header — broadcast-grade slug */}
@@ -115,7 +118,7 @@ export default async function ArticleDetail({ params }: Props) {
             </p>
           )}
           <div className="mt-6 flex flex-wrap items-center gap-3 text-sm text-bone/80">
-            <span className="font-bold uppercase tracking-[0.18em] text-[11px] text-bone">By Brad Benson</span>
+            <span className="font-bold uppercase tracking-[0.18em] text-[11px] text-bone">By {authorName}</span>
             <span className="text-bone/40">·</span>
             <time dateTime={article.date}>{formatDate(article.date)}</time>
             <span className="text-bone/40">·</span>

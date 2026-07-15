@@ -12,9 +12,22 @@
 import path from 'node:path';
 import fs from 'node:fs/promises';
 import matter from 'gray-matter';
-import { sql } from 'drizzle-orm';
+import { and, eq, sql } from 'drizzle-orm';
 import { db, dbAvailable } from './client';
-import { users, articles, siteConfig, newsSources } from './schema';
+import {
+  articlePublicationEvents,
+  articleRevisions,
+  articles,
+  mediaAssets,
+  newsSources,
+  siteConfig,
+  users,
+} from './schema';
+import {
+  articleHeroMediaAssetId,
+  hashArticlePublicationSnapshot,
+  normalizeArticlePublicationSnapshot,
+} from '../article-publication';
 
 let bootstrapPromise: Promise<void> | null = null;
 
@@ -58,6 +71,10 @@ async function bootstrap(): Promise<void> {
       brads_take text NOT NULL DEFAULT '',
       published boolean NOT NULL DEFAULT false,
       published_at timestamptz,
+      published_snapshot jsonb,
+      published_content_hash varchar(64),
+      published_revision_id uuid,
+      created_under_approval_gate boolean NOT NULL DEFAULT false,
       created_at timestamptz NOT NULL DEFAULT now(),
       updated_at timestamptz NOT NULL DEFAULT now()
     );
@@ -65,10 +82,408 @@ async function bootstrap(): Promise<void> {
   // Forward-compat: ALTER TABLE for older databases that were bootstrapped
   // before these columns existed. Idempotent — IF NOT EXISTS is supported on
   // ADD COLUMN in Postgres 9.6+.
-  await db.execute(sql`ALTER TABLE articles ADD COLUMN IF NOT EXISTS hero_alt text NOT NULL DEFAULT '';`);
-  await db.execute(sql`ALTER TABLE articles ADD COLUMN IF NOT EXISTS hero_credit text NOT NULL DEFAULT '';`);
-  await db.execute(sql`ALTER TABLE articles ADD COLUMN IF NOT EXISTS ai_assisted boolean NOT NULL DEFAULT false;`);
-  await db.execute(sql`ALTER TABLE articles ADD COLUMN IF NOT EXISTS brads_take text NOT NULL DEFAULT '';`);
+  // The first table lock is the rolling-deploy boundary. PostgreSQL holds it
+  // until commit, so old writers that arrive after this point wait until the
+  // state check, transition/edit/delete triggers, activation control, and live
+  // media guard all become visible together. No partially installed contract
+  // can be observed by another connection.
+  await db.transaction(async (migration) => {
+    await migration.execute(sql`LOCK TABLE articles IN ACCESS EXCLUSIVE MODE;`);
+    await migration.execute(sql`ALTER TABLE articles ADD COLUMN IF NOT EXISTS hero_alt text NOT NULL DEFAULT '';`);
+    await migration.execute(sql`ALTER TABLE articles ADD COLUMN IF NOT EXISTS hero_credit text NOT NULL DEFAULT '';`);
+    await migration.execute(sql`ALTER TABLE articles ADD COLUMN IF NOT EXISTS ai_assisted boolean NOT NULL DEFAULT false;`);
+    await migration.execute(sql`ALTER TABLE articles ADD COLUMN IF NOT EXISTS brads_take text NOT NULL DEFAULT '';`);
+    await migration.execute(sql`ALTER TABLE articles ADD COLUMN IF NOT EXISTS published_snapshot jsonb;`);
+    await migration.execute(sql`ALTER TABLE articles ADD COLUMN IF NOT EXISTS published_content_hash varchar(64);`);
+    await migration.execute(sql`ALTER TABLE articles ADD COLUMN IF NOT EXISTS published_revision_id uuid;`);
+    await migration.execute(sql`ALTER TABLE articles ADD COLUMN IF NOT EXISTS created_under_approval_gate boolean NOT NULL DEFAULT false;`);
+  // Install the complete two-way state invariant before any snapshot backfill.
+  // NOT VALID permits legacy rows to be reconciled below, while PostgreSQL
+  // immediately enforces the constraint for concurrent writes from older
+  // rolling-deploy instances. A version marker prevents a same-named weak
+  // predecessor (including an adversarial `OR true`) from being trusted.
+    await migration.execute(sql`
+    DO $block$
+    BEGIN
+      IF NOT EXISTS (
+        SELECT 1
+        FROM pg_constraint
+        WHERE conname = 'articles_published_snapshot_complete'
+          AND conrelid = 'articles'::regclass
+          AND obj_description(oid, 'pg_constraint') =
+            'bbsports:articles-published-snapshot-complete:v2'
+      ) THEN
+        ALTER TABLE articles
+        DROP CONSTRAINT IF EXISTS articles_published_snapshot_complete;
+        ALTER TABLE articles
+        ADD CONSTRAINT articles_published_snapshot_complete CHECK (
+          (
+            published = false
+            AND published_at IS NULL
+            AND published_snapshot IS NULL
+            AND published_content_hash IS NULL
+            AND published_revision_id IS NULL
+          )
+          OR (
+            published = true
+            AND published_at IS NOT NULL
+            AND published_snapshot IS NOT NULL
+            AND published_content_hash IS NOT NULL
+            AND published_content_hash ~ '^[a-f0-9]{64}$'
+            AND published_revision_id IS NOT NULL
+          )
+        ) NOT VALID;
+        COMMENT ON CONSTRAINT articles_published_snapshot_complete ON articles IS
+          'bbsports:articles-published-snapshot-complete:v2';
+      END IF;
+    END;
+    $block$;
+  `);
+  // Published working-copy edits stay globally disabled until the release
+  // operator confirms every old reader has drained. The control is reversible:
+  // disable it before rolling back to code that reads mutable article columns.
+    await migration.execute(sql`
+    CREATE TABLE IF NOT EXISTS publication_runtime_controls (
+      control_key varchar(80) PRIMARY KEY
+        CHECK (control_key = 'published_working_copy_edits_v1'),
+      enabled boolean NOT NULL DEFAULT false,
+      deployment_sha varchar(64),
+      changed_at timestamptz,
+      changed_by varchar(160) NOT NULL DEFAULT '',
+      updated_at timestamptz NOT NULL DEFAULT now(),
+      CONSTRAINT publication_runtime_controls_sha CHECK (
+        deployment_sha IS NULL OR deployment_sha ~ '^[a-f0-9]{40}$'
+      ),
+      CONSTRAINT publication_runtime_controls_enabled_audit CHECK (
+        enabled = false
+        OR (
+          deployment_sha IS NOT NULL
+          AND changed_at IS NOT NULL
+          AND length(trim(changed_by)) > 0
+        )
+      )
+    );
+  `);
+    await migration.execute(sql`
+    INSERT INTO publication_runtime_controls (control_key, enabled)
+    VALUES ('published_working_copy_edits_v1', false)
+    ON CONFLICT (control_key) DO NOTHING;
+  `);
+    await migration.execute(sql`
+    CREATE OR REPLACE FUNCTION bbsports_guard_publication_runtime_control()
+    RETURNS trigger
+    LANGUAGE plpgsql
+    AS $function$
+    BEGIN
+      IF TG_OP = 'DELETE' THEN
+        RAISE EXCEPTION 'publication runtime controls cannot be deleted'
+          USING
+            ERRCODE = '55000',
+            CONSTRAINT = 'publication_runtime_controls_guarded';
+      END IF;
+      IF OLD.control_key IS DISTINCT FROM NEW.control_key
+        OR OLD.enabled IS NOT DISTINCT FROM NEW.enabled
+        OR current_setting(
+          'bbsports.publication_activation_contract',
+          true
+        ) IS DISTINCT FROM 'v1'
+        OR length(trim(NEW.changed_by)) = 0
+        OR NEW.changed_at IS NULL
+        OR (
+          NEW.enabled = true
+          AND (
+            NEW.deployment_sha IS NULL
+            OR NEW.deployment_sha !~ '^[a-f0-9]{40}$'
+          )
+        )
+      THEN
+        RAISE EXCEPTION 'publication runtime control changes require the guarded release command'
+          USING
+            ERRCODE = '55000',
+            CONSTRAINT = 'publication_runtime_controls_guarded';
+      END IF;
+      IF NEW.enabled = false
+        AND EXISTS (
+          SELECT 1
+          FROM articles
+          WHERE published = true
+            AND published_snapshot IS DISTINCT FROM jsonb_build_object(
+              'slug', slug,
+              'title', title,
+              'dek', dek,
+              'body', body,
+              'sport', sport,
+              'hero', hero,
+              'heroAlt', hero_alt,
+              'heroCredit', hero_credit,
+              'authorName', author_name,
+              'aiAssisted', ai_assisted,
+              'bradsTake', brads_take
+            )
+        )
+      THEN
+        RAISE EXCEPTION 'working-copy edits cannot be disabled while a live article differs from its approved snapshot'
+          USING
+            ERRCODE = '55000',
+            CONSTRAINT = 'publication_runtime_controls_live_drift';
+      END IF;
+      RETURN NEW;
+    END;
+    $function$;
+  `);
+    await migration.execute(sql`
+    DO $block$
+    BEGIN
+      IF NOT EXISTS (
+        SELECT 1
+        FROM pg_trigger
+        WHERE tgname = 'publication_runtime_controls_guarded'
+          AND tgrelid = 'publication_runtime_controls'::regclass
+          AND obj_description(oid, 'pg_trigger') =
+            'bbsports:publication-runtime-controls:v1'
+      ) THEN
+        DROP TRIGGER IF EXISTS publication_runtime_controls_guarded
+          ON publication_runtime_controls;
+        CREATE TRIGGER publication_runtime_controls_guarded
+        BEFORE UPDATE OR DELETE ON publication_runtime_controls
+        FOR EACH ROW EXECUTE FUNCTION bbsports_guard_publication_runtime_control();
+        COMMENT ON TRIGGER publication_runtime_controls_guarded
+          ON publication_runtime_controls IS
+          'bbsports:publication-runtime-controls:v1';
+      END IF;
+    END;
+    $block$;
+  `);
+  // Rolling deployments can keep an older application instance alive after
+  // immutable publication pointers are installed. That older code writes the
+  // reader-visible columns directly and can delete drafts without the current
+  // authorization/history checks. Install both mutation contracts before any
+  // later bootstrap work can block: old instances do not know the transaction-
+  // local capabilities, while current code enables each capability only after
+  // completing its row lock, CAS, authorization, and audit checks.
+    await migration.execute(sql`
+    CREATE OR REPLACE FUNCTION bbsports_enforce_article_mutation_contracts()
+    RETURNS trigger
+    LANGUAGE plpgsql
+    AS $function$
+    BEGIN
+      IF TG_OP = 'DELETE' THEN
+        IF current_setting('bbsports.article_delete_contract', true) IS DISTINCT FROM 'v1' THEN
+          RAISE EXCEPTION 'article deletion requires the guarded deletion contract'
+            USING
+              ERRCODE = '55000',
+              CONSTRAINT = 'articles_guarded_delete_contract';
+        END IF;
+        RETURN OLD;
+      END IF;
+
+      IF OLD.published IS DISTINCT FROM NEW.published
+        AND current_setting('bbsports.article_publication_contract', true) IS DISTINCT FROM 'v1'
+      THEN
+        RAISE EXCEPTION 'article publication transitions require the guarded publication contract'
+          USING
+            ERRCODE = '55000',
+            CONSTRAINT = 'articles_publication_transition_contract';
+      END IF;
+
+      IF OLD.published = true
+        AND (
+          OLD.slug IS DISTINCT FROM NEW.slug
+          OR OLD.title IS DISTINCT FROM NEW.title
+          OR OLD.dek IS DISTINCT FROM NEW.dek
+          OR OLD.body IS DISTINCT FROM NEW.body
+          OR OLD.sport IS DISTINCT FROM NEW.sport
+          OR OLD.hero IS DISTINCT FROM NEW.hero
+          OR OLD.hero_alt IS DISTINCT FROM NEW.hero_alt
+          OR OLD.hero_credit IS DISTINCT FROM NEW.hero_credit
+          OR OLD.author_name IS DISTINCT FROM NEW.author_name
+          OR OLD.ai_assisted IS DISTINCT FROM NEW.ai_assisted
+          OR OLD.brads_take IS DISTINCT FROM NEW.brads_take
+        )
+        AND (
+          current_setting(
+            'bbsports.published_working_copy_edit_contract',
+            true
+          ) IS DISTINCT FROM 'v1'
+          OR NOT EXISTS (
+            SELECT 1
+            FROM publication_runtime_controls
+            WHERE control_key = 'published_working_copy_edits_v1'
+              AND enabled = true
+          )
+        )
+      THEN
+        RAISE EXCEPTION 'published working-copy edits require the guarded edit contract'
+          USING
+            ERRCODE = '55000',
+            CONSTRAINT = 'articles_published_working_copy_edit_contract';
+      END IF;
+      RETURN NEW;
+    END;
+    $function$;
+  `);
+    await migration.execute(sql`
+    DO $block$
+    BEGIN
+      IF NOT EXISTS (
+        SELECT 1
+        FROM pg_trigger
+        WHERE tgname = 'articles_published_working_copy_edit_guard'
+          AND tgrelid = 'articles'::regclass
+          AND obj_description(oid, 'pg_trigger') =
+            'bbsports:published-working-copy-edit-contract:v1'
+      ) THEN
+        DROP TRIGGER IF EXISTS articles_published_working_copy_edit_guard ON articles;
+        CREATE TRIGGER articles_published_working_copy_edit_guard
+        BEFORE UPDATE OF
+          slug,
+          title,
+          dek,
+          body,
+          sport,
+          hero,
+          hero_alt,
+          hero_credit,
+          author_name,
+          ai_assisted,
+          brads_take
+        ON articles
+        FOR EACH ROW EXECUTE FUNCTION bbsports_enforce_article_mutation_contracts();
+        COMMENT ON TRIGGER articles_published_working_copy_edit_guard ON articles IS
+          'bbsports:published-working-copy-edit-contract:v1';
+      END IF;
+
+      IF NOT EXISTS (
+        SELECT 1
+        FROM pg_trigger
+        WHERE tgname = 'articles_guarded_delete'
+          AND tgrelid = 'articles'::regclass
+          AND obj_description(oid, 'pg_trigger') =
+            'bbsports:article-delete-contract:v1'
+      ) THEN
+        DROP TRIGGER IF EXISTS articles_guarded_delete ON articles;
+        CREATE TRIGGER articles_guarded_delete
+        BEFORE DELETE ON articles
+        FOR EACH ROW EXECUTE FUNCTION bbsports_enforce_article_mutation_contracts();
+        COMMENT ON TRIGGER articles_guarded_delete ON articles IS
+          'bbsports:article-delete-contract:v1';
+      END IF;
+
+      IF NOT EXISTS (
+        SELECT 1
+        FROM pg_trigger
+        WHERE tgname = 'articles_publication_transition_guard'
+          AND tgrelid = 'articles'::regclass
+          AND obj_description(oid, 'pg_trigger') =
+            'bbsports:article-publication-contract:v1'
+      ) THEN
+        DROP TRIGGER IF EXISTS articles_publication_transition_guard ON articles;
+        CREATE TRIGGER articles_publication_transition_guard
+        BEFORE UPDATE OF published ON articles
+        FOR EACH ROW EXECUTE FUNCTION bbsports_enforce_article_mutation_contracts();
+        COMMENT ON TRIGGER articles_publication_transition_guard ON articles IS
+          'bbsports:article-publication-contract:v1';
+      END IF;
+    END;
+    $block$;
+  `);
+  // Media referenced by an immutable live snapshot must remain renderable for
+  // as long as that snapshot is public. Create the table and install this
+  // no-bypass invariant before the remainder of bootstrap so a legacy replica
+  // cannot invalidate or delete a live hero during a rolling deployment.
+    await migration.execute(sql`
+    CREATE TABLE IF NOT EXISTS media_assets (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      kind varchar(24) NOT NULL DEFAULT 'image',
+      status varchar(32) NOT NULL DEFAULT 'ready',
+      title text NOT NULL DEFAULT '',
+      sport varchar(40) NOT NULL DEFAULT 'general',
+      placement varchar(40) NOT NULL DEFAULT 'homepage',
+      prompt text NOT NULL DEFAULT '',
+      provider varchar(40) NOT NULL DEFAULT 'xai',
+      model varchar(80) NOT NULL DEFAULT '',
+      asset_url text NOT NULL DEFAULT '',
+      external_url text NOT NULL DEFAULT '',
+      content_type varchar(80) NOT NULL DEFAULT '',
+      data_base64 text NOT NULL DEFAULT '',
+      alt_text text NOT NULL DEFAULT '',
+      credit text NOT NULL DEFAULT 'AI-generated via xAI Grok; approved by BB Sports.',
+      aspect_ratio varchar(16) NOT NULL DEFAULT '16:9',
+      resolution varchar(16) NOT NULL DEFAULT '',
+      duration_seconds integer,
+      animated boolean NOT NULL DEFAULT false,
+      approved boolean NOT NULL DEFAULT false,
+      request_id varchar(160),
+      raw_response jsonb,
+      created_by uuid REFERENCES users(id) ON DELETE SET NULL,
+      created_at timestamptz NOT NULL DEFAULT now(),
+      updated_at timestamptz NOT NULL DEFAULT now()
+    );
+  `);
+    await migration.execute(sql`LOCK TABLE media_assets IN ACCESS EXCLUSIVE MODE;`);
+    await migration.execute(sql`
+    CREATE OR REPLACE FUNCTION bbsports_preserve_live_article_media()
+    RETURNS trigger
+    LANGUAGE plpgsql
+    AS $function$
+    DECLARE
+      referenced_asset_id uuid := OLD.id;
+    BEGIN
+      IF EXISTS (
+        SELECT 1
+        FROM articles
+        WHERE published = true
+          AND published_snapshot->>'hero' =
+            '/api/media/assets/' || referenced_asset_id::text || '/file'
+      ) THEN
+        IF TG_OP = 'DELETE' THEN
+          RAISE EXCEPTION 'a live article hero asset cannot be deleted while referenced'
+            USING
+              ERRCODE = '23514',
+              CONSTRAINT = 'media_assets_live_article_ready';
+        END IF;
+        IF NEW.id IS DISTINCT FROM OLD.id
+          OR NEW.kind IS DISTINCT FROM OLD.kind
+          OR NEW.status IS DISTINCT FROM OLD.status
+          OR NEW.approved IS DISTINCT FROM OLD.approved
+          OR NEW.content_type IS DISTINCT FROM OLD.content_type
+          OR NEW.data_base64 IS DISTINCT FROM OLD.data_base64
+        THEN
+          RAISE EXCEPTION 'a live article hero asset and its durable bytes are immutable while referenced'
+            USING
+              ERRCODE = '23514',
+              CONSTRAINT = 'media_assets_live_article_ready';
+        END IF;
+      END IF;
+      IF TG_OP = 'DELETE' THEN
+        RETURN OLD;
+      END IF;
+      RETURN NEW;
+    END;
+    $function$;
+  `);
+    await migration.execute(sql`
+    DO $block$
+    BEGIN
+      IF NOT EXISTS (
+        SELECT 1
+        FROM pg_trigger
+        WHERE tgname = 'media_assets_live_article_ready_guard'
+          AND tgrelid = 'media_assets'::regclass
+          AND obj_description(oid, 'pg_trigger') =
+            'bbsports:media-assets-live-article-ready:v1'
+      ) THEN
+        DROP TRIGGER IF EXISTS media_assets_live_article_ready_guard ON media_assets;
+        CREATE TRIGGER media_assets_live_article_ready_guard
+        BEFORE UPDATE OR DELETE ON media_assets
+        FOR EACH ROW EXECUTE FUNCTION bbsports_preserve_live_article_media();
+        COMMENT ON TRIGGER media_assets_live_article_ready_guard ON media_assets IS
+          'bbsports:media-assets-live-article-ready:v1';
+      END IF;
+    END;
+    $block$;
+  `);
+  });
   await db.execute(sql`
     CREATE TABLE IF NOT EXISTS site_config (
       key varchar(64) PRIMARY KEY,
@@ -165,35 +580,6 @@ async function bootstrap(): Promise<void> {
   await db.execute(sql`ALTER TABLE donation_intents ADD COLUMN IF NOT EXISTS stripe_currency varchar(8);`);
   await db.execute(sql`ALTER TABLE donation_intents ADD COLUMN IF NOT EXISTS stripe_amount_received_cents integer;`);
   await db.execute(sql`ALTER TABLE donation_intents ADD COLUMN IF NOT EXISTS paid_at timestamptz;`);
-  await db.execute(sql`
-    CREATE TABLE IF NOT EXISTS media_assets (
-      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-      kind varchar(24) NOT NULL DEFAULT 'image',
-      status varchar(32) NOT NULL DEFAULT 'ready',
-      title text NOT NULL DEFAULT '',
-      sport varchar(40) NOT NULL DEFAULT 'general',
-      placement varchar(40) NOT NULL DEFAULT 'homepage',
-      prompt text NOT NULL DEFAULT '',
-      provider varchar(40) NOT NULL DEFAULT 'xai',
-      model varchar(80) NOT NULL DEFAULT '',
-      asset_url text NOT NULL DEFAULT '',
-      external_url text NOT NULL DEFAULT '',
-      content_type varchar(80) NOT NULL DEFAULT '',
-      data_base64 text NOT NULL DEFAULT '',
-      alt_text text NOT NULL DEFAULT '',
-      credit text NOT NULL DEFAULT 'AI-generated via xAI Grok; approved by BB Sports.',
-      aspect_ratio varchar(16) NOT NULL DEFAULT '16:9',
-      resolution varchar(16) NOT NULL DEFAULT '',
-      duration_seconds integer,
-      animated boolean NOT NULL DEFAULT false,
-      approved boolean NOT NULL DEFAULT false,
-      request_id varchar(160),
-      raw_response jsonb,
-      created_by uuid REFERENCES users(id) ON DELETE SET NULL,
-      created_at timestamptz NOT NULL DEFAULT now(),
-      updated_at timestamptz NOT NULL DEFAULT now()
-    );
-  `);
   await db.execute(sql`
     CREATE TABLE IF NOT EXISTS comments (
       id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -293,8 +679,8 @@ async function bootstrap(): Promise<void> {
     CREATE TABLE IF NOT EXISTS news_evidence (
       id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
       event_id uuid NOT NULL REFERENCES news_events(id),
-      source_id uuid REFERENCES news_sources(id) ON DELETE SET NULL,
-      signal_id uuid REFERENCES news_signals(id) ON DELETE SET NULL,
+      source_id uuid REFERENCES news_sources(id) ON DELETE RESTRICT,
+      signal_id uuid REFERENCES news_signals(id) ON DELETE RESTRICT,
       supersedes_evidence_id uuid REFERENCES news_evidence(id),
       stance varchar(24) NOT NULL CHECK (stance IN ('supporting', 'contradicting', 'context')),
       evidence_class varchar(24) NOT NULL CHECK (evidence_class IN ('primary', 'official', 'reporting', 'context')),
@@ -307,7 +693,7 @@ async function bootstrap(): Promise<void> {
       excerpt text NOT NULL DEFAULT '',
       notes text NOT NULL DEFAULT '',
       captured_at timestamptz NOT NULL DEFAULT now(),
-      added_by uuid REFERENCES users(id) ON DELETE SET NULL,
+      added_by uuid REFERENCES users(id) ON DELETE RESTRICT,
       created_at timestamptz NOT NULL DEFAULT now()
     );
   `);
@@ -315,7 +701,7 @@ async function bootstrap(): Promise<void> {
     CREATE TABLE IF NOT EXISTS news_verification_reviews (
       id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
       event_id uuid NOT NULL REFERENCES news_events(id),
-      reviewer_id uuid REFERENCES users(id) ON DELETE SET NULL,
+      reviewer_id uuid REFERENCES users(id) ON DELETE RESTRICT,
       reviewer_label varchar(160) NOT NULL,
       decision varchar(24) NOT NULL CHECK (decision IN ('verified', 'rejected')),
       rationale text NOT NULL CHECK (length(trim(rationale)) >= 20),
@@ -330,7 +716,7 @@ async function bootstrap(): Promise<void> {
       sequence bigserial NOT NULL UNIQUE,
       event_id uuid REFERENCES news_events(id),
       signal_id uuid REFERENCES news_signals(id),
-      actor_user_id uuid REFERENCES users(id) ON DELETE SET NULL,
+      actor_user_id uuid REFERENCES users(id) ON DELETE RESTRICT,
       actor_label varchar(160) NOT NULL,
       action varchar(64) NOT NULL,
       from_state varchar(32),
@@ -341,8 +727,179 @@ async function bootstrap(): Promise<void> {
     );
   `);
   await db.execute(sql`
+    CREATE TABLE IF NOT EXISTS article_revisions (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      article_id uuid NOT NULL REFERENCES articles(id) ON DELETE RESTRICT,
+      revision_number integer NOT NULL CHECK (revision_number > 0),
+      content_hash varchar(64) NOT NULL CHECK (content_hash ~ '^[a-f0-9]{64}$'),
+      snapshot jsonb NOT NULL CHECK (jsonb_typeof(snapshot) = 'object'),
+      created_by uuid REFERENCES users(id) ON DELETE RESTRICT,
+      source_event_id uuid REFERENCES news_events(id) ON DELETE RESTRICT,
+      created_at timestamptz NOT NULL DEFAULT now()
+    );
+  `);
+  await db.execute(sql`
+    CREATE TABLE IF NOT EXISTS article_publication_events (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      article_id uuid NOT NULL REFERENCES articles(id) ON DELETE RESTRICT,
+      revision_id uuid NOT NULL REFERENCES article_revisions(id) ON DELETE RESTRICT,
+      content_hash varchar(64) NOT NULL CHECK (content_hash ~ '^[a-f0-9]{64}$'),
+      action varchar(24) NOT NULL
+        CHECK (action IN ('published', 'unpublished', 'legacy_backfill')),
+      actor_user_id uuid REFERENCES users(id) ON DELETE RESTRICT,
+      actor_label varchar(160) NOT NULL,
+      exact_confirmation text NOT NULL DEFAULT '',
+      rationale text NOT NULL,
+      created_at timestamptz NOT NULL DEFAULT now(),
+      CONSTRAINT article_publication_events_confirmation_check CHECK (
+        (action = 'published' AND exact_confirmation = 'BRAD APPROVES THIS EXACT ARTICLE FOR PUBLICATION')
+        OR (action <> 'published' AND exact_confirmation = '')
+      )
+    );
+  `);
+  await db.execute(sql`
+    CREATE TABLE IF NOT EXISTS news_event_articles (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      event_id uuid NOT NULL REFERENCES news_events(id) ON DELETE RESTRICT,
+      article_id uuid NOT NULL REFERENCES articles(id) ON DELETE RESTRICT,
+      revision_id uuid NOT NULL REFERENCES article_revisions(id) ON DELETE RESTRICT,
+      relation varchar(24) NOT NULL DEFAULT 'source' CHECK (relation = 'source'),
+      actor_user_id uuid REFERENCES users(id) ON DELETE RESTRICT,
+      actor_label varchar(160) NOT NULL,
+      created_at timestamptz NOT NULL DEFAULT now()
+    );
+  `);
+  await db.execute(sql`
     ALTER TABLE news_evidence
     ADD COLUMN IF NOT EXISTS supersedes_evidence_id uuid REFERENCES news_evidence(id);
+  `);
+  // CREATE TABLE IF NOT EXISTS does not repair referential actions on an
+  // already-deployed schema. Older newsroom ledgers used SET NULL and an
+  // early publication migration used CASCADE; both can issue an implicit
+  // UPDATE/DELETE that conflicts with the append-only triggers below. Replace
+  // those historical foreign keys in place and validate every replacement.
+  await db.execute(sql`
+    DO $block$
+    DECLARE
+      desired record;
+    BEGIN
+      FOR desired IN
+        SELECT *
+        FROM (VALUES
+          (
+            'news_evidence',
+            'news_evidence_source_id_fkey',
+            'FOREIGN KEY (source_id) REFERENCES news_sources(id) ON DELETE RESTRICT'
+          ),
+          (
+            'news_evidence',
+            'news_evidence_signal_id_fkey',
+            'FOREIGN KEY (signal_id) REFERENCES news_signals(id) ON DELETE RESTRICT'
+          ),
+          (
+            'news_evidence',
+            'news_evidence_added_by_fkey',
+            'FOREIGN KEY (added_by) REFERENCES users(id) ON DELETE RESTRICT'
+          ),
+          (
+            'news_verification_reviews',
+            'news_verification_reviews_reviewer_id_fkey',
+            'FOREIGN KEY (reviewer_id) REFERENCES users(id) ON DELETE RESTRICT'
+          ),
+          (
+            'newsroom_activity',
+            'newsroom_activity_actor_user_id_fkey',
+            'FOREIGN KEY (actor_user_id) REFERENCES users(id) ON DELETE RESTRICT'
+          ),
+          (
+            'article_revisions',
+            'article_revisions_article_id_fkey',
+            'FOREIGN KEY (article_id) REFERENCES articles(id) ON DELETE RESTRICT'
+          ),
+          (
+            'article_revisions',
+            'article_revisions_created_by_fkey',
+            'FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE RESTRICT'
+          ),
+          (
+            'article_revisions',
+            'article_revisions_source_event_id_fkey',
+            'FOREIGN KEY (source_event_id) REFERENCES news_events(id) ON DELETE RESTRICT'
+          ),
+          (
+            'article_publication_events',
+            'article_publication_events_article_id_fkey',
+            'FOREIGN KEY (article_id) REFERENCES articles(id) ON DELETE RESTRICT'
+          ),
+          (
+            'article_publication_events',
+            'article_publication_events_revision_id_fkey',
+            'FOREIGN KEY (revision_id) REFERENCES article_revisions(id) ON DELETE RESTRICT'
+          ),
+          (
+            'article_publication_events',
+            'article_publication_events_actor_user_id_fkey',
+            'FOREIGN KEY (actor_user_id) REFERENCES users(id) ON DELETE RESTRICT'
+          ),
+          (
+            'news_event_articles',
+            'news_event_articles_event_id_fkey',
+            'FOREIGN KEY (event_id) REFERENCES news_events(id) ON DELETE RESTRICT'
+          ),
+          (
+            'news_event_articles',
+            'news_event_articles_article_id_fkey',
+            'FOREIGN KEY (article_id) REFERENCES articles(id) ON DELETE RESTRICT'
+          ),
+          (
+            'news_event_articles',
+            'news_event_articles_revision_id_fkey',
+            'FOREIGN KEY (revision_id) REFERENCES article_revisions(id) ON DELETE RESTRICT'
+          ),
+          (
+            'news_event_articles',
+            'news_event_articles_actor_user_id_fkey',
+            'FOREIGN KEY (actor_user_id) REFERENCES users(id) ON DELETE RESTRICT'
+          )
+        ) AS desired_fks(table_name, constraint_name, definition)
+      LOOP
+        IF NOT EXISTS (
+          SELECT 1
+          FROM pg_constraint
+          WHERE conname = desired.constraint_name
+            AND conrelid = to_regclass(desired.table_name)
+            AND contype = 'f'
+            AND confdeltype = 'r'
+        ) THEN
+          EXECUTE format(
+            'ALTER TABLE %I DROP CONSTRAINT IF EXISTS %I',
+            desired.table_name,
+            desired.constraint_name
+          );
+          EXECUTE format(
+            'ALTER TABLE %I ADD CONSTRAINT %I %s NOT VALID',
+            desired.table_name,
+            desired.constraint_name,
+            desired.definition
+          );
+        END IF;
+
+        IF EXISTS (
+          SELECT 1
+          FROM pg_constraint
+          WHERE conname = desired.constraint_name
+            AND conrelid = to_regclass(desired.table_name)
+            AND convalidated = false
+        ) THEN
+          EXECUTE format(
+            'ALTER TABLE %I VALIDATE CONSTRAINT %I',
+            desired.table_name,
+            desired.constraint_name
+          );
+        END IF;
+      END LOOP;
+    END;
+    $block$;
   `);
   // Database-enforced append-only ledgers. Corrections and reversals are new
   // rows; UPDATE/DELETE can never rewrite the historical verification basis.
@@ -390,8 +947,83 @@ async function bootstrap(): Promise<void> {
     END;
     $block$;
   `);
+  await db.execute(sql`
+    CREATE OR REPLACE FUNCTION bbsports_reject_publication_ledger_mutation()
+    RETURNS trigger
+    LANGUAGE plpgsql
+    AS $function$
+    BEGIN
+      RAISE EXCEPTION '% is append-only; append a new publication record instead', TG_TABLE_NAME
+        USING ERRCODE = '55000';
+    END;
+    $function$;
+  `);
+  await db.execute(sql`
+    DO $block$
+    BEGIN
+      IF NOT EXISTS (
+        SELECT 1 FROM pg_trigger
+        WHERE tgname = 'article_revisions_append_only'
+          AND tgrelid = 'article_revisions'::regclass
+      ) THEN
+        CREATE TRIGGER article_revisions_append_only
+        BEFORE UPDATE OR DELETE ON article_revisions
+        FOR EACH ROW EXECUTE FUNCTION bbsports_reject_publication_ledger_mutation();
+      END IF;
+      IF NOT EXISTS (
+        SELECT 1 FROM pg_trigger
+        WHERE tgname = 'article_publication_events_append_only'
+          AND tgrelid = 'article_publication_events'::regclass
+      ) THEN
+        CREATE TRIGGER article_publication_events_append_only
+        BEFORE UPDATE OR DELETE ON article_publication_events
+        FOR EACH ROW EXECUTE FUNCTION bbsports_reject_publication_ledger_mutation();
+      END IF;
+      IF NOT EXISTS (
+        SELECT 1 FROM pg_trigger
+        WHERE tgname = 'news_event_articles_append_only'
+          AND tgrelid = 'news_event_articles'::regclass
+      ) THEN
+        CREATE TRIGGER news_event_articles_append_only
+        BEFORE UPDATE OR DELETE ON news_event_articles
+        FOR EACH ROW EXECUTE FUNCTION bbsports_reject_publication_ledger_mutation();
+      END IF;
+    END;
+    $block$;
+  `);
+  await db.execute(sql`
+    CREATE OR REPLACE FUNCTION bbsports_reject_article_origin_change()
+    RETURNS trigger
+    LANGUAGE plpgsql
+    AS $function$
+    BEGIN
+      IF OLD.created_under_approval_gate IS DISTINCT FROM NEW.created_under_approval_gate THEN
+        RAISE EXCEPTION 'article creation provenance is immutable'
+          USING ERRCODE = '55000';
+      END IF;
+      RETURN NEW;
+    END;
+    $function$;
+  `);
+  await db.execute(sql`
+    DO $block$
+    BEGIN
+      IF NOT EXISTS (
+        SELECT 1 FROM pg_trigger
+        WHERE tgname = 'articles_creation_provenance_immutable'
+          AND tgrelid = 'articles'::regclass
+      ) THEN
+        CREATE TRIGGER articles_creation_provenance_immutable
+        BEFORE UPDATE OF created_under_approval_gate ON articles
+        FOR EACH ROW EXECUTE FUNCTION bbsports_reject_article_origin_change();
+      END IF;
+    END;
+    $block$;
+  `);
   await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_articles_published ON articles(published, published_at DESC);`);
   await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_articles_sport ON articles(sport);`);
+  await db.execute(sql`CREATE UNIQUE INDEX IF NOT EXISTS idx_articles_live_snapshot_slug ON articles ((published_snapshot->>'slug')) WHERE published = true AND published_snapshot IS NOT NULL;`);
+  await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_articles_live_snapshot_sport ON articles ((published_snapshot->>'sport'), published_at DESC) WHERE published = true AND published_snapshot IS NOT NULL;`);
   await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_sessions_user ON sessions(user_id);`);
   await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_newsletter_status ON newsletter_subscribers(status, updated_at DESC);`);
   await db.execute(sql`CREATE UNIQUE INDEX IF NOT EXISTS idx_newsletter_unsubscribe_token ON newsletter_subscribers(unsubscribe_token) WHERE unsubscribe_token IS NOT NULL;`);
@@ -429,6 +1061,21 @@ async function bootstrap(): Promise<void> {
   await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_newsroom_activity_event_sequence ON newsroom_activity(event_id, sequence);`);
   await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_newsroom_activity_signal ON newsroom_activity(signal_id);`);
   await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_newsroom_activity_actor ON newsroom_activity(actor_user_id);`);
+  await db.execute(sql`CREATE UNIQUE INDEX IF NOT EXISTS idx_article_revisions_article_number ON article_revisions(article_id, revision_number);`);
+  await db.execute(sql`CREATE UNIQUE INDEX IF NOT EXISTS idx_article_revisions_article_hash ON article_revisions(article_id, content_hash);`);
+  await db.execute(sql`CREATE UNIQUE INDEX IF NOT EXISTS idx_article_revisions_article_id_id ON article_revisions(article_id, id);`);
+  await db.execute(sql`CREATE UNIQUE INDEX IF NOT EXISTS idx_article_revisions_article_id_id_hash ON article_revisions(article_id, id, content_hash);`);
+  await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_article_revisions_created_by ON article_revisions(created_by);`);
+  await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_article_revisions_source_event ON article_revisions(source_event_id);`);
+  await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_article_publication_events_article_time ON article_publication_events(article_id, created_at DESC);`);
+  await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_article_publication_events_revision ON article_publication_events(revision_id);`);
+  await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_article_publication_events_actor ON article_publication_events(actor_user_id);`);
+  await db.execute(sql`CREATE UNIQUE INDEX IF NOT EXISTS idx_article_publication_events_legacy_once ON article_publication_events(article_id) WHERE action = 'legacy_backfill';`);
+  await db.execute(sql`CREATE UNIQUE INDEX IF NOT EXISTS idx_news_event_articles_event_relation ON news_event_articles(event_id, relation);`);
+  await db.execute(sql`CREATE UNIQUE INDEX IF NOT EXISTS idx_news_event_articles_article_event ON news_event_articles(article_id, event_id);`);
+  await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_news_event_articles_article ON news_event_articles(article_id);`);
+  await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_news_event_articles_revision ON news_event_articles(revision_id);`);
+  await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_news_event_articles_actor ON news_event_articles(actor_user_id);`);
 
   // Credential-free intake source. It records a human newsroom observation but
   // is intentionally unverified, so it can never satisfy corroboration alone.
@@ -502,7 +1149,7 @@ async function bootstrap(): Promise<void> {
       .onConflictDoNothing({ target: siteConfig.key });
   }
 
-  // 4. Articles seed — only if articles table is empty (one-time on first boot).
+  // 4. Draft import — only if articles table is empty (one-time on first boot).
   const countResult = await db.execute(sql`SELECT count(*)::int AS c FROM articles`);
   const count = (countResult as unknown as { c: number }[])[0]?.c ?? 0;
   if (count === 0) {
@@ -532,10 +1179,316 @@ async function bootstrap(): Promise<void> {
           authorName: String(data.author ?? 'Brad Benson'),
           aiAssisted: Boolean(data.aiAssisted),
           bradsTake: String(data.bradsTake ?? ''),
-          published: true,
-          publishedAt: data.date ? new Date(String(data.date)) : new Date(),
+          // Repository content is an import candidate, not publication
+          // approval. A fresh database must never manufacture a legacy live
+          // state merely because a Markdown file exists.
+          published: false,
+          publishedAt: null,
         })
         .onConflictDoNothing({ target: articles.slug });
+    }
+  }
+
+  // 5. Preserve every legacy live story as an immutable, content-addressed
+  // revision before public queries begin serving snapshot-only content. The
+  // per-article transaction and unique keys make crash/retry recovery safe.
+  await backfillPublishedArticleSnapshots();
+
+  // The composite key proves that a live pointer cannot reference another
+  // article's revision or attach a different content hash to that revision.
+  // It is added after legacy backfill, then fully validated; NOT VALID keeps
+  // the initial DDL lock brief on an upgraded database.
+  await db.execute(sql`
+    DO $block$
+    BEGIN
+      IF EXISTS (
+        SELECT 1
+        FROM pg_constraint
+        WHERE conname = 'articles_published_revision_same_article'
+          AND conrelid = 'articles'::regclass
+          AND position(
+            'published_content_hash'
+            IN lower(pg_get_constraintdef(oid))
+          ) = 0
+      ) THEN
+        ALTER TABLE articles
+        DROP CONSTRAINT articles_published_revision_same_article;
+      END IF;
+      IF NOT EXISTS (
+        SELECT 1
+        FROM pg_constraint
+        WHERE conname = 'articles_published_revision_same_article'
+          AND conrelid = 'articles'::regclass
+      ) THEN
+        ALTER TABLE articles
+        ADD CONSTRAINT articles_published_revision_same_article
+        FOREIGN KEY (id, published_revision_id, published_content_hash)
+        REFERENCES article_revisions(article_id, id, content_hash)
+        ON DELETE RESTRICT
+        NOT VALID;
+      END IF;
+    END;
+    $block$;
+  `);
+  await db.execute(sql`
+    DO $block$
+    BEGIN
+      IF EXISTS (
+        SELECT 1
+        FROM pg_constraint
+        WHERE conname = 'articles_published_revision_same_article'
+          AND conrelid = 'articles'::regclass
+          AND convalidated = false
+      ) THEN
+        ALTER TABLE articles
+        VALIDATE CONSTRAINT articles_published_revision_same_article;
+      END IF;
+    END;
+    $block$;
+  `);
+
+  // Audit rows cannot point at a revision owned by another article or claim a
+  // different hash. Newsroom links receive the same same-article guarantee.
+  await db.execute(sql`
+    DO $block$
+    BEGIN
+      IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint
+        WHERE conname = 'article_publication_events_revision_integrity'
+          AND conrelid = 'article_publication_events'::regclass
+      ) THEN
+        ALTER TABLE article_publication_events
+        ADD CONSTRAINT article_publication_events_revision_integrity
+        FOREIGN KEY (article_id, revision_id, content_hash)
+        REFERENCES article_revisions(article_id, id, content_hash)
+        NOT VALID;
+      END IF;
+      IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint
+        WHERE conname = 'news_event_articles_revision_integrity'
+          AND conrelid = 'news_event_articles'::regclass
+      ) THEN
+        ALTER TABLE news_event_articles
+        ADD CONSTRAINT news_event_articles_revision_integrity
+        FOREIGN KEY (article_id, revision_id)
+        REFERENCES article_revisions(article_id, id)
+        NOT VALID;
+      END IF;
+    END;
+    $block$;
+  `);
+  await db.execute(sql`
+    DO $block$
+    BEGIN
+      IF EXISTS (
+        SELECT 1 FROM pg_constraint
+        WHERE conname = 'article_publication_events_revision_integrity'
+          AND conrelid = 'article_publication_events'::regclass
+          AND convalidated = false
+      ) THEN
+        ALTER TABLE article_publication_events
+        VALIDATE CONSTRAINT article_publication_events_revision_integrity;
+      END IF;
+      IF EXISTS (
+        SELECT 1 FROM pg_constraint
+        WHERE conname = 'news_event_articles_revision_integrity'
+          AND conrelid = 'news_event_articles'::regclass
+          AND convalidated = false
+      ) THEN
+        ALTER TABLE news_event_articles
+        VALIDATE CONSTRAINT news_event_articles_revision_integrity;
+      END IF;
+    END;
+    $block$;
+  `);
+
+  // Once legacy rows are reconciled, make it impossible for any old mutation
+  // path to set `published = true` without all immutable publication pointers.
+  await db.execute(sql`
+    UPDATE articles
+    SET published_at = NULL,
+        published_snapshot = NULL,
+        published_content_hash = NULL,
+        published_revision_id = NULL
+    WHERE published = false
+      AND (
+        published_at IS NOT NULL
+        OR published_snapshot IS NOT NULL
+        OR published_content_hash IS NOT NULL
+        OR published_revision_id IS NOT NULL
+      );
+  `);
+  await db.execute(sql`
+    DO $block$
+    BEGIN
+      IF EXISTS (
+        SELECT 1
+        FROM pg_constraint
+        WHERE conname = 'articles_published_snapshot_complete'
+          AND conrelid = 'articles'::regclass
+          AND convalidated = false
+      ) THEN
+        ALTER TABLE articles
+        VALIDATE CONSTRAINT articles_published_snapshot_complete;
+      END IF;
+    END;
+    $block$;
+  `);
+}
+
+async function backfillPublishedArticleSnapshots(): Promise<void> {
+  if (!db) return;
+
+  while (true) {
+    const candidates = await db
+      .select()
+      .from(articles)
+      .where(
+        and(
+          eq(articles.published, true),
+          sql`(
+            ${articles.publishedSnapshot} IS NULL
+            OR ${articles.publishedContentHash} IS NULL
+            OR ${articles.publishedRevisionId} IS NULL
+          )`,
+        ),
+      )
+      .orderBy(articles.createdAt)
+      .limit(100);
+    if (candidates.length === 0) return;
+
+    for (const candidate of candidates) {
+      await db.transaction(async (tx) => {
+        await tx.execute(sql`SELECT id FROM articles WHERE id = ${candidate.id} FOR UPDATE`);
+        const [current] = await tx
+          .select()
+          .from(articles)
+          .where(eq(articles.id, candidate.id))
+          .limit(1);
+        if (
+          !current?.published ||
+          (current.publishedSnapshot &&
+            current.publishedContentHash &&
+            current.publishedRevisionId)
+        ) {
+          return;
+        }
+
+        const internalHeroMediaId = articleHeroMediaAssetId(current.hero);
+        if (internalHeroMediaId) {
+          const [heroAsset] = await tx
+            .select({
+              kind: mediaAssets.kind,
+              status: mediaAssets.status,
+              contentType: mediaAssets.contentType,
+              approved: mediaAssets.approved,
+              hasBytes: sql<boolean>`length(${mediaAssets.dataBase64}) > 0`,
+            })
+            .from(mediaAssets)
+            .where(eq(mediaAssets.id, internalHeroMediaId))
+            .limit(1);
+          if (
+            !heroAsset ||
+            heroAsset.kind !== 'image' ||
+            heroAsset.status !== 'ready' ||
+            !heroAsset.approved ||
+            !/^image\/(?:jpeg|png|webp)$/i.test(heroAsset.contentType) ||
+            !heroAsset.hasBytes
+          ) {
+            throw new Error(
+              `Legacy live article ${current.id} references an unavailable publication hero.`,
+            );
+          }
+        }
+
+        const snapshot = normalizeArticlePublicationSnapshot({
+          slug: current.slug,
+          title: current.title,
+          dek: current.dek,
+          body: current.body,
+          sport: current.sport,
+          hero: current.hero,
+          heroAlt: current.heroAlt,
+          heroCredit: current.heroCredit,
+          authorName: current.authorName,
+          aiAssisted: current.aiAssisted,
+          bradsTake: current.bradsTake,
+        });
+        const contentHash = hashArticlePublicationSnapshot(snapshot);
+
+        let [revision] = await tx
+          .select()
+          .from(articleRevisions)
+          .where(
+            and(
+              eq(articleRevisions.articleId, current.id),
+              eq(articleRevisions.contentHash, contentHash),
+            ),
+          )
+          .limit(1);
+        if (!revision) {
+          const [counter] = await tx
+            .select({
+              maximum: sql<number>`coalesce(max(${articleRevisions.revisionNumber}), 0)::int`,
+            })
+            .from(articleRevisions)
+            .where(eq(articleRevisions.articleId, current.id));
+          [revision] = await tx
+            .insert(articleRevisions)
+            .values({
+              articleId: current.id,
+              revisionNumber: (counter?.maximum ?? 0) + 1,
+              contentHash,
+              snapshot,
+              createdBy: current.authorId,
+            })
+            .returning();
+        }
+        if (!revision) {
+          throw new Error(`Could not preserve legacy article revision ${current.id}.`);
+        }
+        const preservedRevisionSnapshot = normalizeArticlePublicationSnapshot(revision.snapshot);
+        if (
+          revision.contentHash !== contentHash ||
+          hashArticlePublicationSnapshot(preservedRevisionSnapshot) !== contentHash ||
+          JSON.stringify(preservedRevisionSnapshot) !== JSON.stringify(snapshot)
+        ) {
+          throw new Error(`Legacy article revision integrity check failed for ${current.id}.`);
+        }
+
+        await tx
+          .insert(articlePublicationEvents)
+          .values({
+            articleId: current.id,
+            revisionId: revision.id,
+            contentHash,
+            action: 'legacy_backfill',
+            actorUserId: null,
+            actorLabel: 'BB Sports legacy bootstrap',
+            exactConfirmation: '',
+            rationale: 'Preserved the previously public article during immutable publication migration.',
+          })
+          .onConflictDoNothing();
+
+        await tx
+          .update(articles)
+          .set({
+            publishedSnapshot: snapshot,
+            publishedContentHash: contentHash,
+            publishedRevisionId: revision.id,
+          })
+          .where(
+            and(
+              eq(articles.id, current.id),
+              eq(articles.published, true),
+              sql`(
+                ${articles.publishedSnapshot} IS NULL
+                OR ${articles.publishedContentHash} IS NULL
+                OR ${articles.publishedRevisionId} IS NULL
+              )`,
+            ),
+          );
+      });
     }
   }
 }
