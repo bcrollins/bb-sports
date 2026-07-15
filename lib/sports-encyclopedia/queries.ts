@@ -1,4 +1,4 @@
-import { and, asc, eq, sql } from 'drizzle-orm';
+import { and, asc, eq, ilike, or, sql } from 'drizzle-orm';
 import { db } from '../db/client';
 import { ensureBootstrapped } from '../db/bootstrap';
 import {
@@ -91,11 +91,96 @@ export async function listPeopleForTeam(
     .limit(100);
 }
 
+export async function listSportsPeople(options: {
+  leagueKey?: string;
+  limit?: number;
+} = {}): Promise<SportsPerson[]> {
+  await ensureBootstrapped();
+  const database = requireDb();
+  const limit = Math.min(Math.max(options.limit ?? 100, 1), 200);
+  if (options.leagueKey) {
+    if (!isSportsLeagueKey(options.leagueKey)) return [];
+    return database
+      .select()
+      .from(sportsPeople)
+      .where(eq(sportsPeople.leagueKey, options.leagueKey))
+      .orderBy(asc(sportsPeople.commonName))
+      .limit(limit);
+  }
+  return database
+    .select()
+    .from(sportsPeople)
+    .orderBy(asc(sportsPeople.leagueKey), asc(sportsPeople.commonName))
+    .limit(limit);
+}
+
+export async function getSportsPerson(personKey: string): Promise<SportsPerson | null> {
+  if (!personKey || personKey.length > 120) return null;
+  await ensureBootstrapped();
+  const database = requireDb();
+  const rows = await database
+    .select()
+    .from(sportsPeople)
+    .where(eq(sportsPeople.personKey, personKey))
+    .limit(1);
+  return rows[0] ?? null;
+}
+
+export async function searchSportsTeams(
+  rawQuery: string,
+  limit = 20,
+): Promise<SportsTeam[]> {
+  const query = rawQuery.trim().replace(/\s+/g, ' ').slice(0, 80);
+  if (query.length < 2) return [];
+  await ensureBootstrapped();
+  const database = requireDb();
+  const pattern = `%${query.replace(/[%_]/g, '')}%`;
+  return database
+    .select()
+    .from(sportsTeams)
+    .where(
+      or(
+        ilike(sportsTeams.displayName, pattern),
+        ilike(sportsTeams.city, pattern),
+        ilike(sportsTeams.nickname, pattern),
+        ilike(sportsTeams.abbreviation, pattern),
+        ilike(sportsTeams.teamKey, pattern),
+      ),
+    )
+    .orderBy(asc(sportsTeams.displayName))
+    .limit(Math.min(Math.max(limit, 1), 50));
+}
+
+export async function searchSportsPeople(
+  rawQuery: string,
+  limit = 20,
+): Promise<SportsPerson[]> {
+  const query = rawQuery.trim().replace(/\s+/g, ' ').slice(0, 80);
+  if (query.length < 2) return [];
+  await ensureBootstrapped();
+  const database = requireDb();
+  const pattern = `%${query.replace(/[%_]/g, '')}%`;
+  return database
+    .select()
+    .from(sportsPeople)
+    .where(
+      or(
+        ilike(sportsPeople.commonName, pattern),
+        ilike(sportsPeople.fullName, pattern),
+        ilike(sportsPeople.personKey, pattern),
+        ilike(sportsPeople.positionOrTitle, pattern),
+      ),
+    )
+    .orderBy(asc(sportsPeople.commonName))
+    .limit(Math.min(Math.max(limit, 1), 50));
+}
+
 export async function getSportsEncyclopediaStats(): Promise<{
   leagues: number;
   teams: number;
   people: number;
   teamsByLeague: Record<string, number>;
+  peopleByLeague: Record<string, number>;
 }> {
   await ensureBootstrapped();
   const database = requireDb();
@@ -113,12 +198,22 @@ export async function getSportsEncyclopediaStats(): Promise<{
     })
     .from(sportsTeams)
     .groupBy(sportsTeams.leagueKey);
+  const peopleBy = await database
+    .select({
+      leagueKey: sportsPeople.leagueKey,
+      n: sql<number>`count(*)::int`,
+    })
+    .from(sportsPeople)
+    .groupBy(sportsPeople.leagueKey);
   const teamsByLeague: Record<string, number> = {};
   for (const row of byLeague) teamsByLeague[row.leagueKey] = row.n;
+  const peopleByLeague: Record<string, number> = {};
+  for (const row of peopleBy) peopleByLeague[row.leagueKey] = row.n;
   return {
     leagues: leagueCount?.n ?? 0,
     teams: teamCount?.n ?? 0,
     people: peopleCount?.n ?? 0,
     teamsByLeague,
+    peopleByLeague,
   };
 }

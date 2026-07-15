@@ -5,9 +5,13 @@ export * from './people.seed';
 export {
   getSportsEncyclopediaStats,
   getSportsLeague,
+  getSportsPerson,
   getSportsTeam,
   isSportsLeagueKey,
   listPeopleForTeam,
   listSportsLeagues,
+  listSportsPeople,
   listSportsTeams,
+  searchSportsPeople,
+  searchSportsTeams,
 } from './queries';

@@ -23,9 +23,9 @@
 
 ## sports_people
 
-- **Coverage:** Small first-party set material to BB Sports columns (not full league rosters).
+- **Coverage:** First-party set material to BB Sports columns and rankings (40+ rows across NFL/MLB/NHL/NBA — not full league rosters).
 - **Primary source:** Official club pages linked per row.
-- **Confidence:** Mostly `CROSS_REFERENCED`; coaching titles may be `FLAGGED` for offseason churn.
+- **Confidence:** Mostly `CROSS_REFERENCED`; coaching titles and free-agent-risk associations may be `FLAGGED` for offseason churn.
 - **Excluded:** Full career stat lines, proprietary WAR/DVOA/etc. tables.
 
 ## Maintenance
