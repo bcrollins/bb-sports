@@ -61,6 +61,10 @@ test('analytics API and tracker wire privacy + salt gates', () => {
   assert.match(api, /parseAnalyticsPrivacySignals/);
   assert.match(api, /evaluateAnalyticsHashPosture/);
   assert.match(api, /privacy_signal/);
+  // Validation must run before salt/privacy short-circuit so invalid events still 400.
+  const validateAt = api.indexOf('analyticsPayloadSchema.safeParse');
+  const saltAt = api.indexOf('evaluateAnalyticsHashPosture');
+  assert.ok(validateAt > -1 && saltAt > -1 && validateAt < saltAt);
   assert.match(tracker, /clientAnalyticsBlocked/);
   assert.match(tracker, /globalPrivacyControl/);
   assert.doesNotMatch(lib, /bb-sports-analytics-v1/);

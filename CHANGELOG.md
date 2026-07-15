@@ -5,6 +5,10 @@ All notable changes to BB Sports. Format loosely follows
 
 ## [Unreleased]
 
+### Fixed
+
+- Analytics POST validates event schema before privacy/salt short-circuit so invalid events still return 400.
+
 ### Added
 
 - Production rollback runbook (`docs/operations/ROLLBACK.md`) with Railway redeploy, git revert, and EXPECTED_COMMIT smoke.
