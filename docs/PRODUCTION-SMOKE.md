@@ -1,54 +1,62 @@
 # BB Sports Production Smoke Gate
 
-Built: 2026-05-08
+Built: 2026-05-08 · Updated: 2026-07-15
 
 ## Purpose
 
-Every shipped interval needs a repeatable live check. `npm run smoke:production` verifies the production Railway app, the soft-launch gate, the first-party search surface, and the analytics write path from outside the process.
+Every shipped interval needs a repeatable live check. `npm run smoke:production` verifies the production Railway app, soft-launch gate, public surfaces, and write-path guards from outside the process.
 
 ## Command
 
 ```sh
+EXPECTED_COMMIT=$(git rev-parse HEAD) \
+BB_PRODUCTION_GATE_PASSWORD=… \
+PRODUCTION_BASE_URL=https://bbsports.fans \
 npm run smoke:production
 ```
 
 Optional controls:
 
-- `PRODUCTION_BASE_URL=https://web-production-c65d6.up.railway.app`
-- `EXPECTED_COMMIT=<git-sha>`
-- `BB_PRODUCTION_GATE_PASSWORD=<Railway GATE_PASSWORD>` (preferred; obtains a fresh signed cookie)
-- `BB_PRODUCTION_GATE_COOKIE=<bb_gate cookie>` (optional pre-issued-cookie override)
-- `BB_SMOKE_SEARCH_QUERY=Bears`
-- `BB_SMOKE_REQUIRED_TEXT="Why the Bears finally have a real shot"`
-- `BB_SMOKE_ARTICLE_SLUG=why-the-bears-finally-have-a-real-shot`
-- `BB_SMOKE_ARTICLE_TITLE="Why the Bears finally have a real shot"`
-- `BB_SMOKE_IP=198.51.100.10` for public write validation guard rate-limit isolation.
+- `PRODUCTION_BASE_URL` (default may still reference Railway hostname)
+- `EXPECTED_COMMIT=<git-sha>` — full or short SHA match against health release
+- `BB_PRODUCTION_GATE_PASSWORD` (preferred; obtains signed `bb_gate` cookie)
+- `BB_PRODUCTION_GATE_COOKIE` (optional pre-issued cookie)
+- `BB_SMOKE_SEARCH_QUERY`, `BB_SMOKE_REQUIRED_TEXT`, `BB_SMOKE_ARTICLE_SLUG`, `BB_SMOKE_ARTICLE_TITLE`
+- `BB_SMOKE_IP` for validation-guard rate-limit isolation
 
-## Checks
+## Checks (33)
 
-- `GET /api/health` returns `status=ok`, `service=bb-sports`, and a reachable database when configured.
-- `GET /search?q=Bears` without a gate cookie redirects to `/coming-soon` with a `next` value.
-- `POST /api/gate` accepts the configured smoke credential and issues a signed `bb_gate` cookie.
-- `GET /search?q=Bears` with that signed cookie returns the search page headline and the known Bears article.
-- The retired `bb_gate=1` value is rejected; rotating `GATE_COOKIE_SECRET` invalidates all previously issued cookies.
-- `GET /api/search?q=Bears` returns JSON results including the known Bears article.
-- `GET /articles/why-the-bears-finally-have-a-real-shot` returns the headline, byline, and editorial note.
-- `GET /api/articles/why-the-bears-finally-have-a-real-shot/comments` returns the public comments array without creating reader data.
-- `GET /sitemap.xml` includes the known article and search route.
-- `GET /api/donations` reports donation mode (`disabled`, `payment_link`, or `checkout`) without exposing secrets.
-- `GET /api/stripe/webhook` reports handled Stripe webhook events without requiring a secret.
-- `GET /api/newsletter` reports whether the Resend welcome rail is configured without exposing secrets.
-- Invalid newsletter, contact, donation, and comment payloads return `400` without creating production records.
-- `GET /api/analytics` advertises the POST contract.
-- Invalid analytics event names return `400`.
-- A valid `page_view` event writes through `POST /api/analytics`.
+1. Health combined (`/api/health`) + commit pin
+2. Health live (`/api/health/live`)
+3. Health ready (`/api/health/ready`)
+4. Public `/status` page
+5. Soft-launch `robots.txt` disallow all
+6. Soft-launch RSS empty of items
+7. Article OG card PNG (`/api/og/article`)
+8. Soft-launch gate redirect (307)
+9. Signed access-wall credential
+10. Live-newsroom auth boundary (401 / login redirect)
+11. Gated search page
+12. Search API JSON
+13. Article page render
+14. Comments read path
+15. Sitemap editorial URLs (empty under soft launch)
+16. Teams encyclopedia API
+17. Teams encyclopedia pages
+18. Donation readiness contract
+19. Stripe webhook contract
+20. Newsletter welcome contract
+21–25. Validation guards (newsletter, contact, donation, comment, analytics)
+26. Analytics contract GET
+27. Analytics write path
+28. Reading list page
+29. Podcast honesty (no fake player)
+30. Videos honesty (no fake clips)
+31. Support surface
+32. Status page honesty (live scores not enabled)
+33. Admin canaries auth boundary (401 without newsroom session)
 
-## Provider Posture
+## Related
 
-GREEN. This smoke uses only BB Sports-owned production endpoints and the existing Railway deployment. It does not add any external provider.
-
-## Path To 10.0
-
-- Add admin-authenticated smoke coverage once a non-personal smoke account exists.
-- Add newsletter/donation success-path smokes with deterministic cleanup.
-- Run this automatically after every Railway deploy.
+- `docs/operations/COMMERCIAL-CANARIES.md` — live Resend/Stripe/R2 proofs
+- `npm run canaries:dry` — local fail-closed provider matrix
