@@ -222,6 +222,22 @@ test('harmless bootstrap notices are filtered without hiding warnings or errors'
     }),
     true,
   );
+  assert.equal(
+    isHarmlessBootstrapNotice({
+      severity: 'NOTICE',
+      message:
+        'constraint "articles_published_snapshot_complete" of relation "articles" does not exist, skipping',
+    }),
+    true,
+  );
+  assert.equal(
+    isHarmlessBootstrapNotice({
+      severity: 'NOTICE',
+      message:
+        'trigger "articles_guarded_delete" for relation "articles" does not exist, skipping',
+    }),
+    true,
+  );
 
   assert.equal(
     isHarmlessBootstrapNotice({

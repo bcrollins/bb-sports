@@ -466,14 +466,17 @@ export function isHarmlessBootstrapNotice(notice: Readonly<{
   }
 
   const message = notice.message ?? '';
-  // Postgres IF NOT EXISTS / OR REPLACE cold-bootstrap chatter.
+  // Postgres IF [NOT] EXISTS cold-bootstrap chatter only.
   return (
     /already exists, skipping$/i.test(message) ||
+    /does not exist, skipping$/i.test(message) ||
     /^relation ".+" already exists, skipping$/i.test(message) ||
     /^column ".+" of relation ".+" already exists, skipping$/i.test(message) ||
     /^constraint ".+" (?:for relation ".+" )?already exists/i.test(message) ||
+    /^constraint ".+" of relation ".+" does not exist, skipping$/i.test(message) ||
     /^index ".+" already exists/i.test(message) ||
     /^trigger ".+" for relation ".+" already exists/i.test(message) ||
+    /^trigger ".+" for relation ".+" does not exist, skipping$/i.test(message) ||
     /^schema ".+" already exists/i.test(message) ||
     /^extension ".+" already exists/i.test(message) ||
     /^type ".+" already exists/i.test(message) ||
