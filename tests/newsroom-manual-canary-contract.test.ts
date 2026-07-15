@@ -2,7 +2,23 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import { manualNewsSignalInputSchema } from '../lib/newsroom-validation';
-import { assessNewsVerification } from '../lib/newsroom-verification';
+import { assessNewsVerification, type VerificationEvidence } from '../lib/newsroom-verification';
+
+function evidence(partial: Partial<VerificationEvidence> = {}): VerificationEvidence {
+  return {
+    stance: 'supporting',
+    evidenceClass: 'reporting',
+    ownerKey: 'reporter-a',
+    sourceTier: 'tier_2',
+    credible: true,
+    sourceId: null,
+    signalId: null,
+    url: null,
+    excerpt: '',
+    notes: '',
+    ...partial,
+  };
+}
 
 test('manual lead schema accepts a desk canary fixture and rejects junk', () => {
   const ok = manualNewsSignalInputSchema.safeParse({
@@ -23,18 +39,18 @@ test('manual lead schema accepts a desk canary fixture and rejects junk', () => 
 });
 
 test('single uncorroborated lead cannot satisfy verification readiness alone', () => {
-  // Pure verification assessment — one tier_2 reporter is not enough to pass floors.
+  // One tier_2 reporter without primary/official and without a second owner fails floors.
   const assessment = assessNewsVerification([
-    {
-      stance: 'supporting',
-      label: 'Single reporter claim',
-      evidenceClass: 'reporting',
+    evidence({
+      url: 'https://example.com/single-reporter',
       sourceTier: 'tier_2',
-      credible: true,
+      evidenceClass: 'reporting',
       ownerKey: 'reporter-a',
-    },
-  ] as never);
+      credible: true,
+    }),
+  ]);
   assert.equal(assessment.passes, false);
+  assert.equal(assessment.reason, 'insufficient_support');
 });
 
 test('worker entry serves health without enabling provider transport by default', () => {
