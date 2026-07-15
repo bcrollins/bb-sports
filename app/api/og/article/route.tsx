@@ -6,6 +6,7 @@ export const runtime = 'nodejs';
 /**
  * Deterministic 1200×630 social card for articles.
  * Brand-safe: no remote hero pixels (rights-safe text-only card).
+ * Satori requires multi-child nodes to use display:flex|none.
  */
 export async function GET(req: NextRequest) {
   const { searchParams } = req.nextUrl;
@@ -22,13 +23,12 @@ export async function GET(req: NextRequest) {
           display: 'flex',
           flexDirection: 'column',
           justifyContent: 'space-between',
-          background: '#06122A',
+          backgroundColor: '#06122A',
           color: '#F5F2EC',
           padding: '56px 64px',
-          fontFamily: 'Georgia, Times New Roman, serif',
         }}
       >
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <div style={{ display: 'flex', flexDirection: 'column' }}>
           <div
             style={{
               display: 'flex',
@@ -37,10 +37,10 @@ export async function GET(req: NextRequest) {
               textTransform: 'uppercase',
               color: '#D7263D',
               fontWeight: 700,
-              fontFamily: 'system-ui, sans-serif',
+              marginBottom: 20,
             }}
           >
-            BB Sports · {sport}
+            {`BB Sports · ${sport}`}
           </div>
           <div
             style={{
@@ -57,14 +57,18 @@ export async function GET(req: NextRequest) {
         <div
           style={{
             display: 'flex',
+            width: '100%',
             justifyContent: 'space-between',
             alignItems: 'flex-end',
-            fontFamily: 'system-ui, sans-serif',
           }}
         >
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            <div style={{ fontSize: 24, fontWeight: 700 }}>By {byline}</div>
-            <div style={{ fontSize: 18, opacity: 0.75 }}>Sports from the fan&apos;s view. No BS.</div>
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <div style={{ display: 'flex', fontSize: 24, fontWeight: 700, marginBottom: 8 }}>
+              {`By ${byline}`}
+            </div>
+            <div style={{ display: 'flex', fontSize: 18, opacity: 0.75 }}>
+              {"Sports from the fan's view. No BS."}
+            </div>
           </div>
           <div
             style={{
