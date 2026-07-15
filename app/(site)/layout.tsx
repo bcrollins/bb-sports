@@ -3,6 +3,7 @@ import BreakingNewsBar from '@/components/BreakingNewsBar';
 import SiteHeader from '@/components/SiteHeader';
 import SiteFooter from '@/components/SiteFooter';
 import AnalyticsTracker from '@/components/AnalyticsTracker';
+import OfflineBanner from '@/components/OfflineBanner';
 import { serializeJsonLd } from '@/lib/json-ld';
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://bbsports.fans';
@@ -64,6 +65,7 @@ export default function SiteLayout({ children }: { children: React.ReactNode }) 
       <SiteHeader />
       <main id="main">{children}</main>
       <SiteFooter />
+      <OfflineBanner />
       <Suspense fallback={null}>
         <AnalyticsTracker />
       </Suspense>

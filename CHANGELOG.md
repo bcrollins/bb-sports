@@ -15,6 +15,7 @@ All notable changes to BB Sports. Format loosely follows
 
 ### Added
 
+- Offline/reconnect banner (honest, no invented write success).
 - Documented Core Web Vitals / payload budgets (`lib/performance-budgets.ts`).
 - Production smoke checks for soft-launch RSS emptiness and per-article OG cards.
 - Newsroom least-privilege capability matrix on comments, access wall, site config, citations.
