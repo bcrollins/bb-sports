@@ -103,7 +103,7 @@ The mandate: make BB Sports measurably better on every run — toward 10.0 on ev
 | Bone (page bg) | `#F5F2EC` |
 | Charcoal (body) | `#1A1A1A` |
 | Gray | `#6B7280` |
-| Breaking-news red | `#D7263D` |
+| Accent grey | `#6B7280` |
 | Headline font | serif (Playfair Display / Source Serif) |
 | Body font | Inter |
 | Mono | JetBrains Mono |
@@ -230,7 +230,7 @@ For every touched surface verify, on every primary device:
 **Navigation** — back works, deep links resolve, tab/active states correct, modal dismiss preserves input, scroll restores.
 **Tap depth** — ≤ 2 taps to: latest article, search, contact, donate, X profile.
 **No hamburger / More / Other buckets** anywhere.
-**Sports-specific** — live scores show timestamp, breaking-news labels are red + labeled (never red-only), bylines appear above the fold, AI-assisted label visible on AI pieces.
+**Sports-specific** — live scores show timestamp, breaking-news labels use accent grey + text label (never color-only), bylines appear above the fold, AI-assisted label visible on AI pieces.
 
 ### 5D — Fix Verification Protocol
 Before-state → root cause → fix → after-state on target device → cross-device regression → adjacent-surface check → state-variant check → deployment status declared.

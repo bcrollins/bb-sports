@@ -77,7 +77,7 @@ A production-ready Next.js 14 site for Brad Benson's personal sports-media brand
 - **Wordmark:** "BB SPORTS" set in Anton italic, all caps, with a horizontal red rule under — same grammar as ESPN's red bar under the shield, Sky Sports' condensed italic.
 - **Sport tag system:** every sport gets a broadcast bug (NFL navy, NHL deep navy with sky-blue accent, CFB orange, Soccer green, NBA red, MMA black).
 - **Type:** Anton + Oswald for display headlines, Playfair Display for editorial serif, Inter for UI, Source Serif Pro for body copy, JetBrains Mono for stats.
-- **Color tokens:** navy `#0A1F44`, navy deep `#06122A`, breaking red `#D7263D`, bone `#F5F2EC`, charcoal `#1A1A1A`.
+- **Color tokens:** navy `#0A1F44`, navy deep `#06122A`, accent grey `#6B7280`, bone `#F5F2EC`, charcoal `#1A1A1A`.
 
 See `/docs/00-BRADLEY-STRATEGY-BRIEF.md` for the full strategy synthesis from Brad's voice memos and `/docs/BB-SPORTS-PERFECTION-ENGINE-v1.0.md` for the master operating directive. Legal guardrails live in `/docs/legal/MEDIA-LAW-PLAYBOOK.md`; Bradley's copy-paste agent prompts live in `/docs/prompts/BRADLEY-PROMPT-ALBUM.md`.
 
