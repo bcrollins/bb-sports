@@ -21,6 +21,8 @@ The BB Sports admin is Bradley Benson's no-code control room. It is not a develo
 ## Guardrails
 
 - The white access wall only opens public site access. It does not bypass admin authentication.
+- `/admin/login` and `/api/admin/login` are **not** blocked by the soft-launch wall. Brad signs in with his newsroom email/password only. Unauthenticated visits to other `/admin/*` paths redirect to login (not the white wall).
+- Railway `ADMIN_EMAIL` + `ADMIN_PASSWORD_HASH` are upserted on every boot. Rotating the hash in Railway restores Brad’s login after redeploy.
 - AI-assisted pieces cannot publish unless Brad's Take is present.
 - Hero images require alt text and credit before saving/publishing.
 - Generated media fails closed until xAI is commercially approved and configured, and public surfaces render approved assets only.

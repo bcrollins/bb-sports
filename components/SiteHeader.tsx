@@ -47,7 +47,7 @@ export default function SiteHeader() {
       {/* Masthead — broadcast lockup */}
       <div className="relative px-4 py-7 text-center sm:px-6 sm:py-9">
         <Link
-          href="/admin"
+          href="/admin/login"
           aria-label="Sign in to the newsroom"
           title="Sign in to the newsroom"
           className="absolute right-3 top-3 inline-flex h-11 w-11 items-center justify-center rounded-full border border-navy/15 bg-white text-navy shadow-sm transition-colors hover:border-breaking hover:text-breaking focus:outline-none focus-visible:ring-2 focus-visible:ring-breaking"

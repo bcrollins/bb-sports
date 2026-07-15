@@ -2,7 +2,7 @@
  * POST /api/admin/logout — clears the session cookie and revokes the audit row.
  */
 import { NextResponse } from 'next/server';
-import { clearSessionCookie, getSession, revokeSession } from '@/lib/auth';
+import { clearSessionCookieOnResponse, getSession, revokeSession } from '@/lib/auth';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -18,6 +18,7 @@ export async function POST() {
       return NextResponse.json({ error: 'Logout could not be completed safely.' }, { status: 503 });
     }
   }
-  await clearSessionCookie();
-  return NextResponse.json({ ok: true });
+  const res = NextResponse.json({ ok: true });
+  clearSessionCookieOnResponse(res);
+  return res;
 }

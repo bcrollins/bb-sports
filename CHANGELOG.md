@@ -7,6 +7,8 @@ All notable changes to BB Sports. Format loosely follows
 
 ### Fixed
 
+- Newsroom login no longer trapped behind soft-launch wall; admin password hash from Railway upserts on boot; session cookie attached on login response; friendlier admin error UI (`docs/operations/ADMIN-LOGIN-FIX-2026-07-15.md`).
+
 - Analytics POST validates event schema before privacy/salt short-circuit so invalid events still return 400.
 
 ### Documentation

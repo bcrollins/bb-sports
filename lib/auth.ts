@@ -86,26 +86,32 @@ export async function getSession(): Promise<SessionPayload | null> {
 
 /** Higher-level: load the User row for the current request. */
 export async function getCurrentUser(): Promise<User | null> {
-  const session = await getSession();
-  if (!session || !db) return null;
-  await ensureBootstrapped();
-  const rows = await db
-    .select({ user: users })
-    .from(sessions)
-    .innerJoin(users, eq(users.id, sessions.userId))
-    .where(
-      and(
-        eq(sessions.jwtId, session.jti),
-        eq(sessions.userId, session.sub),
-        isNull(sessions.revokedAt),
-        gt(sessions.expiresAt, new Date()),
-      ),
-    )
-    .limit(1);
-  const user = rows[0]?.user ?? null;
-  // Accepted newsroom roles are super_admin, admin, and editor. The current
-  // database role is authoritative; the token's copied role is not.
-  return user && isAdminRole(user.role) ? user : null;
+  try {
+    const session = await getSession();
+    if (!session || !db) return null;
+    await ensureBootstrapped();
+    const rows = await db
+      .select({ user: users })
+      .from(sessions)
+      .innerJoin(users, eq(users.id, sessions.userId))
+      .where(
+        and(
+          eq(sessions.jwtId, session.jti),
+          eq(sessions.userId, session.sub),
+          isNull(sessions.revokedAt),
+          gt(sessions.expiresAt, new Date()),
+        ),
+      )
+      .limit(1);
+    const user = rows[0]?.user ?? null;
+    // Accepted newsroom roles are super_admin, admin, and editor. The current
+    // database role is authoritative; the token's copied role is not.
+    return user && isAdminRole(user.role) ? user : null;
+  } catch {
+    // Never turn a transient DB/bootstrap blip into a stack-trace error page for
+    // Brad. Fail closed as signed-out so login stays reachable.
+    return null;
+  }
 }
 
 /** Verify a password against a bcrypt hash. */
@@ -138,20 +144,52 @@ export function getTimingMitigationHash(): string {
   return cachedTimingHash;
 }
 
-/** Set the session cookie on the response. Call only inside a route handler / server action. */
-export async function setSessionCookie(token: string, exp: Date) {
-  (await cookies()).set(COOKIE, token, {
-    httpOnly: true,
+/** Cookie attributes for the newsroom session. Shared by login/logout. */
+export function sessionCookieOptions(exp: Date) {
+  return {
+    httpOnly: true as const,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
+    sameSite: 'lax' as const,
     path: '/',
     expires: exp,
-  });
+  };
+}
+
+/**
+ * Set the session cookie via the Next.js cookies() helper.
+ * Prefer `attachSessionCookie(response, token, exp)` in route handlers so the
+ * Set-Cookie header is guaranteed on the returned NextResponse.
+ */
+export async function setSessionCookie(token: string, exp: Date) {
+  (await cookies()).set(COOKIE, token, sessionCookieOptions(exp));
+}
+
+/** Attach the session cookie directly onto a route-handler response. */
+export function attachSessionCookie(
+  res: { cookies: { set: (name: string, value: string, options: ReturnType<typeof sessionCookieOptions>) => void } },
+  token: string,
+  exp: Date,
+) {
+  res.cookies.set(COOKIE, token, sessionCookieOptions(exp));
 }
 
 /** Clear the session cookie. */
 export async function clearSessionCookie() {
   (await cookies()).delete(COOKIE);
+}
+
+/** Delete the session cookie on a route-handler response. */
+export function clearSessionCookieOnResponse(res: {
+  cookies: { set: (name: string, value: string, options: Record<string, unknown>) => void };
+}) {
+  res.cookies.set(COOKIE, '', {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    path: '/',
+    expires: new Date(0),
+    maxAge: 0,
+  });
 }
 
 /** Convenience name. */

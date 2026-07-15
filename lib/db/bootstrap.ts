@@ -176,7 +176,14 @@ let bootstrapPromise: Promise<void> | null = null;
 /** Returns once the DB is ready. Subsequent calls re-use the same promise. */
 export function ensureBootstrapped(): Promise<void> {
   if (!dbAvailable) return Promise.resolve();
-  if (!bootstrapPromise) bootstrapPromise = bootstrap();
+  if (!bootstrapPromise) {
+    bootstrapPromise = bootstrap().catch((error) => {
+      // Allow a later request to retry instead of permanently bricking the
+      // process on a one-time cold-start failure.
+      bootstrapPromise = null;
+      throw error;
+    });
+  }
   return bootstrapPromise;
 }
 
@@ -1879,13 +1886,15 @@ async function bootstrap(): Promise<void> {
     `);
   }
 
-  // 2. Admin user seed (idempotent ON CONFLICT DO NOTHING).
+  // 2. Admin user seed — Railway ADMIN_EMAIL + ADMIN_PASSWORD_HASH are the
+  // recovery source of truth. Upsert so rotating the hash in Railway always
+  // restores Brad's ability to sign in (write-once seed left him locked out).
   const adminEmail = process.env.ADMIN_EMAIL;
   const adminHash = process.env.ADMIN_PASSWORD_HASH;
   const adminName = process.env.ADMIN_NAME ?? 'Bradley Benson';
   let adminId: string | null = null;
   if (adminEmail && adminHash) {
-    const inserted = await db
+    const upserted = await db
       .insert(users)
       .values({
         email: adminEmail.toLowerCase(),
@@ -1893,12 +1902,21 @@ async function bootstrap(): Promise<void> {
         name: adminName,
         role: 'super_admin',
       })
-      .onConflictDoNothing({ target: users.email })
+      .onConflictDoUpdate({
+        target: users.email,
+        set: {
+          passwordHash: adminHash,
+          name: adminName,
+          role: 'super_admin',
+          updatedAt: new Date(),
+        },
+      })
       .returning({ id: users.id });
-    if (inserted[0]) {
-      adminId = inserted[0].id;
-    } else {
-      const existing = await db.execute(sql`SELECT id FROM users WHERE email = ${adminEmail.toLowerCase()} LIMIT 1`);
+    adminId = upserted[0]?.id ?? null;
+    if (!adminId) {
+      const existing = await db.execute(
+        sql`SELECT id FROM users WHERE email = ${adminEmail.toLowerCase()} LIMIT 1`,
+      );
       const row = (existing as unknown as { id: string }[])[0];
       adminId = row?.id ?? null;
     }

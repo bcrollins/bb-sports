@@ -47,6 +47,8 @@ test('production env posture never serializes secret values', () => {
     GATE_COOKIE_SECRET: 'cookie',
     GATE_PASSWORD: 'pass',
     NEXT_PUBLIC_SITE_URL: 'https://bbsports.fans',
+    ADMIN_EMAIL: 'brad@bbsports.fans',
+    ADMIN_PASSWORD_HASH: '$2a$10$abcdefghijklmnopqrstuu',
   });
   assert.equal(posture.ok, true);
   const dto = productionEnvPublicDto({
@@ -54,7 +56,10 @@ test('production env posture never serializes secret values', () => {
     JWT_SECRET: 'super-secret-value',
   });
   assert.ok(dto.missing.includes('DATABASE_URL'));
+  assert.ok(dto.missing.includes('ADMIN_EMAIL'));
+  assert.ok(dto.missing.includes('ADMIN_PASSWORD_HASH'));
   assert.doesNotMatch(JSON.stringify(dto), /super-secret-value/);
+  assert.doesNotMatch(JSON.stringify(dto), /\$2a\$10\$/);
 });
 
 test('publish path and ready health integrate gates; findings seed present', () => {

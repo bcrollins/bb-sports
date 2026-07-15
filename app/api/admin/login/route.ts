@@ -16,9 +16,9 @@ import { db, dbAvailable } from '@/lib/db/client';
 import { users } from '@/lib/db/schema';
 import { ensureBootstrapped } from '@/lib/db/bootstrap';
 import {
+  attachSessionCookie,
   getTimingMitigationHash,
   recordSession,
-  setSessionCookie,
   signSession,
   verifyPassword,
 } from '@/lib/auth';
@@ -93,20 +93,41 @@ export async function POST(req: NextRequest) {
 
   await recordAuthSuccess({ purpose: 'admin_login', ip, account: email });
 
-  const { token, jti, exp } = await signSession({
-    sub: user.id,
-    email: user.email,
-    name: user.name,
-    role: user.role,
-  });
+  let token: string;
+  let jti: string;
+  let exp: Date;
+  try {
+    ({ token, jti, exp } = await signSession({
+      sub: user.id,
+      email: user.email,
+      name: user.name,
+      role: user.role,
+    }));
+  } catch {
+    return NextResponse.json(
+      { error: 'Newsroom sign-in is misconfigured. Contact Brandon (JWT secret).' },
+      { status: 503 },
+    );
+  }
+
   const ua = req.headers.get('user-agent');
   // Persist the authoritative row before issuing a replayable browser token.
   // A database failure therefore fails closed and never leaves an orphan JWT.
-  await recordSession({ userId: user.id, jti, ip, ua, exp });
-  await setSessionCookie(token, exp);
+  try {
+    await recordSession({ userId: user.id, jti, ip, ua, exp });
+  } catch {
+    return NextResponse.json(
+      { error: 'Could not open a durable newsroom session. Try again in a moment.' },
+      { status: 503 },
+    );
+  }
 
-  return NextResponse.json({
+  // Attach Set-Cookie on the response object so browsers always receive it
+  // (more reliable than cookies().set alone in some Route Handler paths).
+  const res = NextResponse.json({
     ok: true,
     user: { id: user.id, email: user.email, name: user.name, role: user.role },
   });
+  attachSessionCookie(res, token, exp);
+  return res;
 }

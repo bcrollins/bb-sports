@@ -5,10 +5,8 @@
 'use client';
 
 import { useState, type FormEvent } from 'react';
-import { useRouter } from 'next/navigation';
 
 export default function LoginForm({ nextPath }: { nextPath: string }) {
-  const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -22,15 +20,23 @@ export default function LoginForm({ nextPath }: { nextPath: string }) {
       const res = await fetch('/api/admin/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
         body: JSON.stringify({ email, password }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setError(data?.error ?? 'Sign in failed');
-      } else {
-        router.push(nextPath);
-        router.refresh();
+        if (res.status === 429) {
+          setError(data?.error ?? 'Too many attempts. Wait a few minutes and try again.');
+        } else if (res.status === 503) {
+          setError(data?.error ?? 'Newsroom is temporarily unavailable. Try again in a moment.');
+        } else {
+          setError(data?.error ?? 'Invalid email or password');
+        }
+        return;
       }
+      // Hard navigation so the freshly set httpOnly cookie is on the next request.
+      // Client router.push can race the cookie on some mobile browsers.
+      window.location.assign(nextPath.startsWith('/admin') ? nextPath : '/admin');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Network error');
     } finally {

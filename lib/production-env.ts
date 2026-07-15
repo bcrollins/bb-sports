@@ -28,6 +28,9 @@ const PRODUCTION_REQUIRED = [
   'GATE_COOKIE_SECRET',
   'GATE_PASSWORD',
   'NEXT_PUBLIC_SITE_URL',
+  // Newsroom operator — without these Brad has no account to sign in with.
+  'ADMIN_EMAIL',
+  'ADMIN_PASSWORD_HASH',
 ] as const;
 
 const OPTIONAL_LAUNCH = [

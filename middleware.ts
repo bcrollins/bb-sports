@@ -11,7 +11,8 @@
  *                          jose; route handlers re-verify against the users table.
  *
  * Always allowed (no gate, no auth):
- *   /coming-soon, /api/gate, /api/health (+ /live, /ready), /status, /api/analytics, Stripe webhook,
+ *   /coming-soon, /api/gate, /admin/login, /api/admin/login, /api/admin/logout,
+ *   /api/health (+ /live, /ready), /status, /api/analytics, Stripe webhook,
  *   newsletter unsubscribe, approved media streams, static brand/image assets, _next assets,
  *   robots/sitemap/icons/og.
  */
@@ -43,6 +44,11 @@ const GATE_BYPASS_EXACT = new Set<string>([
   '/api/stripe/webhook',
   '/api/newsletter/unsubscribe',
   '/newsletter/unsubscribe',
+  // Newsroom sign-in is a separate second factor from the soft-launch wall.
+  // Brad must always be able to reach /admin/login without the public gate password.
+  '/admin/login',
+  '/api/admin/login',
+  '/api/admin/logout',
   '/robots.txt',
   '/sitemap.xml',
   '/rss.xml',
@@ -95,7 +101,8 @@ export async function middleware(req: NextRequest) {
   }
 
   // 1. Site wall — every non-bypass route requires either bb_gate or a valid
-  // admin session. This includes /admin/login so the white wall is truly global.
+  // admin session. Newsroom login/logout stay on GATE_BYPASS_EXACT so Brad can
+  // always sign in; the wall still covers every public reader surface.
   if (GATE_BYPASS_EXACT.has(pathname)) {
     return attachRequestId(req, NextResponse.next());
   }
@@ -108,14 +115,26 @@ export async function middleware(req: NextRequest) {
       return attachRequestId(req, NextResponse.json({ error: 'Site gated' }, { status: 401 }));
     }
 
+    // Soft-launch wall for public pages. If Brad is heading for the newsroom,
+    // send him straight to /admin/login instead of the white wall — the
+    // newsroom password is the real lock.
+    if (pathname.startsWith('/admin')) {
+      const url = req.nextUrl.clone();
+      url.pathname = '/admin/login';
+      if (pathname !== '/admin' && pathname !== '/admin/login') {
+        url.searchParams.set('next', pathname);
+      }
+      return attachRequestId(req, NextResponse.redirect(url));
+    }
+
     const url = req.nextUrl.clone();
     url.pathname = '/coming-soon';
     if (pathname !== '/') url.searchParams.set('next', pathname);
     return attachRequestId(req, NextResponse.redirect(url));
   }
 
-  // 2. Admin routes — after the white wall is cleared, require a valid
-  // newsroom JWT. /admin/login and login/logout APIs stay public behind the wall.
+  // 2. Admin routes — after the white wall (or an active newsroom session),
+  // require a valid newsroom JWT. /admin/login and login/logout stay public.
   const adminCheck = await adminAuthIfNeeded(req, pathname);
   if (adminCheck) return attachRequestId(req, adminCheck);
 
