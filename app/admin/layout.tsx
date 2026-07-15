@@ -61,6 +61,12 @@ export default async function AdminLayout({ children }: { children: ReactNode })
 
   return (
     <div className="fixed inset-0 z-[9998] overflow-y-auto bg-[#f6f7f9] text-navy">
+      <a
+        href="#main"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-2 focus:top-2 focus:z-[10000] focus:rounded focus:bg-navy focus:px-3 focus:py-2 focus:text-sm focus:font-bold focus:text-bone"
+      >
+        Skip to main content
+      </a>
       <div className="lg:grid lg:min-h-screen lg:grid-cols-[276px_minmax(0,1fr)]">
         <aside className="border-b border-navy/10 bg-white lg:sticky lg:top-0 lg:h-screen lg:border-b-0 lg:border-r">
           <div className="flex h-full flex-col">
