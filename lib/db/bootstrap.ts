@@ -14,7 +14,7 @@ import fs from 'node:fs/promises';
 import matter from 'gray-matter';
 import { sql } from 'drizzle-orm';
 import { db, dbAvailable } from './client';
-import { users, articles, siteConfig } from './schema';
+import { users, articles, siteConfig, newsSources } from './schema';
 
 let bootstrapPromise: Promise<void> | null = null;
 
@@ -225,6 +225,171 @@ async function bootstrap(): Promise<void> {
       created_at timestamptz NOT NULL DEFAULT now()
     );
   `);
+  await db.execute(sql`
+    CREATE TABLE IF NOT EXISTS news_sources (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      source_key varchar(120) NOT NULL UNIQUE,
+      display_name varchar(200) NOT NULL,
+      source_type varchar(32) NOT NULL DEFAULT 'manual',
+      owner_key varchar(160) NOT NULL,
+      tier varchar(24) NOT NULL DEFAULT 'unverified'
+        CHECK (tier IN ('primary', 'official', 'tier_1', 'tier_2', 'unverified')),
+      commercial_status varchar(32) NOT NULL DEFAULT 'review_required'
+        CHECK (commercial_status IN ('approved', 'review_required', 'prohibited')),
+      commercial_notes text NOT NULL DEFAULT '',
+      homepage_url text,
+      enabled boolean NOT NULL DEFAULT true,
+      created_at timestamptz NOT NULL DEFAULT now(),
+      updated_at timestamptz NOT NULL DEFAULT now()
+    );
+  `);
+  await db.execute(sql`
+    CREATE TABLE IF NOT EXISTS news_signals (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      source_id uuid NOT NULL REFERENCES news_sources(id),
+      external_id varchar(240),
+      canonical_url text,
+      exact_url_hash varchar(64),
+      exact_content_hash varchar(64) NOT NULL,
+      headline text NOT NULL,
+      summary text NOT NULL DEFAULT '',
+      sport varchar(40) NOT NULL DEFAULT 'General',
+      source_published_at timestamptz,
+      observed_at timestamptz NOT NULL DEFAULT now(),
+      raw_payload jsonb NOT NULL DEFAULT '{}'::jsonb,
+      created_at timestamptz NOT NULL DEFAULT now()
+    );
+  `);
+  await db.execute(sql`
+    CREATE TABLE IF NOT EXISTS news_events (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      headline text NOT NULL,
+      summary text NOT NULL DEFAULT '',
+      sport varchar(40) NOT NULL DEFAULT 'General',
+      state varchar(32) NOT NULL DEFAULT 'new'
+        CHECK (state IN ('new', 'investigating', 'verification_ready', 'verified', 'dismissed')),
+      urgency varchar(24) NOT NULL DEFAULT 'routine'
+        CHECK (urgency IN ('routine', 'watch', 'breaking')),
+      version integer NOT NULL DEFAULT 1 CHECK (version > 0),
+      first_signal_at timestamptz NOT NULL DEFAULT now(),
+      last_signal_at timestamptz NOT NULL DEFAULT now(),
+      created_at timestamptz NOT NULL DEFAULT now(),
+      updated_at timestamptz NOT NULL DEFAULT now()
+    );
+  `);
+  await db.execute(sql`
+    CREATE TABLE IF NOT EXISTS news_event_signals (
+      event_id uuid NOT NULL REFERENCES news_events(id),
+      signal_id uuid NOT NULL REFERENCES news_signals(id),
+      linkage varchar(24) NOT NULL DEFAULT 'manual'
+        CHECK (linkage IN ('manual', 'exact', 'clustered')),
+      similarity_basis_points integer
+        CHECK (similarity_basis_points IS NULL OR similarity_basis_points BETWEEN 0 AND 10000),
+      created_at timestamptz NOT NULL DEFAULT now(),
+      CONSTRAINT news_event_signals_pk PRIMARY KEY (event_id, signal_id)
+    );
+  `);
+  await db.execute(sql`
+    CREATE TABLE IF NOT EXISTS news_evidence (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      event_id uuid NOT NULL REFERENCES news_events(id),
+      source_id uuid REFERENCES news_sources(id) ON DELETE SET NULL,
+      signal_id uuid REFERENCES news_signals(id) ON DELETE SET NULL,
+      supersedes_evidence_id uuid REFERENCES news_evidence(id),
+      stance varchar(24) NOT NULL CHECK (stance IN ('supporting', 'contradicting', 'context')),
+      evidence_class varchar(24) NOT NULL CHECK (evidence_class IN ('primary', 'official', 'reporting', 'context')),
+      owner_key varchar(160) NOT NULL,
+      source_tier varchar(24) NOT NULL
+        CHECK (source_tier IN ('primary', 'official', 'tier_1', 'tier_2', 'unverified')),
+      credible boolean NOT NULL DEFAULT false,
+      label text NOT NULL,
+      url text,
+      excerpt text NOT NULL DEFAULT '',
+      notes text NOT NULL DEFAULT '',
+      captured_at timestamptz NOT NULL DEFAULT now(),
+      added_by uuid REFERENCES users(id) ON DELETE SET NULL,
+      created_at timestamptz NOT NULL DEFAULT now()
+    );
+  `);
+  await db.execute(sql`
+    CREATE TABLE IF NOT EXISTS news_verification_reviews (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      event_id uuid NOT NULL REFERENCES news_events(id),
+      reviewer_id uuid REFERENCES users(id) ON DELETE SET NULL,
+      reviewer_label varchar(160) NOT NULL,
+      decision varchar(24) NOT NULL CHECK (decision IN ('verified', 'rejected')),
+      rationale text NOT NULL CHECK (length(trim(rationale)) >= 20),
+      event_version integer NOT NULL CHECK (event_version > 0),
+      criteria_snapshot jsonb NOT NULL DEFAULT '{}'::jsonb,
+      created_at timestamptz NOT NULL DEFAULT now()
+    );
+  `);
+  await db.execute(sql`
+    CREATE TABLE IF NOT EXISTS newsroom_activity (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      sequence bigserial NOT NULL UNIQUE,
+      event_id uuid REFERENCES news_events(id),
+      signal_id uuid REFERENCES news_signals(id),
+      actor_user_id uuid REFERENCES users(id) ON DELETE SET NULL,
+      actor_label varchar(160) NOT NULL,
+      action varchar(64) NOT NULL,
+      from_state varchar(32),
+      to_state varchar(32),
+      summary text NOT NULL,
+      metadata jsonb NOT NULL DEFAULT '{}'::jsonb,
+      created_at timestamptz NOT NULL DEFAULT now()
+    );
+  `);
+  await db.execute(sql`
+    ALTER TABLE news_evidence
+    ADD COLUMN IF NOT EXISTS supersedes_evidence_id uuid REFERENCES news_evidence(id);
+  `);
+  // Database-enforced append-only ledgers. Corrections and reversals are new
+  // rows; UPDATE/DELETE can never rewrite the historical verification basis.
+  await db.execute(sql`
+    CREATE OR REPLACE FUNCTION bbsports_reject_newsroom_ledger_mutation()
+    RETURNS trigger
+    LANGUAGE plpgsql
+    AS $function$
+    BEGIN
+      RAISE EXCEPTION '% is append-only; append a superseding record instead', TG_TABLE_NAME
+        USING ERRCODE = '55000';
+    END;
+    $function$;
+  `);
+  await db.execute(sql`
+    DO $block$
+    BEGIN
+      IF NOT EXISTS (
+        SELECT 1 FROM pg_trigger
+        WHERE tgname = 'news_evidence_append_only'
+          AND tgrelid = 'news_evidence'::regclass
+      ) THEN
+        CREATE TRIGGER news_evidence_append_only
+        BEFORE UPDATE OR DELETE ON news_evidence
+        FOR EACH ROW EXECUTE FUNCTION bbsports_reject_newsroom_ledger_mutation();
+      END IF;
+      IF NOT EXISTS (
+        SELECT 1 FROM pg_trigger
+        WHERE tgname = 'news_verification_reviews_append_only'
+          AND tgrelid = 'news_verification_reviews'::regclass
+      ) THEN
+        CREATE TRIGGER news_verification_reviews_append_only
+        BEFORE UPDATE OR DELETE ON news_verification_reviews
+        FOR EACH ROW EXECUTE FUNCTION bbsports_reject_newsroom_ledger_mutation();
+      END IF;
+      IF NOT EXISTS (
+        SELECT 1 FROM pg_trigger
+        WHERE tgname = 'newsroom_activity_append_only'
+          AND tgrelid = 'newsroom_activity'::regclass
+      ) THEN
+        CREATE TRIGGER newsroom_activity_append_only
+        BEFORE UPDATE OR DELETE ON newsroom_activity
+        FOR EACH ROW EXECUTE FUNCTION bbsports_reject_newsroom_ledger_mutation();
+      END IF;
+    END;
+    $block$;
+  `);
   await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_articles_published ON articles(published, published_at DESC);`);
   await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_articles_sport ON articles(sport);`);
   await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_sessions_user ON sessions(user_id);`);
@@ -242,6 +407,44 @@ async function bootstrap(): Promise<void> {
   await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_comments_ip_recent ON comments(ip_address, created_at DESC);`);
   await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_analytics_events_name_time ON analytics_events(event_name, created_at DESC);`);
   await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_analytics_events_path_time ON analytics_events(path, created_at DESC);`);
+  await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_news_sources_enabled_tier ON news_sources(enabled, tier);`);
+  await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_news_sources_owner ON news_sources(owner_key);`);
+  await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_news_sources_commercial ON news_sources(commercial_status);`);
+  await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_news_signals_source_time ON news_signals(source_id, observed_at DESC);`);
+  await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_news_signals_published_time ON news_signals(source_published_at DESC);`);
+  await db.execute(sql`CREATE UNIQUE INDEX IF NOT EXISTS idx_news_signals_source_external ON news_signals(source_id, external_id) WHERE external_id IS NOT NULL;`);
+  await db.execute(sql`CREATE UNIQUE INDEX IF NOT EXISTS idx_news_signals_exact_url ON news_signals(exact_url_hash) WHERE exact_url_hash IS NOT NULL;`);
+  await db.execute(sql`CREATE UNIQUE INDEX IF NOT EXISTS idx_news_signals_exact_content ON news_signals(exact_content_hash);`);
+  await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_news_events_state_urgency ON news_events(state, urgency, updated_at DESC);`);
+  await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_news_events_last_signal ON news_events(last_signal_at DESC);`);
+  await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_news_event_signals_signal ON news_event_signals(signal_id);`);
+  await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_news_evidence_event_time ON news_evidence(event_id, created_at ASC);`);
+  await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_news_evidence_source ON news_evidence(source_id);`);
+  await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_news_evidence_signal ON news_evidence(signal_id);`);
+  await db.execute(sql`CREATE UNIQUE INDEX IF NOT EXISTS idx_news_evidence_supersedes ON news_evidence(supersedes_evidence_id) WHERE supersedes_evidence_id IS NOT NULL;`);
+  await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_news_evidence_owner_stance ON news_evidence(owner_key, stance);`);
+  await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_news_verification_event_time ON news_verification_reviews(event_id, created_at DESC);`);
+  await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_news_verification_reviewer ON news_verification_reviews(reviewer_id);`);
+  await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_newsroom_activity_sequence ON newsroom_activity(sequence);`);
+  await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_newsroom_activity_event_sequence ON newsroom_activity(event_id, sequence);`);
+  await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_newsroom_activity_signal ON newsroom_activity(signal_id);`);
+  await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_newsroom_activity_actor ON newsroom_activity(actor_user_id);`);
+
+  // Credential-free intake source. It records a human newsroom observation but
+  // is intentionally unverified, so it can never satisfy corroboration alone.
+  await db
+    .insert(newsSources)
+    .values({
+      sourceKey: 'manual-newsroom',
+      displayName: 'BB Sports newsroom manual intake',
+      sourceType: 'manual',
+      ownerKey: 'bb-sports',
+      tier: 'unverified',
+      commercialStatus: 'approved',
+      commercialNotes: 'First-party manual intake; not independent verification.',
+      enabled: true,
+    })
+    .onConflictDoNothing({ target: newsSources.sourceKey });
 
   // 2. Admin user seed (idempotent ON CONFLICT DO NOTHING).
   const adminEmail = process.env.ADMIN_EMAIL;
