@@ -14,7 +14,8 @@ test('article OG route is brand-safe text card and gate-bypassed', () => {
   assert.match(route, /1200/);
   assert.match(route, /630/);
   assert.match(route, /BB Sports/);
-  assert.doesNotMatch(route, /fetch\(|images\.unsplash|hero/);
+  assert.doesNotMatch(route, /fetch\(|images\.unsplash/);
+  assert.doesNotMatch(route, /src=\{|img src|backgroundImage/);
   assert.match(page, /\/api\/og\/article/);
   assert.match(mw, /\/api\/og\//);
 });

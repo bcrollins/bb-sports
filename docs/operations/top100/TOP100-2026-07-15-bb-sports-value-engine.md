@@ -781,7 +781,7 @@ Verification: HTTP fixture matrix, SSRF corpus, scheduled run, admin/source disp
 Customizability added: Brad snoozes/replaces a source and sets check cadence within bounds.
 Surfaces: web
 Risk & rollback: Monitoring can violate terms or overload sites; low rate, registry allowlist, kill switch.
-Status: Pending
+Status: Complete — extractCitationLinks + SSRF-safe probe (HTTPS, DNS private deny, timeout, no body); POST /api/admin/citations/probe. Scheduled cron still optional.
 
 #54 — Make search use the complete canonical catalog
 Area: Search data Anchor: consumer-CEO benchmark
