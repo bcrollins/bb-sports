@@ -13,7 +13,7 @@ BB Sports is a commercial media property. Production providers must be authorize
 | First-party comments | Article discussion and moderation | GREEN when `DATABASE_URL` is configured | No external comment provider. Public UI renders approved records only. |
 | Stripe SDK | Donations, Checkout, webhook reconciliation | YELLOW | `stripe@22.1.1` is MIT licensed and installed. Checkout/webhook routes fail closed until `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET` are configured. |
 | Resend | Email transport | YELLOW | Newsletter ledger and unsubscribe suppression work without transport. Welcome email sends only when `RESEND_API_KEY`, `RESEND_FROM`, and `BBSPORTS_APPROVED_RESEND=true` are configured; List-Unsubscribe headers point back to BB Sports' first-party suppression route. |
-| Cloudflare R2 | Object storage | YELLOW | No production upload dependency yet. Hero image URLs require alt text and credit. |
+| Cloudflare R2 | Object storage | YELLOW | `lib/r2-storage.ts` fails closed until `BBSPORTS_APPROVED_R2=true` + IAM. Transport canary not completed; no production upload path. Hero image URLs still require alt/credit. |
 | xAI Grok | AI assistance and generated media | YELLOW | Admin media routes are built but fail closed unless `XAI_API_KEY` and `BBSPORTS_APPROVED_XAI=true` are configured. Any AI draft/media must stay approval-gated and labeled. |
 | Live scores provider | Scores / standings | RED | Homepage renders editorial coverage lanes only. Do not render live scores until commercial terms are stored and `BBSPORTS_APPROVED_LIVE_SCORES=true` is configured. |
 | Google Fonts via `next/font` | Font source | GREEN | Fonts are self-hosted by Next at build/runtime, not loaded from a browser CDN. |
