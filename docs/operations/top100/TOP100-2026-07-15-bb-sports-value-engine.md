@@ -35,7 +35,7 @@ Verification: Snapshot non-secret posture; run local and live credential matrix;
 Customizability added: Brad may create a separate versioned guest password only after active-session re-authentication; operator recovery is not UI-editable.
 Surfaces: web
 Risk & rollback: Rotation can strand guests; operator recovery is the break-glass path, and rollback means issuing a new version, never restoring an old hash.
-Status: Pending
+Status: Complete — exact lowercase Railway credential and versioned signed-cookie wall are live; the former mixed-case credential, legacy DB fallback, forged cookie, and malformed/expired paths fail closed.
 
 #2 — Make active admin sessions authoritative and keep config hashes server-only
 Area: Admin authentication and configuration Anchor: publishing-reliability benchmark
@@ -49,7 +49,7 @@ Verification: Replay captured tokens across all 12 admin pages and 11 route file
 Customizability added: Brad can name/revoke sessions and edit allowlisted non-secret settings; authorization and redaction are fixed.
 Surfaces: web
 Risk & rollback: DB outage fails admin closed; retain only the documented operator recovery path, and rollback UI/DTO fields without weakening session checks.
-Status: Pending
+Status: Complete — active database sessions and current roles are authoritative across protected pages/APIs, invalid sessions fail closed, safe return paths are enforced, and public config DTOs exclude secret/hash material.
 
 #3 — Patch dependencies continuously and fail on known vulnerabilities
 Area: Supply-chain security Anchor: publishing-reliability benchmark
@@ -91,7 +91,7 @@ Verification: Contract-test manual intake and the persistent stream; prove cron 
 Customizability added: Brad controls source enablement, sport/team watchlists, corroboration thresholds within safe floors, quiet hours, alert channel, draft template, expiry, and one-tap actions.
 Surfaces: web
 Risk & rollback: Misinformation, license breach, SSRF, spam, or accidental publication; adapters default off, manual intake remains, kill switch stops ingestion, and published items can be retracted/corrected without deleting audit history.
-Status: Pending
+Status: In progress — the protected manual Live Desk, deterministic verification, SSE/poll fallback, and immutable Brad approval gate are implemented; paid/provider connectors remain disabled pending commercial approval, credentials, persistent worker delivery, and live canary proof.
 
 #6 — Converge the published article catalog without data loss
 Area: Editorial data plane Anchor: publishing-reliability benchmark
@@ -105,7 +105,7 @@ Verification: Pre/post snapshot; dry-run and transaction; sorted slug comparison
 Customizability added: Brad includes/excludes each candidate and chooses draft import; publish remains separate.
 Surfaces: web
 Risk & rollback: Mapping can duplicate/publish; unique slugs, backup, import tags, and rollback only inserted rows.
-Status: Pending
+Status: In progress — public runtime reads are snapshot-only from Postgres, missing production DB fails closed, and fresh Markdown imports remain drafts; the six historical file-only candidates still require a reviewed reconciliation manifest before any publication decision.
 
 #7 — Require authorization before every admin page loader
 Area: Admin pages Anchor: Apple OS benchmark
@@ -581,7 +581,7 @@ Verification: Transition/property tests; direct API/DB constraint attempts; audi
 Customizability added: Brad controls checklist completion, schedule, and final edits; approval requirement fixed.
 Surfaces: web
 Risk & rollback: Workflow can block urgent posts; breaking desk offers one-tap review, never bypass.
-Status: Pending
+Status: In progress — current unscheduled publication now binds Brad's active super-admin role, exact immutable revision/hash, phrase, and rationale in one transaction; checklist/scheduled-release extensions remain pending.
 
 #41 — Render AI assistance labels from enforced provenance
 Area: Editorial disclosure Anchor: consumer-CEO benchmark
@@ -679,7 +679,7 @@ Verification: Create/edit/restore concurrency tests; DB immutability; admin diff
 Customizability added: Brad names revisions, compares, and restores via new revision.
 Surfaces: web
 Risk & rollback: Storage growth; compress/retain safely, never prune published history without policy.
-Status: Pending
+Status: In progress — prepared and published snapshots, hashes, actors, source-event links, and publish/unpublish events are immutable and append-only; editor-visible diff/restore and revision-per-working-edit remain pending.
 
 #48 — Turn corrections into a linked editorial workflow
 Area: Corrections Anchor: sports-newsroom benchmark

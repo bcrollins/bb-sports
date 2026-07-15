@@ -11,11 +11,13 @@ import { and, asc, desc, eq, gt, lt, ne, sql, type SQL } from 'drizzle-orm';
 import { db, dbAvailable } from './db/client';
 import {
   articles,
+  articleRevisions,
   comments,
   contactMessages,
   donationIntents,
   mediaAssets,
   newsletterSubscribers,
+  publicationRuntimeControls,
   siteConfig,
   type Article,
   type Comment,
@@ -27,17 +29,42 @@ import {
 import { ensureBootstrapped } from './db/bootstrap';
 import { moderateComment } from './comment-moderation';
 import type { CommentCreateInput, CommentStatus } from './comment-validation';
+import { hashArticleEditableState } from './article-publication';
+import {
+  isPostgresConstraintViolation,
+  materializePublishedArticle,
+  PublicationError,
+} from './article-publication-queries';
 
 // ---------- articles ----------
 
 export async function getPublishedArticles(): Promise<Article[]> {
   if (!db) return [];
   await ensureBootstrapped();
-  return db
-    .select()
+  // Archive, search, RSS, and sitemap require one exact canonical catalog.
+  // One MVCC statement prevents concurrent publish/unpublish operations from
+  // shifting rows between pages and making a story disappear or duplicate.
+  const rows = await db
+    .select({ article: articles, revision: articleRevisions })
     .from(articles)
-    .where(eq(articles.published, true))
-    .orderBy(desc(articles.publishedAt));
+    .innerJoin(
+      articleRevisions,
+      and(
+        eq(articleRevisions.id, articles.publishedRevisionId),
+        eq(articleRevisions.articleId, articles.id),
+        eq(articleRevisions.contentHash, articles.publishedContentHash),
+      ),
+    )
+    .where(
+      and(
+        eq(articles.published, true),
+        sql`${articles.publishedSnapshot} IS NOT NULL`,
+      ),
+    )
+    .orderBy(desc(articles.publishedAt), desc(articles.id));
+  return rows
+    .map((row) => materializePublishedArticle(row.article, row.revision))
+    .filter((article): article is Article => Boolean(article));
 }
 
 export async function getAllArticles(): Promise<Article[]> {
@@ -47,6 +74,59 @@ export async function getAllArticles(): Promise<Article[]> {
     .select()
     .from(articles)
     .orderBy(desc(articles.updatedAt));
+}
+
+export type AdminArticleRosterRow = {
+  article: Article;
+  /** Present only when every immutable live pointer, revision, hash, and snapshot check passes. */
+  liveArticle: Article | null;
+  /** True only when no immutable revision, publication event, or newsroom link exists. */
+  canDeleteVirginDraft: boolean;
+};
+
+/**
+ * Admin roster read with the same fail-closed immutable materialization used by
+ * public delivery. A truthy JSON snapshot alone is never treated as proof that
+ * an article is live.
+ */
+export async function getAllArticlesForAdmin(): Promise<AdminArticleRosterRow[]> {
+  if (!db) return [];
+  await ensureBootstrapped();
+  const rows = await db
+    .select({
+      article: articles,
+      revision: articleRevisions,
+      hasHistory: sql<boolean>`
+        EXISTS (SELECT 1 FROM article_revisions history_revision WHERE history_revision.article_id = ${articles.id})
+        OR EXISTS (SELECT 1 FROM article_publication_events history_event WHERE history_event.article_id = ${articles.id})
+        OR EXISTS (SELECT 1 FROM news_event_articles history_link WHERE history_link.article_id = ${articles.id})
+        OR EXISTS (SELECT 1 FROM comments history_comment WHERE history_comment.article_id = ${articles.id})
+      `,
+    })
+    .from(articles)
+    .leftJoin(
+      articleRevisions,
+      and(
+        eq(articleRevisions.id, articles.publishedRevisionId),
+        eq(articleRevisions.articleId, articles.id),
+      ),
+    )
+    .orderBy(desc(articles.updatedAt));
+
+  return rows.map(({ article, revision, hasHistory }) => ({
+    article,
+    liveArticle: article.published
+      ? materializePublishedArticle(article, revision)
+      : null,
+    canDeleteVirginDraft:
+      !article.published &&
+      !article.publishedAt &&
+      !article.publishedSnapshot &&
+      !article.publishedContentHash &&
+      !article.publishedRevisionId &&
+      article.createdUnderApprovalGate &&
+      !hasHistory,
+  }));
 }
 
 export async function getArticleBySlug(slug: string): Promise<Article | null> {
@@ -68,8 +148,29 @@ export async function getArticleById(id: string): Promise<Article | null> {
 }
 
 export async function getPublishedArticleBySlug(slug: string): Promise<Article | null> {
-  const a = await getArticleBySlug(slug);
-  return a && a.published ? a : null;
+  if (!db) return null;
+  await ensureBootstrapped();
+  const [article] = await db
+    .select({ article: articles, revision: articleRevisions })
+    .from(articles)
+    .innerJoin(
+      articleRevisions,
+      and(
+        eq(articleRevisions.id, articles.publishedRevisionId),
+        eq(articleRevisions.articleId, articles.id),
+        eq(articleRevisions.contentHash, articles.publishedContentHash),
+      ),
+    )
+    .where(
+      and(
+        eq(articles.published, true),
+        sql`${articles.publishedSnapshot}->>'slug' = ${slug}`,
+      ),
+    )
+    .limit(1);
+  return article
+    ? materializePublishedArticle(article.article, article.revision)
+    : null;
 }
 
 // ---------- site_config ----------
@@ -114,6 +215,13 @@ export async function createArticle(input: {
   published?: boolean;
 }): Promise<Article> {
   if (!db) throw new Error('Database not available');
+  if (input.published === true) {
+    throw new PublicationError(
+      'FORBIDDEN',
+      403,
+      'New articles must begin as drafts and use Brad\'s explicit approval flow.',
+    );
+  }
   await ensureBootstrapped();
   const rows = await db
     .insert(articles)
@@ -130,8 +238,9 @@ export async function createArticle(input: {
       authorName: input.authorName ?? 'Brad Benson',
       aiAssisted: Boolean(input.aiAssisted),
       bradsTake: input.bradsTake ?? '',
-      published: Boolean(input.published),
-      publishedAt: input.published ? new Date() : null,
+      createdUnderApprovalGate: true,
+      published: false,
+      publishedAt: null,
     })
     .returning();
   return rows[0];
@@ -153,28 +262,97 @@ export async function updateArticle(
     bradsTake: string;
     published: boolean;
   }>,
+  expectedEditToken: string,
 ): Promise<Article | null> {
   if (!db) throw new Error('Database not available');
+  if (Object.hasOwn(patch, 'published')) {
+    throw new PublicationError(
+      'FORBIDDEN',
+      403,
+      'Publishing and unpublishing require Brad\'s immutable approval workflow.',
+    );
+  }
+  if (!/^[a-f0-9]{64}$/.test(expectedEditToken)) {
+    throw new PublicationError(
+      'VALIDATION',
+      400,
+      'A valid article edit precondition is required.',
+    );
+  }
   await ensureBootstrapped();
-  const current = await getArticleById(id);
-  if (!current) return null;
-  const willPublish = patch.published === true && !current.published;
-  const willUnpublish = patch.published === false && current.published;
-  const update: Record<string, unknown> = {
-    ...patch,
-    updatedAt: new Date(),
-  };
-  if (willPublish) update.publishedAt = new Date();
-  if (willUnpublish) update.publishedAt = null;
-  const rows = await db.update(articles).set(update).where(eq(articles.id, id)).returning();
-  return rows[0] ?? null;
-}
-
-export async function deleteArticle(id: string): Promise<boolean> {
-  if (!db) throw new Error('Database not available');
-  await ensureBootstrapped();
-  const rows = await db.delete(articles).where(eq(articles.id, id)).returning({ id: articles.id });
-  return rows.length > 0;
+  try {
+    return await db.transaction(async (tx) => {
+      // Lock the release gate before the article. The disable command takes
+      // this row FOR UPDATE, waits for every in-flight edit, and then evaluates
+      // live drift with a fresh statement snapshot. This fixed lock order also
+      // prevents edit/rollback deadlocks.
+      const [workingCopyControl] = await tx
+        .select({ enabled: publicationRuntimeControls.enabled })
+        .from(publicationRuntimeControls)
+        .where(
+          eq(
+            publicationRuntimeControls.controlKey,
+            'published_working_copy_edits_v1',
+          ),
+        )
+        .limit(1)
+        .for('share');
+      await tx.execute(sql`SELECT id FROM articles WHERE id = ${id} FOR UPDATE`);
+      const [current] = await tx
+        .select()
+        .from(articles)
+        .where(eq(articles.id, id))
+        .limit(1);
+      if (!current) return null;
+      if (hashArticleEditableState(current) !== expectedEditToken) {
+        throw new PublicationError(
+          'CONFLICT',
+          409,
+          'This draft changed in another session. Reload before saving so no work is overwritten.',
+        );
+      }
+      if (current.published) {
+        if (!workingCopyControl?.enabled) {
+          throw new PublicationError(
+            'RELEASE_CONVERGENCE',
+            503,
+            'Published working-copy edits are temporarily paused while the release converges. Retry after all prior readers have drained.',
+          );
+        }
+      }
+      // The early database trigger rejects published-row edits from older
+      // rolling-deploy instances. Enable its capability transaction-locally only
+      // after this request has locked the row and passed the exact edit CAS.
+      await tx.execute(sql`
+        SELECT set_config(
+          'bbsports.published_working_copy_edit_contract',
+          'v1',
+          true
+        )
+      `);
+      const [updated] = await tx
+        .update(articles)
+        .set({ ...patch, updatedAt: new Date() })
+        .where(eq(articles.id, id))
+        .returning();
+      return updated ?? null;
+    });
+  } catch (error) {
+    if (
+      isPostgresConstraintViolation(
+        error,
+        '55000',
+        'articles_published_working_copy_edit_contract',
+      )
+    ) {
+      throw new PublicationError(
+        'RELEASE_CONVERGENCE',
+        503,
+        'Published working-copy edits are temporarily paused while the release converges. Retry after all prior readers have drained.',
+      );
+    }
+    throw error;
+  }
 }
 
 export async function adjacentArticles(
@@ -186,19 +364,44 @@ export async function adjacentArticles(
   // than the previous 50-row fetch + JS filter.
   const [prevRows, nextRows] = await Promise.all([
     db
-      .select()
+      .select({ article: articles, revision: articleRevisions })
       .from(articles)
+      .innerJoin(
+        articleRevisions,
+        and(
+          eq(articleRevisions.id, articles.publishedRevisionId),
+          eq(articleRevisions.articleId, articles.id),
+          eq(articleRevisions.contentHash, articles.publishedContentHash),
+        ),
+      )
       .where(and(eq(articles.published, true), lt(articles.publishedAt, publishedAt)))
       .orderBy(desc(articles.publishedAt))
-      .limit(1),
+      .limit(25),
     db
-      .select()
+      .select({ article: articles, revision: articleRevisions })
       .from(articles)
+      .innerJoin(
+        articleRevisions,
+        and(
+          eq(articleRevisions.id, articles.publishedRevisionId),
+          eq(articleRevisions.articleId, articles.id),
+          eq(articleRevisions.contentHash, articles.publishedContentHash),
+        ),
+      )
       .where(and(eq(articles.published, true), gt(articles.publishedAt, publishedAt)))
       .orderBy(asc(articles.publishedAt))
-      .limit(1),
+      .limit(25),
   ]);
-  return { prev: prevRows[0] ?? null, next: nextRows[0] ?? null };
+  return {
+    prev:
+      prevRows
+        .map((row) => materializePublishedArticle(row.article, row.revision))
+        .find(Boolean) ?? null,
+    next:
+      nextRows
+        .map((row) => materializePublishedArticle(row.article, row.revision))
+        .find(Boolean) ?? null,
+  };
 }
 
 /**
@@ -213,16 +416,29 @@ export async function getRelatedArticlesBySport(
 ): Promise<Article[]> {
   if (!db) return [];
   await ensureBootstrapped();
-  return db
-    .select()
+  const safeLimit = Number.isInteger(limit) ? Math.min(Math.max(limit, 1), 50) : 6;
+  const rows = await db
+    .select({ article: articles, revision: articleRevisions })
     .from(articles)
+    .innerJoin(
+      articleRevisions,
+      and(
+        eq(articleRevisions.id, articles.publishedRevisionId),
+        eq(articleRevisions.articleId, articles.id),
+        eq(articleRevisions.contentHash, articles.publishedContentHash),
+      ),
+    )
     .where(and(
       eq(articles.published, true),
-      eq(articles.sport, sport),
+      sql`${articles.publishedSnapshot}->>'sport' = ${sport}`,
       ne(articles.id, currentId),
     ))
     .orderBy(desc(articles.publishedAt))
-    .limit(limit);
+    .limit(Math.min(safeLimit * 4, 200));
+  return rows
+    .map((row) => materializePublishedArticle(row.article, row.revision))
+    .filter((article): article is Article => Boolean(article))
+    .slice(0, safeLimit);
 }
 
 // ---------- audience / intake ledgers ----------
@@ -532,6 +748,15 @@ export async function getAudienceSnapshot(): Promise<{
 
 // ---------- media assets ----------
 
+export class MediaAssetConflictError extends Error {
+  readonly status = 409;
+
+  constructor(message: string) {
+    super(message);
+    this.name = 'MediaAssetConflictError';
+  }
+}
+
 export function publicMediaUrl(asset: Pick<MediaAsset, 'id' | 'dataBase64' | 'assetUrl' | 'externalUrl'>): string {
   if (asset.dataBase64) return `/api/media/assets/${asset.id}/file`;
   return asset.assetUrl || asset.externalUrl || '';
@@ -640,12 +865,56 @@ export async function updateMediaAsset(
 ): Promise<MediaAsset | null> {
   if (!db) throw new Error('Database not available');
   await ensureBootstrapped();
-  const rows = await db
-    .update(mediaAssets)
-    .set({ ...patch, updatedAt: new Date() })
-    .where(eq(mediaAssets.id, id))
-    .returning();
-  return rows[0] ?? null;
+  try {
+    return await db.transaction(async (tx) => {
+      await tx.execute(sql`SELECT id FROM media_assets WHERE id = ${id} FOR UPDATE`);
+      const [current] = await tx
+        .select()
+        .from(mediaAssets)
+        .where(eq(mediaAssets.id, id))
+        .limit(1);
+      if (!current) return null;
+
+      if (patch.approved === false && current.approved) {
+        const publicPath = `/api/media/assets/${current.id}/file`;
+        const [liveReference] = await tx
+          .select({ id: articles.id })
+          .from(articles)
+          .where(
+            and(
+              eq(articles.published, true),
+              sql`${articles.publishedSnapshot}->>'hero' = ${publicPath}`,
+            ),
+          )
+          .limit(1);
+        if (liveReference) {
+          throw new MediaAssetConflictError(
+            'Unpublish every live article using this hero before unapproving the asset.',
+          );
+        }
+      }
+
+      const [updated] = await tx
+        .update(mediaAssets)
+        .set({ ...patch, updatedAt: new Date() })
+        .where(eq(mediaAssets.id, id))
+        .returning();
+      return updated ?? null;
+    });
+  } catch (error) {
+    if (
+      isPostgresConstraintViolation(
+        error,
+        '23514',
+        'media_assets_live_article_ready',
+      )
+    ) {
+      throw new MediaAssetConflictError(
+        'A live article requires this approved, ready image asset.',
+      );
+    }
+    throw error;
+  }
 }
 
 // ---------- comments / community ----------
@@ -689,11 +958,27 @@ async function getPublishedArticleIdBySlug(slug: string): Promise<string | null>
   if (!db) return null;
   await ensureBootstrapped();
   const rows = await db
-    .select({ id: articles.id })
+    .select({ article: articles, revision: articleRevisions })
     .from(articles)
-    .where(and(eq(articles.slug, slug), eq(articles.published, true)))
+    .innerJoin(
+      articleRevisions,
+      and(
+        eq(articleRevisions.id, articles.publishedRevisionId),
+        eq(articleRevisions.articleId, articles.id),
+        eq(articleRevisions.contentHash, articles.publishedContentHash),
+      ),
+    )
+    .where(
+      and(
+        eq(articles.published, true),
+        sql`${articles.publishedSnapshot}->>'slug' = ${slug}`,
+      ),
+    )
     .limit(1);
-  return rows[0]?.id ?? null;
+  const article = rows[0]
+    ? materializePublishedArticle(rows[0].article, rows[0].revision)
+    : null;
+  return article?.id ?? null;
 }
 
 export async function getPublicCommentsByArticleSlug(slug: string): Promise<PublicComment[]> {

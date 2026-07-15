@@ -1,6 +1,6 @@
 # BB Sports Real-Time Newsroom
 
-Status: foundation contract
+Status: manual desk and immutable publication gate implemented; external connectors gated off
 Owner: Brad Benson (editorial approval) / Brandon Rollins (platform)
 Last reviewed: 2026-07-15
 
@@ -64,6 +64,87 @@ single Brad approval step.
 
 The manual desk is the safe baseline and remains available even when every
 automated connector is disabled.
+
+### Immutable Brad approval gate
+
+The article boundary is separate from newsroom verification and is enforced in
+the API, transaction layer, and Postgres constraints:
+
+1. Every new article and repository import begins as a draft. Normal create and
+   edit routes reject direct publication-state changes.
+2. Draft saves require an exact `If-Match` edit token. A concurrent editor gets
+   a conflict instead of silently overwriting newer work.
+3. Preparing approval requires the SHA-256 hash of the exact saved draft. The
+   server locks the article, re-canonicalizes all reader-visible fields, and
+   creates or reuses one immutable revision for that exact hash.
+4. The editor renders every field from that returned immutable revision,
+   including the complete markdown body and full hash. Any local or server-side
+   draft change invalidates the prepared approval.
+5. Publication requires the current database-backed `super_admin`, the exact
+   article/revision/hash tuple, a meaningful rationale, and the literal phrase
+   `BRAD APPROVES THIS EXACT ARTICLE FOR PUBLICATION`. The role and article are
+   rechecked under database locks in the publishing transaction.
+6. If an article came from a newsroom event, every linked event, active source,
+   commercial approval, independence threshold, and contradiction is rechecked
+   at publication time. Verification going stale blocks publication.
+7. Public readers receive only the canonical snapshot joined to its immutable
+   revision and matching content hash. Mutable draft columns never fill gaps in
+   a corrupt or incomplete live pointer.
+8. Unpublishing clears every live pointer atomically and appends a retained
+   audit event. Immutable revisions and publication history cannot be edited or
+   deleted. Only Brad can permanently delete a database-proven virgin draft.
+
+Postgres additionally enforces a same-article revision/hash foreign key, strict
+all-null draft versus all-present live pointers, unique live slugs, and
+append-only revision/publication/newsroom ledgers. Routine status responses are
+metadata-only and bounded; the one exact prepared revision is the prose payload
+Brad reviews. A verified-event draft includes at most 25 tier-prioritized source
+links while the complete evidence set remains in the internal ledger.
+
+This gate never changes a verified signal into a public article by itself. It
+only makes an explicitly initiated Brad approval precise, auditable, and safe
+under concurrent edits.
+
+Publication heroes are part of the approved reader-visible revision. A draft
+may retain a safe repository or allowlisted remote URL while it is being
+assembled, but prepare/publish requires an approved BB Sports media-library
+asset with durable JPEG, PNG, or WebP bytes. Postgres prevents those bytes,
+readiness, approval, type, or asset identity from changing while a live snapshot
+references them.
+
+A verified newsroom event can create or reopen one deterministic cited article
+draft. The action rechecks the event, active evidence, independent ownership,
+source enablement, and commercial approval under locks, then links the event,
+revision, and at most 25 prioritized source URLs. It never publishes. A
+substantive event edit reopens the event to `investigating`, so stale
+verification cannot remain a publication prerequisite.
+
+### Rolling release activation
+
+The migration installs its state constraint, publication/edit/delete triggers,
+runtime control, and live-media guard atomically behind an exclusive table lock.
+Published working-copy edits remain disabled by default while older mutable-row
+readers may still exist; drafts, public immutable reads, prepare, publish, and
+unpublish remain available.
+
+After the exact deployment SHA is healthy and every old replica has drained:
+
+```bash
+node ops/verify-publication-postgres.mjs
+node ops/publication-working-copy-control.mjs status
+node ops/publication-working-copy-control.mjs enable \
+  --actor="Brandon Rollins" \
+  --capability=publication-runtime-controls-v1 \
+  --confirm="ENABLE ONLY AFTER ALL OLD ARTICLE READERS ARE DRAINED" \
+  --deploy-sha=<exact-40-character-sha>
+```
+
+Before rollback, run the same command with `disable`, the disable confirmation
+phrase `DISABLE BEFORE OLD ARTICLE READERS RETURN`, and the current SHA. The
+database refuses disable if any live working copy differs from its approved
+snapshot; publish, unpublish, or intentionally reconcile that draft first. This
+prevents an old reader from exposing already-divergent mutable copy after a
+rollback.
 
 ### Signal states
 

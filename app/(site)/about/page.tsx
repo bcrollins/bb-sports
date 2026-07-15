@@ -1,6 +1,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { BRADLEY_BRAND_ASSETS, PRIMARY_BRADLEY_ASSET } from '@/lib/brandAssets';
+import { renderMarkdown } from '@/lib/markdown';
 import { getConfig } from '@/lib/queries';
 
 export const metadata = {
@@ -23,6 +24,9 @@ export default async function AboutPage() {
     Array.isArray(adminBio) && adminBio.filter((p) => p?.trim()).length > 0
       ? adminBio.filter((p) => p?.trim())
       : DEFAULT_BIO;
+  const bioHtml = bioParagraphs.length > 0
+    ? await renderMarkdown(bioParagraphs.join('\n\n'))
+    : '';
   return (
     <article className="bg-bone">
       <header className="bg-navy-deep text-bone relative overflow-hidden">
@@ -62,13 +66,7 @@ export default async function AboutPage() {
 
       <div className="max-w-3xl mx-auto px-4 sm:px-6 py-10">
         <section className="article-body">
-          {bioParagraphs.length > 0 && (
-            <>
-              {bioParagraphs.map((p, i) => (
-                <p key={i} dangerouslySetInnerHTML={{ __html: p }} />
-              ))}
-            </>
-          )}
+          {bioHtml && <div dangerouslySetInnerHTML={{ __html: bioHtml }} />}
 
           <h2>The basics</h2>
           <ul>

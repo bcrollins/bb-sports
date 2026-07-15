@@ -10,7 +10,8 @@
  */
 import { getAllArticles, type Article } from '@/lib/articles';
 
-export const revalidate = 60;
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 const FEED_LIMIT = 30;
 
@@ -70,7 +71,7 @@ ${channel}
     status: 200,
     headers: {
       'content-type': 'application/rss+xml; charset=utf-8',
-      'cache-control': 'public, max-age=300, s-maxage=300',
+      'cache-control': 'public, no-cache, max-age=0, s-maxage=0, must-revalidate',
     },
   });
 }

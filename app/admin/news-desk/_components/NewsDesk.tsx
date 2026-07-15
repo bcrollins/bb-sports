@@ -6,6 +6,7 @@ import {
   CheckCircle2,
   Clock3,
   ExternalLink,
+  FileText,
   Plus,
   Radio,
   RefreshCw,
@@ -136,11 +137,11 @@ const STATE_LABELS: Record<EventState, string> = {
 };
 
 const CONNECTION_COPY: Record<ConnectionMode, { label: string; detail: string; style: string }> = {
-  connecting: { label: 'Connecting', detail: 'Opening live stream', style: 'bg-navy/10 text-navy' },
-  live: { label: 'Live', detail: 'Stream connected', style: 'bg-emerald-100 text-emerald-800' },
-  polling: { label: 'Polling', detail: '5-second fallback', style: 'bg-amber-100 text-amber-900' },
-  degraded: { label: 'Degraded', detail: 'Refresh is failing', style: 'bg-red-100 text-red-800' },
-  manual: { label: 'Manual', detail: 'Browser is offline', style: 'bg-slate-200 text-slate-800' },
+  connecting: { label: 'Desk connecting', detail: 'Opening activity stream', style: 'bg-navy/10 text-navy' },
+  live: { label: 'Desk live', detail: 'Activity stream connected', style: 'bg-emerald-100 text-emerald-800' },
+  polling: { label: 'Desk polling', detail: '5-second fallback', style: 'bg-amber-100 text-amber-900' },
+  degraded: { label: 'Desk degraded', detail: 'Refresh is failing', style: 'bg-red-100 text-red-800' },
+  manual: { label: 'Desk manual', detail: 'Browser is offline', style: 'bg-slate-200 text-slate-800' },
 };
 
 const INPUT =
@@ -334,11 +335,29 @@ export default function NewsDesk({
       setSnapshot(next);
       failuresRef.current = 0;
       setGlobalError('');
-      if (notifyEventId && 'Notification' in window && Notification.permission === 'granted') {
-        const event = next.events.find((item) => item.id === notifyEventId);
-        if (event?.urgency === 'breaking' && !notifiedRef.current.has(event.id)) {
+      if ('Notification' in window && Notification.permission === 'granted') {
+        // Scan the snapshot, not only the SSE hint. This preserves breaking
+        // alerts when EventSource is unavailable and the desk is on its
+        // five-second polling fallback. The initial snapshot is pre-marked as
+        // seen, so reconnects and duplicate activity never create an alert
+        // storm.
+        const breakingEvents = next.events.filter((event) => event.urgency === 'breaking');
+        if (notifyEventId) {
+          breakingEvents.sort((left, right) =>
+            left.id === notifyEventId ? -1 : right.id === notifyEventId ? 1 : 0,
+          );
+        }
+        for (const event of breakingEvents) {
+          if (notifiedRef.current.has(event.id)) continue;
           notifiedRef.current.add(event.id);
-          new Notification('BB Sports breaking lead', { body: event.headline, tag: event.id });
+          try {
+            new Notification('BB Sports breaking lead', { body: event.headline, tag: event.id });
+          } catch {
+            // Some mobile browsers expose Notification but still refuse the
+            // constructor outside an installed web app. The fresh lead remains
+            // visible in the desk; never let a platform alert failure break
+            // synchronization.
+          }
         }
       }
       return next;
@@ -563,6 +582,39 @@ export default function NewsDesk({
     if (saved) setEvidence(EMPTY_EVIDENCE);
   }
 
+  async function createArticleDraft() {
+    if (!detail || detail.event.state !== 'verified') return;
+    setMutationBusy(true);
+    setDetailError('');
+    try {
+      const result = await requestData<{
+        created: boolean;
+        articleId: string;
+        articleTitle: string;
+        articleSlug: string;
+        revisionId: string;
+        contentHash: string;
+      }>(`/api/admin/news-desk/events/${detail.event.id}/draft`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: '{}',
+      });
+      setNotice(
+        result.created
+          ? 'Verified evidence became a reviewable article draft.'
+          : 'This event already has a reviewable article draft.',
+      );
+      window.location.assign(`/admin/articles/${encodeURIComponent(result.articleId)}/edit`);
+    } catch (error) {
+      setDetailError(
+        error instanceof Error ? error.message : 'The article draft could not be created.',
+      );
+      await loadDetail(detail.event.id, true);
+    } finally {
+      setMutationBusy(false);
+    }
+  }
+
   async function requestNotifications() {
     if (!('Notification' in window)) {
       setNotificationPermission('unsupported');
@@ -574,7 +626,7 @@ export default function NewsDesk({
   }
 
   const connectionCopy = connection === 'manual' && !automationEnabled
-    ? { ...CONNECTION_COPY.manual, detail: 'Automated alerts off' }
+    ? { ...CONNECTION_COPY.manual, detail: 'Activity stream off' }
     : CONNECTION_COPY[connection];
   const mobileEvents = lanes[mobileLane];
   const supersededEvidenceIds = new Set(
@@ -594,6 +646,9 @@ export default function NewsDesk({
             <h1 className="mt-2 font-display text-3xl uppercase tracking-tight text-white sm:text-4xl">Live Desk</h1>
             <p className="mt-1 max-w-2xl text-sm leading-6 text-white/70">
               Capture fast-moving leads, document independent evidence, and enforce a human verification gate.
+            </p>
+            <p className="mt-2 text-xs font-semibold text-amber-200">
+              Sources: Manual only · external X, Bluesky, and RSS monitoring is not active.
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
@@ -693,7 +748,24 @@ export default function NewsDesk({
                     <div className="mt-5 flex flex-wrap gap-2">
                       {detail.event.state === 'new' ? <button type="button" className={`${BUTTON} bg-navy text-white`} disabled={mutationBusy} onClick={() => void mutate(`/api/admin/news-desk/events/${detail.event.id}`, 'PATCH', { expectedVersion: detail.event.version, targetState: 'investigating' }, 'Verification started.')}>Start verification</button> : null}
                       {detail.event.state === 'investigating' ? <button type="button" className={`${BUTTON} bg-navy text-white`} disabled={mutationBusy} onClick={() => void mutate(`/api/admin/news-desk/events/${detail.event.id}`, 'PATCH', { expectedVersion: detail.event.version, targetState: 'verification_ready' }, 'Event moved to the final verification check.')}>Mark verification-ready</button> : null}
+                      {detail.event.state === 'verified' ? (
+                        <button
+                          type="button"
+                          className={`${BUTTON} bg-broadcast-red text-white`}
+                          disabled={mutationBusy}
+                          onClick={() => void createArticleDraft()}
+                        >
+                          <FileText size={16} aria-hidden="true" />
+                          {mutationBusy ? 'Opening draft…' : 'Create article draft'}
+                        </button>
+                      ) : null}
                     </div>
+                    {detail.event.state === 'verified' ? (
+                      <p className="mt-3 text-xs leading-5 text-navy/60">
+                        Creates a cited working draft only. It cannot go live until Brad reviews
+                        the exact immutable revision and completes the separate approval gate.
+                      </p>
+                    ) : null}
                   </section>
 
                   <div className="grid gap-5 lg:grid-cols-2">

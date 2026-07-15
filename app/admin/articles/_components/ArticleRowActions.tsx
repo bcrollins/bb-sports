@@ -4,69 +4,81 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
-export function ArticleRowActions({ id, slug, published }: { id: string; slug: string; published: boolean }) {
+export function ArticleRowActions({
+  id,
+  liveSlug,
+  published,
+  canDelete,
+}: {
+  id: string;
+  liveSlug: string | null;
+  published: boolean;
+  canDelete: boolean;
+}) {
   const router = useRouter();
-  const [pending, setPending] = useState<'toggle' | 'delete' | null>(null);
-
-  async function toggle() {
-    setPending('toggle');
-    try {
-      await fetch(`/api/admin/articles/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ published: !published }),
-      });
-      router.refresh();
-    } finally {
-      setPending(null);
-    }
-  }
+  const [deleting, setDeleting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   async function remove() {
-    if (!confirm('Delete this article? This cannot be undone.')) return;
-    setPending('delete');
+    setError(null);
+    if (published || !canDelete) return;
+    if (!window.confirm('Delete this never-published draft? This cannot be undone.')) return;
+
+    setDeleting(true);
     try {
-      await fetch(`/api/admin/articles/${id}`, { method: 'DELETE' });
+      const response = await fetch(`/api/admin/articles/${id}`, { method: 'DELETE' });
+      const data: unknown = await response.json().catch(() => ({}));
+      const payload =
+        data !== null && typeof data === 'object' && !Array.isArray(data)
+          ? (data as Record<string, unknown>)
+          : null;
+      if (!response.ok || payload?.ok === false) {
+        throw new Error(
+          typeof payload?.error === 'string' ? payload.error : 'The article could not be deleted.',
+        );
+      }
       router.refresh();
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : 'The article could not be deleted.');
     } finally {
-      setPending(null);
+      setDeleting(false);
     }
   }
 
   return (
-    <div className="inline-flex items-center gap-2">
-      {published ? (
+    <div className="inline-flex flex-wrap items-center justify-end gap-2">
+      <span className="sr-only">{published ? 'Live approved snapshot' : 'Draft only'}</span>
+      {published && liveSlug ? (
         <Link
-          href={`/articles/${slug}`}
+          href={`/articles/${liveSlug}`}
           target="_blank"
           rel="noreferrer"
-          className="text-xs underline text-navy/70 hover:text-broadcast-red"
+          className="inline-flex min-h-11 items-center rounded px-2 text-xs text-navy/70 underline underline-offset-2 hover:text-broadcast-red focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-broadcast-red/50"
         >
-          View
+          View live
         </Link>
       ) : null}
       <Link
         href={`/admin/articles/${id}/edit`}
-        className="text-xs px-2.5 py-1 border border-navy/20 rounded hover:bg-bone-50"
+        className="inline-flex min-h-11 items-center rounded border border-navy/20 px-3 text-xs font-semibold hover:bg-bone-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-broadcast-red/50"
       >
-        Edit
+        Edit draft
       </Link>
-      <button
-        type="button"
-        onClick={toggle}
-        disabled={pending !== null}
-        className="text-xs px-2.5 py-1 border border-navy/20 rounded hover:bg-bone-50 disabled:opacity-50"
-      >
-        {pending === 'toggle' ? '…' : published ? 'Unpublish' : 'Publish'}
-      </button>
-      <button
-        type="button"
-        onClick={remove}
-        disabled={pending !== null}
-        className="text-xs px-2.5 py-1 border border-broadcast-red/30 text-broadcast-red rounded hover:bg-broadcast-red/5 disabled:opacity-50"
-      >
-        {pending === 'delete' ? '…' : 'Delete'}
-      </button>
+      {!published && canDelete ? (
+        <button
+          type="button"
+          onClick={() => void remove()}
+          disabled={deleting}
+          className="inline-flex min-h-11 items-center rounded border border-broadcast-red/30 px-3 text-xs font-semibold text-broadcast-red hover:bg-broadcast-red/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-broadcast-red/50 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {deleting ? 'Deleting…' : 'Delete virgin draft'}
+        </button>
+      ) : null}
+      {error ? (
+        <span role="alert" className="basis-full text-xs text-broadcast-red">
+          {error}
+        </span>
+      ) : null}
     </div>
   );
 }

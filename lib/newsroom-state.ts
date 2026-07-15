@@ -52,3 +52,15 @@ export function assertNewsEventTransition(
 export function newsEventStateAfterEvidenceAdded(state: NewsEventState): NewsEventState {
   return state === 'verified' ? 'investigating' : state;
 }
+
+/**
+ * Verification covers the exact event claim that a reviewer saw. Changing any
+ * reader-facing classification or wording invalidates that review just as new
+ * evidence does, while a true no-op may retain the verified state.
+ */
+export function newsEventStateAfterSubstantiveEdit(
+  state: NewsEventState,
+  changed: boolean,
+): NewsEventState {
+  return state === 'verified' && changed ? 'investigating' : state;
+}

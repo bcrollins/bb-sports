@@ -24,7 +24,10 @@ test('/rss.xml serves a valid RSS 2.0 feed with the launch tagline', async () =>
   const contentType = res.headers.get('content-type') ?? '';
   assert.match(contentType, /application\/rss\+xml/);
   const cacheControl = res.headers.get('cache-control') ?? '';
-  assert.match(cacheControl, /max-age=300/);
+  assert.match(cacheControl, /no-cache/);
+  assert.match(cacheControl, /max-age=0/);
+  assert.match(cacheControl, /s-maxage=0/);
+  assert.match(cacheControl, /must-revalidate/);
 
   const body = await res.text();
   assert.match(body, /^<\?xml version="1\.0" encoding="UTF-8"\?>/);

@@ -3,6 +3,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { getAllArticles, formatDate, type SportSlug } from '@/lib/articles';
 import { sportMeta } from '@/lib/sport-meta';
+import { serializeJsonLd } from '@/lib/json-ld';
 import NewsletterSignup from '@/components/NewsletterSignup';
 import {
   buildAllRankings,
@@ -70,7 +71,7 @@ export default async function RankingsPage() {
     <div className="bg-bone">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(itemListJsonLd) }}
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(itemListJsonLd) }}
       />
       <header className="bg-navy text-bone">
         <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 sm:py-16">

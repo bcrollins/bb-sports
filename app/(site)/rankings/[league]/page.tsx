@@ -15,6 +15,7 @@ import Image from 'next/image';
 import type { Metadata } from 'next';
 import { getAllArticles, formatDate, type SportSlug } from '@/lib/articles';
 import { sportMeta } from '@/lib/sport-meta';
+import { serializeJsonLd } from '@/lib/json-ld';
 import NewsletterSignup from '@/components/NewsletterSignup';
 import {
   buildLeagueRanking,
@@ -87,7 +88,7 @@ export default async function LeagueRankingPage({ params }: Props) {
     <div className="bg-bone">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(itemListJsonLd) }}
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(itemListJsonLd) }}
       />
 
       <header className="relative isolate overflow-hidden bg-navy text-bone">
@@ -252,4 +253,3 @@ function FranchiseRow({ team, accent }: { team: RankedFranchise; accent: string 
     </li>
   );
 }
-
