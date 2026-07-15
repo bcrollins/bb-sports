@@ -445,7 +445,7 @@ Verification: Role-action integration matrix and direct API attempts; live super
 Customizability added: Super-admin assigns approved roles; cannot create arbitrary capabilities without code review.
 Surfaces: web
 Risk & rollback: Bad matrix can block Brad; seed super-admin invariant and rollback UI only after API policy remains.
-Status: Pending
+Status: Complete — lib/admin-roles capability matrix (publish/wall/site/comments/citations/audit); enforced on comments, access-wall, site, citations probe. Publish remains super_admin-only via canPublishArticle.
 
 #30 — Give Brad a safe session-control panel
 Area: Account security Anchor: Apple OS benchmark

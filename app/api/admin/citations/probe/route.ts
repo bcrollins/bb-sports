@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { getCurrentUser } from '@/lib/auth';
+import { assertCapability } from '@/lib/admin-roles';
 import { extractCitationLinks, probeCitationUrl } from '@/lib/citation-monitor';
 import { rejectIfMutationBlocked } from '@/lib/mutation-guard';
 
@@ -23,6 +24,10 @@ export async function POST(req: NextRequest) {
   const user = await getCurrentUser();
   if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+  const allowed = assertCapability(user.role, 'probe_citations');
+  if (!allowed.ok) {
+    return NextResponse.json({ error: allowed.error }, { status: 403 });
   }
 
   let json: unknown;

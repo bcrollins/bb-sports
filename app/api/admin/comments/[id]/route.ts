@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
+import { assertCapability } from '@/lib/admin-roles';
 import { commentModerationSchema, validationErrorMessage } from '@/lib/comment-validation';
 import { updateCommentStatus } from '@/lib/queries';
 
@@ -11,6 +12,8 @@ type Context = { params: Promise<{ id: string }> };
 export async function PUT(req: NextRequest, { params }: Context) {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const allowed = assertCapability(user.role, 'moderate_comments');
+  if (!allowed.ok) return NextResponse.json({ error: allowed.error }, { status: 403 });
 
   let body: unknown;
   try {
