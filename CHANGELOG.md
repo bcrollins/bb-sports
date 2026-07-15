@@ -15,6 +15,7 @@ All notable changes to BB Sports. Format loosely follows
 
 ### Added
 
+- Crash-safe local draft autosave in article editor (browser only, never publishes).
 - Audience analytics privacy posture banner; backup/restore operator runbook.
 - Admin citation extract/probe API (SSRF-safe, no body copy).
 - Per-article brand OG cards via `/api/og/article` (1200×630, rights-safe text).

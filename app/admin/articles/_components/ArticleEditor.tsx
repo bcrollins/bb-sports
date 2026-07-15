@@ -293,11 +293,18 @@ export function ArticleEditor({
   const [confirmation, setConfirmation] = useState('');
   const [approvalRationale, setApprovalRationale] = useState('');
   const [unpublishRationale, setUnpublishRationale] = useState('');
+  const [localAutosaveAt, setLocalAutosaveAt] = useState<string | null>(null);
+  const [localRestoreOffer, setLocalRestoreOffer] = useState<ArticleFormValues | null>(null);
+  const autosaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const isSuperAdmin = userRole === 'super_admin';
   const hasUnsavedChanges = fingerprint(v) !== savedFingerprint;
   const serverDraftChanged = Boolean(
     publicationStatus && publicationStatus.draftHash !== reviewedDraftHash,
+  );
+  const localDraftKey = useMemo(
+    () => `bb-article-draft:${mode === 'edit' && v.id ? v.id : 'new'}`,
+    [mode, v.id],
   );
 
   // Auto-derive slug from title in create mode unless Brad has typed in slug manually.
@@ -306,6 +313,46 @@ export function ArticleEditor({
       setV((current) => ({ ...current, slug: slugify(current.title) }));
     }
   }, [v.title, autoSlug]);
+
+  // Crash-safe local autosave (session-private; never publishes).
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const raw = window.localStorage.getItem(localDraftKey);
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as { values?: ArticleFormValues; savedAt?: string };
+      if (!parsed.values || typeof parsed.values.body !== 'string') return;
+      // Only offer restore when local snapshot differs from initial load.
+      if (fingerprint(parsed.values) !== fingerprint(v)) {
+        setLocalRestoreOffer(parsed.values);
+        setLocalAutosaveAt(parsed.savedAt ?? null);
+      }
+    } catch {
+      // ignore corrupt local drafts
+    }
+    // Intentional: run once per draft key on mount
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [localDraftKey]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (autosaveTimer.current) clearTimeout(autosaveTimer.current);
+    autosaveTimer.current = setTimeout(() => {
+      try {
+        const savedAt = new Date().toISOString();
+        window.localStorage.setItem(
+          localDraftKey,
+          JSON.stringify({ values: v, savedAt }),
+        );
+        setLocalAutosaveAt(savedAt);
+      } catch {
+        // quota / private mode
+      }
+    }, 800);
+    return () => {
+      if (autosaveTimer.current) clearTimeout(autosaveTimer.current);
+    };
+  }, [v, localDraftKey]);
 
   // Debounced server-side markdown preview.
   useEffect(() => {
@@ -650,6 +697,51 @@ export function ArticleEditor({
           ← Back
         </Link>
       </header>
+
+      {localRestoreOffer ? (
+        <div
+          className="rounded border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-950"
+          role="status"
+        >
+          <p className="font-semibold">Local draft recovered from this browser</p>
+          <p className="mt-1 text-amber-900/80">
+            Crash-safe autosave
+            {localAutosaveAt ? ` · ${new Date(localAutosaveAt).toLocaleString()}` : ''}. Does not
+            publish. Restore to replace the form, or discard the local copy.
+          </p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <button
+              type="button"
+              className="inline-flex min-h-11 items-center rounded bg-navy px-4 text-xs font-bold uppercase tracking-[0.14em] text-bone"
+              onClick={() => {
+                setV(localRestoreOffer);
+                setLocalRestoreOffer(null);
+                setPreparedRevision(null);
+              }}
+            >
+              Restore local draft
+            </button>
+            <button
+              type="button"
+              className="inline-flex min-h-11 items-center rounded border border-navy/25 px-4 text-xs font-bold uppercase tracking-[0.14em]"
+              onClick={() => {
+                try {
+                  window.localStorage.removeItem(localDraftKey);
+                } catch {
+                  // ignore
+                }
+                setLocalRestoreOffer(null);
+              }}
+            >
+              Discard local draft
+            </button>
+          </div>
+        </div>
+      ) : localAutosaveAt ? (
+        <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-navy/45" role="status">
+          Local autosave · {new Date(localAutosaveAt).toLocaleTimeString()} · browser only
+        </p>
+      ) : null}
 
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="space-y-4 lg:col-span-2">
