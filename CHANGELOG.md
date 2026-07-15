@@ -7,6 +7,7 @@ All notable changes to BB Sports. Format loosely follows
 
 ### Added
 
+- Public release provenance on health/status (`commit`, `commitShort`, `publicLaunch`) and smoke commit pin with short/full SHA match; soft-launch robots/sitemap smoke checks.
 - Soft-launch crawl policy: robots disallow all, empty sitemap, RSS omits items until `BBSPORTS_PUBLIC_LAUNCH=true`.
 
 - Threaded comments accessibility (ARIA live status, reply focus, labeled replies).

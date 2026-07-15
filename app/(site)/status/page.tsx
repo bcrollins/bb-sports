@@ -1,9 +1,9 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { sql } from 'drizzle-orm';
-import pkg from '@/package.json';
 import { db, dbAvailable } from '@/lib/db/client';
 import { evaluateLiveScoresPosture } from '@/lib/live-scores';
+import { getPublicReleaseManifest } from '@/lib/release-manifest';
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = {
@@ -47,6 +47,7 @@ function badgeClass(state: ComponentState): string {
 
 export default async function StatusPage() {
   const checkedAt = new Date();
+  const release = getPublicReleaseManifest();
   const web: { state: ComponentState; detail: string } = {
     state: 'operational',
     detail: 'Web process is serving this page.',
@@ -132,12 +133,18 @@ export default async function StatusPage() {
         <dl className="mt-8 grid gap-3 border border-navy/10 bg-white p-4 text-sm sm:grid-cols-2">
           <div>
             <dt className="font-mono text-[10px] uppercase tracking-[0.2em] text-navy/50">Version</dt>
-            <dd className="mt-1 font-semibold">{pkg.version}</dd>
+            <dd className="mt-1 font-semibold">{release.version}</dd>
           </div>
           <div>
-            <dt className="font-mono text-[10px] uppercase tracking-[0.2em] text-navy/50">Release</dt>
-            <dd className="mt-1 break-all font-mono text-xs font-semibold">
-              {process.env.RAILWAY_GIT_COMMIT_SHA ?? 'local'}
+            <dt className="font-mono text-[10px] uppercase tracking-[0.2em] text-navy/50">Release SHA</dt>
+            <dd className="mt-1 break-all font-mono text-xs font-semibold" data-release-commit={release.commit}>
+              {release.commit}
+            </dd>
+          </div>
+          <div>
+            <dt className="font-mono text-[10px] uppercase tracking-[0.2em] text-navy/50">Launch mode</dt>
+            <dd className="mt-1 font-semibold">
+              {release.publicLaunch ? 'Public launch' : 'Soft launch (gated)'}
             </dd>
           </div>
           <div>

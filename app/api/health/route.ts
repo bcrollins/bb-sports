@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { sql } from 'drizzle-orm';
-import pkg from '@/package.json';
 import { db, dbAvailable } from '@/lib/db/client';
+import { getPublicReleaseManifest } from '@/lib/release-manifest';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -24,6 +24,7 @@ async function checkDb(): Promise<{ configured: boolean; reachable: boolean; lat
 
 export async function GET() {
   const dbStatus = await checkDb();
+  const release = getPublicReleaseManifest();
   // Healthy when DATABASE_URL is unset (filesystem fallback is by design)
   // OR when DATABASE_URL is set AND the DB responded. Only mark degraded
   // when DB is configured but unreachable.
@@ -32,9 +33,11 @@ export async function GET() {
     {
       status: healthy ? 'ok' : 'degraded',
       check: 'combined',
-      service: 'bb-sports',
-      version: pkg.version,
-      commit: process.env.RAILWAY_GIT_COMMIT_SHA ?? 'local',
+      service: release.service,
+      version: release.version,
+      commit: release.commit,
+      commitShort: release.commitShort,
+      release,
       ts: new Date().toISOString(),
       db: dbStatus,
       endpoints: {

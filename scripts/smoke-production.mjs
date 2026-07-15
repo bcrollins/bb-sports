@@ -31,6 +31,7 @@ async function main() {
   await runCheck('health live probe', checkHealthLive);
   await runCheck('health ready probe', checkHealthReady);
   await runCheck('public status page', checkStatusPage);
+  await runCheck('soft-launch robots.txt', checkRobotsSoftLaunch);
   await runCheck('soft-launch gate redirect', checkGateRedirect);
   await runCheck('signed access-wall credential', establishGateCookie);
   await runCheck('live-newsroom auth boundary', checkNewsroomAuthBoundary);
@@ -100,14 +101,33 @@ async function checkHealth() {
   invariant(body.service === 'bb-sports', `expected service bb-sports, received ${body.service}`);
   if (config.expectedCommit) {
     invariant(
-      body.commit === config.expectedCommit,
+      commitsMatch(config.expectedCommit, body.commit || ''),
       `expected commit ${config.expectedCommit}, received ${body.commit || 'unknown'}`,
     );
+  }
+  // release manifest is required on builds that ship it; older deploys may omit.
+  if (body.release) {
+    invariant(body.release.service === 'bb-sports', 'release.service must be bb-sports');
+    invariant(typeof body.release.publicLaunch === 'boolean', 'release.publicLaunch required');
+    invariant(body.release.commit, 'release.commit required when release present');
   }
   if (body.db?.configured === true) {
     invariant(body.db.reachable === true, 'database is configured but not reachable');
   }
   return `commit ${body.commit || 'unknown'}, db ${body.db?.reachable ? 'reachable' : 'not configured'}`;
+}
+
+function commitsMatch(expected, actual) {
+  const e = String(expected || '')
+    .trim()
+    .toLowerCase();
+  const a = String(actual || '')
+    .trim()
+    .toLowerCase();
+  if (!e) return true;
+  if (!a || a === 'local') return false;
+  if (e === a) return true;
+  return a.startsWith(e) || e.startsWith(a);
 }
 
 async function checkHealthLive() {
@@ -134,8 +154,23 @@ async function checkStatusPage() {
   const html = await response.text();
   invariant(html.includes('BB Sports status'), 'status page heading missing');
   invariant(html.includes('Live scores'), 'status page missing live scores posture');
+  invariant(html.includes('Release SHA') || html.includes('data-release-commit'), 'status missing release SHA');
   invariant(!html.includes('Application error'), 'status page application error');
   return 'public status page';
+}
+
+async function checkRobotsSoftLaunch() {
+  const response = await request('/robots.txt');
+  assertStatus(response, 200, '/robots.txt');
+  const text = await response.text();
+  // Soft launch default: disallow all. Public launch allows / but still blocks /admin.
+  if (healthSnapshot?.release?.publicLaunch === true) {
+    invariant(/Allow:\s*\//i.test(text) || /allow:\s*\//i.test(text), 'public launch robots should allow /');
+    invariant(/Disallow:\s*\/admin/i.test(text), 'public launch robots must disallow /admin');
+    return 'public launch robots allow + admin disallow';
+  }
+  invariant(/Disallow:\s*\//i.test(text), 'soft launch robots must Disallow: /');
+  return 'soft launch robots Disallow: /';
 }
 
 async function checkGateRedirect() {
@@ -232,6 +267,12 @@ async function checkSitemap() {
   const response = await request('/sitemap.xml');
   assertStatus(response, 200, '/sitemap.xml');
   const xml = await response.text();
+  // Soft launch: empty inventory is intentional (crawl-policy).
+  if (healthSnapshot?.release?.publicLaunch !== true) {
+    const hasArticleUrls = /\/articles\/[a-z0-9-]+/i.test(xml);
+    invariant(!hasArticleUrls, 'soft launch sitemap must not list article URLs');
+    return 'soft launch empty sitemap';
+  }
   invariant(xml.includes(`/articles/${ARTICLE_SLUG}`), `sitemap missing article ${ARTICLE_SLUG}`);
   invariant(xml.includes('/search'), 'sitemap missing search route');
   invariant(xml.includes('/teams'), 'sitemap missing teams encyclopedia route');
