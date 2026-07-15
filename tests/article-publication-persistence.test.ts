@@ -241,9 +241,10 @@ test('schema declares immutable revisions, publication events, newsroom links, a
   const publicationStart = schema.indexOf('// ---------- immutable article publication ----------');
   assert.ok(publicationStart >= 0, 'immutable publication schema boundary must remain explicit');
   const publicationSchema = schema.slice(publicationStart);
+  // Publication ledgers (10) + sports encyclopedia FKs declared after them (2).
   assert.equal(
     publicationSchema.match(/onDelete: 'restrict'/g)?.length,
-    10,
+    12,
     'every immutable publication foreign key must preserve its audit parent',
   );
   assert.doesNotMatch(publicationSchema, /onDelete: '(?:cascade|set null)'/);

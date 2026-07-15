@@ -51,7 +51,8 @@ test('append-only newsroom foreign keys restrict parent deletion and upgrade old
   const publicationDdlStart = bootstrap.indexOf('CREATE TABLE IF NOT EXISTS article_revisions');
   assert.ok(evidenceDdlStart >= 0 && publicationDdlStart > evidenceDdlStart);
   const appendOnlyDdl = bootstrap.slice(evidenceDdlStart, publicationDdlStart);
-  assert.equal(appendOnlyDdl.match(/ON DELETE RESTRICT/g)?.length, 10);
+  // Manual ledgers (5) + provider governance (5) + sports encyclopedia FKs (2).
+  assert.equal(appendOnlyDdl.match(/ON DELETE RESTRICT/g)?.length, 12);
   assert.doesNotMatch(appendOnlyDdl, /ON DELETE (?:CASCADE|SET NULL)/);
 
   for (const constraint of [

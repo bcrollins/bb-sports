@@ -8,6 +8,7 @@ import Logo from './Logo';
 const NAV = [
   { href: '/articles', label: 'Articles' },
   { href: '/rankings', label: 'Rankings' },
+  { href: '/teams', label: 'Teams' },
   { href: '/search', label: 'Search' },
   { href: '/podcast', label: 'Podcast' },
   { href: '/videos', label: 'Videos' },

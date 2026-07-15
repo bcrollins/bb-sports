@@ -34,6 +34,7 @@ const GATE_BYPASS_EXACT = new Set<string>([
   '/api/analytics',
   '/api/newsletter',
   '/api/rankings',
+  '/api/teams',
   '/api/stripe/webhook',
   '/api/newsletter/unsubscribe',
   '/newsletter/unsubscribe',
