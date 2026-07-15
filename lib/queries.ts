@@ -519,9 +519,30 @@ export async function markNewsletterWelcomeFailed(input: {
   return rows[0] ?? null;
 }
 
+/** Read-only lookup. Never mutates consent — used by GET scanners and confirmation UI. */
+export async function getNewsletterSubscriberByToken(
+  token: string,
+): Promise<NewsletterSubscriber | null> {
+  if (!db) throw new Error('Database not available');
+  await ensureBootstrapped();
+  const rows = await db
+    .select()
+    .from(newsletterSubscribers)
+    .where(eq(newsletterSubscribers.unsubscribeToken, token))
+    .limit(1);
+  return rows[0] ?? null;
+}
+
+/**
+ * Suppress a subscriber by opaque token. Idempotent: already-unsubscribed
+ * tokens still return the row so one-click POST can safely 200.
+ */
 export async function unsubscribeNewsletterSubscriber(token: string): Promise<NewsletterSubscriber | null> {
   if (!db) throw new Error('Database not available');
   await ensureBootstrapped();
+  const existing = await getNewsletterSubscriberByToken(token);
+  if (!existing) return null;
+  if (existing.status === 'unsubscribed') return existing;
   const rows = await db
     .update(newsletterSubscribers)
     .set({
