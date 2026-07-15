@@ -11,6 +11,10 @@ All notable changes to BB Sports. Format loosely follows
 
 ### Added
 
+- Request correlation: `x-request-id` on middleware responses + redacted structured log helpers.
+
+### Added
+
 - Production rollback runbook (`docs/operations/ROLLBACK.md`) with Railway redeploy, git revert, and EXPECTED_COMMIT smoke.
 - Article loading skeletons and dedicated unpublished/missing take not-found surface.
 - Homepage desk chronology hardened: unique lead+latest slugs, desk-updated timestamp, empty catalog honesty.

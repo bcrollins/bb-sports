@@ -1047,7 +1047,7 @@ Verification: Canary/fuzz redaction; correlated fault; retention cleanup; live s
 Customizability added: Operator filters severity/release/request ID and tunes sampling within privacy floors.
 Surfaces: web
 Risk & rollback: Over-redaction obscures diagnosis; preserve reason codes/digests, not sensitive values.
-Status: Pending
+Status: Complete — x-request-id on middleware responses; createRequestId + redactForLog + logSafe; requestMeta.requestId; password/token/email keys redacted. Full admin incident search remains optional follow-on.
 
 #73 — Make rollback a tested release operation
 Area: Release operations Anchor: publishing-reliability benchmark
