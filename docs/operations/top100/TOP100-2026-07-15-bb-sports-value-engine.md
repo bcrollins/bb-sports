@@ -473,7 +473,7 @@ Verification: All-slug GET/POST matrix, moderation round trip, live formerly orp
 Customizability added: Brad enables/disables comments per article with a visible reason.
 Surfaces: web
 Risk & rollback: Import mapping could attach wrong thread; reconcile by unique slug and verify zero existing comments before remap.
-Status: Pending
+Status: Complete — comments resolve only via getPublishedArticleIdBySlug; GET 404 + available:false for non-catalog; POST already threw Article not found; UI surfaces unavailable state.
 
 #32 — Add durable comment abuse controls
 Area: Community safety Anchor: consumer-CEO benchmark
@@ -963,7 +963,7 @@ Verification: Env matrix; deterministic/version tests; canary secret scan; live 
 Customizability added: Operator enables privacy-safe analytics; readers can opt out.
 Surfaces: web
 Risk & rollback: Rotation breaks longitudinal counts; aggregate before rotation and document discontinuity.
-Status: Pending
+Status: Complete — ANALYTICS_HASH_SALT required (≥16, never JWT/default); write fails closed when missing/reused; no public constant salt.
 
 #67 — Honor consent, Global Privacy Control, and Do Not Track
 Area: Analytics privacy Anchor: consumer-CEO benchmark
@@ -977,7 +977,7 @@ Verification: Header/browser preference matrix; network/DB assertions; policy co
 Customizability added: Reader toggles optional analytics and resets anonymous ID.
 Surfaces: web
 Risk & rollback: Metrics fall; privacy wins, rollback dashboard expectations not consent.
-Status: Pending
+Status: Complete — Sec-GPC/DNT/bb_analytics=0 suppress server writes; client tracker honors GPC/DNT/local opt-out; cookies policy documents matrix.
 
 #68 — Turn analytics into an actionable, privacy-safe newsroom dashboard
 Area: Audience insights Anchor: consumer-CEO benchmark

@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requestMeta } from '@/lib/request-meta';
 import { commentCreateSchema, validationErrorMessage } from '@/lib/comment-validation';
-import { createCommentForArticleSlug, dbAvailable, getPublicCommentsByArticleSlug } from '@/lib/queries';
+import {
+  createCommentForArticleSlug,
+  dbAvailable,
+  getPublishedArticleIdBySlug,
+  getPublicCommentsByArticleSlug,
+} from '@/lib/queries';
 import { recordAnalyticsEventSafe } from '@/lib/analytics';
 import { rejectIfMutationBlocked } from '@/lib/mutation-guard';
 
@@ -12,15 +17,39 @@ type Context = { params: Promise<{ slug: string }> };
 
 export async function GET(_: NextRequest, { params }: Context) {
   if (!dbAvailable) {
-    return NextResponse.json({ ok: false, error: 'Comments require the BB Sports database.', comments: [] }, { status: 503 });
+    return NextResponse.json(
+      {
+        ok: false,
+        available: false,
+        error: 'Comments require the BB Sports database.',
+        comments: [],
+      },
+      { status: 503 },
+    );
   }
   const { slug } = await params;
   try {
+    // Canonical catalog only — unpublished / filesystem-only slugs are unavailable.
+    const articleId = await getPublishedArticleIdBySlug(slug);
+    if (!articleId) {
+      return NextResponse.json(
+        {
+          ok: false,
+          available: false,
+          error: 'Comments open only on published catalog articles.',
+          comments: [],
+        },
+        { status: 404 },
+      );
+    }
     const comments = await getPublicCommentsByArticleSlug(slug);
-    return NextResponse.json({ ok: true, comments });
+    return NextResponse.json({ ok: true, available: true, comments });
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Comments unavailable.';
-    return NextResponse.json({ ok: false, error: message, comments: [] }, { status: 503 });
+    return NextResponse.json(
+      { ok: false, available: false, error: message, comments: [] },
+      { status: 503 },
+    );
   }
 }
 
