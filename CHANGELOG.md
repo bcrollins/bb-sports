@@ -7,6 +7,7 @@ All notable changes to BB Sports. Format loosely follows
 
 ### Added
 
+- Homepage desk chronology hardened: unique lead+latest slugs, desk-updated timestamp, empty catalog honesty.
 - Explainable related takes on article pages (same sport / tags / title / recency with reason labels).
 - Admin session control panel (`/admin/account/sessions`) — revoke one/other devices without raw IP/token exposure.
 - Archive shareable URL filters: sport, q, sort with clear chips, result count, safe invalid-param reset.
