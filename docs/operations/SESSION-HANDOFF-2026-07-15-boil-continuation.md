@@ -1,24 +1,25 @@
-# Session handoff — 2026-07-15 BOIL continuation (wave 2)
+# Session handoff — 2026-07-15 BOIL (wave 3)
 
-## Live gold (verified)
-- Prior tip `f355965`: **31/31** smoke
-- Main tip advancing through PRs #139–#141 (publish checklist, type fixes, canary harness)
-- Soft launch: wall on, robots disallow, publicLaunch false
+## Live gold
+- Tip ships through **#147** (watchlist + canary runbook)
+- Prior verified: **33/33** smoke on `84ab135` / `0560ed9` path
+- Soft launch: wall on, robots disallow, scores not enabled
 
-## Shipped this wave
-| PR | Value |
-|----|--------|
-| #139 | Publish fact-check attestation + revision history panel + versioned migrations |
-| #140 | Type fixes for checklist + DB verifier |
-| #141 | Provider dry-run canary harness |
+## Remaining Top-100 (only commercial / connector live proof)
+| # | Item | Blocker |
+|---|------|---------|
+| 5 | Real-time desk connectors | Paid X/Bluesky/RSS transport + live fixture canary |
+| 34 | Resend welcome | Live approved canary (runbook ready) |
+| 37 | Stripe donations | Live e2e payment canary (runbook ready) |
+| 45 | R2 storage | Live digest round-trip (transport not activated) |
 
-## Ledger remaining (commercial / newsroom)
-- **#5** Live desk — connectors dark; manual desk works; commercial connectors pending
-- **#34** Resend live canary (dry harness pass; needs BBSPORTS_APPROVED_RESEND + domain)
-- **#37** Stripe live canary (dry harness pass; needs live account proof)
-- **#45** R2 transport canary (fail-closed + dry harness; transport not activated)
+## Operator tools
+- `npm run canaries:dry`
+- `GET /api/admin/canaries` (super-admin)
+- `/admin/launch` dry-run panel
+- `docs/operations/COMMERCIAL-CANARIES.md`
 
 ## Do not
 - Auto-publish
-- Mark commercial Complete without live canary evidence
-- Edit applied migration SQL files
+- Mark #34/#37/#45 Complete without live canary evidence
+- Enable live scores without commercial license
