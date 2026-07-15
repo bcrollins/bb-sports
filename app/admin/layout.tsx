@@ -37,6 +37,7 @@ const NAV = [
   { href: '/admin/media', label: 'Media', icon: ImageIcon },
   { href: '/admin/comments', label: 'Comments', icon: MessageSquare },
   { href: '/admin/audience', label: 'Audience', icon: Users },
+  { href: '/admin/findings', label: 'Findings', icon: FileText },
   { href: '/admin/rankings', label: 'Rankings', icon: ListOrdered },
   { href: '/admin/site', label: 'Site', icon: Settings },
   { href: '/admin/access-wall', label: 'Access wall', icon: LockKeyhole },

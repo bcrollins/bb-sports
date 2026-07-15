@@ -119,6 +119,30 @@ export const sessions = pgTable('sessions', {
   revokedAt: timestamp('revoked_at', { withTimezone: true }),
 });
 
+// ---------- editorial_findings ----------
+// Disputed/stale claims awaiting Brad-approved correction. Never auto-rewrite.
+export const editorialFindings = pgTable(
+  'editorial_findings',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    findingKey: varchar('finding_key', { length: 120 }).notNull().unique(),
+    articleSlug: varchar('article_slug', { length: 200 }).notNull(),
+    quotedClaim: text('quoted_claim').notNull(),
+    findingType: varchar('finding_type', { length: 32 }).notNull(),
+    severity: varchar('severity', { length: 8 }).notNull().default('P1'),
+    evidenceNote: text('evidence_note').notNull().default(''),
+    proposedCorrection: text('proposed_correction').notNull().default(''),
+    state: varchar('state', { length: 32 }).notNull().default('open'),
+    reviewerNote: text('reviewer_note').notNull().default(''),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index('idx_editorial_findings_slug_state').on(table.articleSlug, table.state),
+    index('idx_editorial_findings_state').on(table.state),
+  ],
+);
+
 // ---------- auth_attempts ----------
 // Durable rate-limit ledger for gate + admin login. identity_hash is a
 // privacy-safe digest (no raw passwords, no full raw IPs).
@@ -775,6 +799,7 @@ export type PublicationRuntimeControl = typeof publicationRuntimeControls.$infer
 export type SiteConfigRow = typeof siteConfig.$inferSelect;
 export type Session = typeof sessions.$inferSelect;
 export type AuthAttempt = typeof authAttempts.$inferSelect;
+export type EditorialFinding = typeof editorialFindings.$inferSelect;
 export type NewsletterSubscriber = typeof newsletterSubscribers.$inferSelect;
 export type ContactMessage = typeof contactMessages.$inferSelect;
 export type DonationIntent = typeof donationIntents.$inferSelect;

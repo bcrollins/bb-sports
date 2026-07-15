@@ -19,7 +19,7 @@ import { getAudienceSnapshot } from '@/lib/queries';
 export const dynamic = 'force-dynamic';
 
 export default async function AudiencePage() {
-  await requireAdminPage('/admin/audience');
+  const user = await requireAdminPage('/admin/audience');
   const [snapshot, analytics] = await Promise.all([
     getAudienceSnapshot(),
     getAnalyticsSnapshot(),
@@ -144,7 +144,11 @@ export default async function AudiencePage() {
                   <div className="mt-2 font-serif font-bold text-navy">
                     {m.name || 'Unnamed'} · <a className="bb-link" href={`mailto:${m.email}`}>{m.email}</a>
                   </div>
-                  <p className="mt-2 text-sm leading-relaxed text-charcoal/85 whitespace-pre-wrap">{m.message}</p>
+                  <p className="mt-2 text-sm leading-relaxed text-charcoal/85 whitespace-pre-wrap">
+                    {m.confidential && user.role !== 'super_admin'
+                      ? '[Confidential tip redacted — super-admin only]'
+                      : m.message}
+                  </p>
                 </article>
               ))}
             </div>

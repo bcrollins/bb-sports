@@ -1,3 +1,4 @@
+import { evaluatePublishSourceGate } from './article-source-gate';
 import {
   and,
   eq,
@@ -697,6 +698,15 @@ export async function publishArticleRevision(
       hashArticlePublicationSnapshot(revisionSnapshot) !== request.expectedContentHash
     ) {
       throw new PublicationError('CONFLICT', 409, 'The approved revision hash no longer matches.');
+    }
+    // Editorial integrity: fact-heavy prose needs citations or opinion-only stamp.
+    const sourceGate = evaluatePublishSourceGate({
+      body: revisionSnapshot.body,
+      title: revisionSnapshot.title,
+      rationale: request.rationale,
+    });
+    if (!sourceGate.ok) {
+      throw new PublicationError('VALIDATION', 400, sourceGate.reason);
     }
 
     let editableSnapshot: ArticlePublicationSnapshot;

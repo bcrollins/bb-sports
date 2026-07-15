@@ -40,6 +40,7 @@ import {
 } from '../newsroom-providers';
 import { LEAGUE_SEEDS } from '../sports-encyclopedia/leagues.seed';
 import { PERSON_SEEDS } from '../sports-encyclopedia/people.seed';
+import { SEED_EDITORIAL_FINDINGS } from '../editorial-findings';
 import { TEAM_SEEDS } from '../sports-encyclopedia/teams.seed';
 
 type LegacyPublicationRequiredField =
@@ -755,6 +756,27 @@ async function bootstrap(): Promise<void> {
       revoked_at timestamptz
     );
   `);
+  await db.execute(sql`
+    CREATE TABLE IF NOT EXISTS editorial_findings (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      finding_key varchar(120) NOT NULL UNIQUE,
+      article_slug varchar(200) NOT NULL,
+      quoted_claim text NOT NULL,
+      finding_type varchar(32) NOT NULL,
+      severity varchar(8) NOT NULL DEFAULT 'P1',
+      evidence_note text NOT NULL DEFAULT '',
+      proposed_correction text NOT NULL DEFAULT '',
+      state varchar(32) NOT NULL DEFAULT 'open',
+      reviewer_note text NOT NULL DEFAULT '',
+      created_at timestamptz NOT NULL DEFAULT now(),
+      updated_at timestamptz NOT NULL DEFAULT now()
+    );
+  `);
+  await db.execute(sql`
+    CREATE INDEX IF NOT EXISTS idx_editorial_findings_slug_state
+    ON editorial_findings(article_slug, state);
+  `);
+
   // Durable auth abuse ledger (gate + admin login). Stores only hashed
   // identity keys — never passwords and never raw submitted credentials.
   await db.execute(sql`
@@ -1785,6 +1807,27 @@ async function bootstrap(): Promise<void> {
           updatedAt: new Date(),
         },
       });
+  }
+
+  // Seed editorial findings (open only). Never auto-applies corrections.
+  for (const finding of SEED_EDITORIAL_FINDINGS) {
+    await db.execute(sql`
+      INSERT INTO editorial_findings (
+        finding_key, article_slug, quoted_claim, finding_type, severity,
+        evidence_note, proposed_correction, state, reviewer_note
+      ) VALUES (
+        ${finding.findingKey},
+        ${finding.articleSlug},
+        ${finding.quotedClaim},
+        ${finding.findingType},
+        ${finding.severity},
+        ${finding.evidenceNote},
+        ${finding.proposedCorrection},
+        'open',
+        ''
+      )
+      ON CONFLICT (finding_key) DO NOTHING
+    `);
   }
 
   // 2. Admin user seed (idempotent ON CONFLICT DO NOTHING).
