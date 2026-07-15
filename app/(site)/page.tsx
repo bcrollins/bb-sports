@@ -5,6 +5,7 @@ import GeneratedMediaRail from '@/components/GeneratedMediaRail';
 import NewsletterSignup from '@/components/NewsletterSignup';
 import RankingsImpactPill from '@/components/RankingsImpactPill';
 import SportTag from '@/components/SportTag';
+import AiAssistedBadge from '@/components/AiAssistedBadge';
 import {
   getAllArticles,
   formatDate,
@@ -356,7 +357,7 @@ function LeadStory({ article }: { article: Article }) {
         )}
         <div className="absolute left-4 top-4 flex flex-wrap gap-2">
           <SportTag sport={article.sport} size="sm" asLink={false} />
-          {article.aiAssisted && <span className="bb-ai-badge !bg-bone/95">AI · Brad-edited</span>}
+          {article.aiAssisted && <AiAssistedBadge tone="bone" />}
         </div>
       </Link>
       <div className="flex flex-col justify-between p-6 sm:p-8">

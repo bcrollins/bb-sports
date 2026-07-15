@@ -10,6 +10,7 @@ import ArticleCard from '@/components/ArticleCard';
 import ArticleComments from '@/components/ArticleComments';
 import NewsletterSignup from '@/components/NewsletterSignup';
 import SportTag from '@/components/SportTag';
+import AiAssistedBadge from '@/components/AiAssistedBadge';
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -117,7 +118,7 @@ export default async function ArticleDetail({ params }: Props) {
         <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
           <div className="flex flex-wrap items-center gap-2 text-xs">
             <SportTag sport={article.sport} size="md" />
-            {article.aiAssisted && <span className="bb-ai-badge !bg-bone/15 !border-bone/30 !text-bone">AI · Brad-edited</span>}
+            {article.aiAssisted && <AiAssistedBadge tone="dark" />}
           </div>
           <h1
             className="mt-5 font-display uppercase italic tracking-[-0.025em] leading-[0.92] text-bone"

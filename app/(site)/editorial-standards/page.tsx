@@ -37,7 +37,7 @@ export default function EditorialStandardsPage() {
 
         <h2>3. AI assistance is labeled.</h2>
         <p>
-          BB Sports uses AI for transcription of voice memos, drafting injury / power-rankings / news-reaction pieces, and producing counterpoint sidebars that argue against the writer’s take. Anything AI touched carries the “AI · Brad-edited” label. AI never publishes without Brad’s approval. AI does not mimic Brad’s voice — Brad supplies the voice.
+          <span id="ai">BB Sports uses AI</span> for transcription of voice memos, drafting injury / power-rankings / news-reaction pieces, and producing counterpoint sidebars that argue against the writer’s take. Anything AI touched carries the “AI · Brad-edited” label. AI never publishes without Brad’s approval. AI does not mimic Brad’s voice — Brad supplies the voice.
         </p>
 
         <h2>4. Quotes are real.</h2>

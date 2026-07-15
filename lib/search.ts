@@ -16,6 +16,46 @@ export function normalizeSearchQuery(value: unknown): string {
     .slice(0, SEARCH_MAX_QUERY_LENGTH);
 }
 
+/** Edit distance ≤ 1 for tokens length ≥ 4 (typo tolerance). */
+export function fuzzyTokenMatch(haystack: string, token: string): boolean {
+  if (!token) return false;
+  if (haystack.includes(token)) return true;
+  if (token.length < 4) return false;
+  const words = haystack.split(/[^a-z0-9]+/i).filter(Boolean);
+  for (const word of words) {
+    if (Math.abs(word.length - token.length) > 1) continue;
+    if (levenshteinAtMostOne(word, token)) return true;
+  }
+  return false;
+}
+
+function levenshteinAtMostOne(a: string, b: string): boolean {
+  if (a === b) return true;
+  const la = a.length;
+  const lb = b.length;
+  if (Math.abs(la - lb) > 1) return false;
+  let i = 0;
+  let j = 0;
+  let edits = 0;
+  while (i < la && j < lb) {
+    if (a[i] === b[j]) {
+      i += 1;
+      j += 1;
+      continue;
+    }
+    edits += 1;
+    if (edits > 1) return false;
+    if (la > lb) i += 1;
+    else if (lb > la) j += 1;
+    else {
+      i += 1;
+      j += 1;
+    }
+  }
+  if (i < la || j < lb) edits += 1;
+  return edits <= 1;
+}
+
 export function searchArticles(articles: Article[], rawQuery: unknown, sport?: SportSlug | 'all'): SearchResult[] {
   const query = normalizeSearchQuery(rawQuery).toLowerCase();
   if (query.length < SEARCH_MIN_QUERY_LENGTH) return [];
@@ -46,6 +86,9 @@ export function searchArticles(articles: Article[], rawQuery: unknown, sport?: S
           if (text.includes(token)) {
             score += field.weight;
             matched.add(field.name);
+          } else if (fuzzyTokenMatch(text, token)) {
+            score += field.weight * 0.6;
+            matched.add(`${field.name}~`);
           }
         }
       }

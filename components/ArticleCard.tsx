@@ -4,6 +4,7 @@ import type { Article } from '@/lib/articles';
 import { formatDate } from '@/lib/articles';
 import { sportMeta } from '@/lib/sport-meta';
 import SportTag from './SportTag';
+import AiAssistedBadge from './AiAssistedBadge';
 
 type Props = {
   article: Article;
@@ -20,7 +21,7 @@ export default function ArticleCard({ article, variant = 'standard' }: Props) {
       <Link href={`/articles/${article.slug}`} className="group block py-4 border-b border-navy/10">
         <div className="flex items-baseline gap-3">
           <SportTag sport={article.sport} size="xs" asLink={false} />
-          {article.aiAssisted && <span className="bb-ai-badge !text-[10px]">AI · Brad-edited</span>}
+          {article.aiAssisted && <AiAssistedBadge className="!text-[10px]" />}
           <time className="text-xs text-charcoal/60">{formatDate(article.date)}</time>
         </div>
         <h3 className="mt-1.5 font-serif font-bold text-lg sm:text-xl text-navy-900 group-hover:text-breaking transition-colors leading-tight">
@@ -51,7 +52,7 @@ export default function ArticleCard({ article, variant = 'standard' }: Props) {
             {/* Sport bug, top-left, broadcast-style */}
             <div className="absolute top-3 left-3 flex items-center gap-2">
               <SportTag sport={article.sport} size="sm" asLink={false} />
-              {article.aiAssisted && <span className="bb-ai-badge !bg-bone/95">AI · Brad-edited</span>}
+              {article.aiAssisted && <AiAssistedBadge tone="bone" />}
             </div>
           </div>
         )}

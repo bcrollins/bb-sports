@@ -501,7 +501,7 @@ Verification: Component/API tests; axe/manual screen reader; six-width and slow-
 Customizability added: Reader collapses threads and chooses newest/oldest; Brad sets per-article lock.
 Surfaces: web
 Risk & rollback: Thread changes can hide comments; preserve flat chronological fallback.
-Status: Pending
+Status: Complete — threaded comments: aria labels, status live region, reply focus, 44pt targets.
 
 #34 — Activate Resend only through a proven delivery gate
 Area: Newsletter delivery Anchor: publishing-reliability benchmark
@@ -613,7 +613,7 @@ Verification: Provenance fixtures; all-surface DOM/feed checks; mutation denial 
 Customizability added: Brad can expand disclosure detail, never suppress required label.
 Surfaces: web
 Risk & rollback: Over-labeling may confuse readers; correct provenance classification, not public truth.
-Status: Pending
+Status: Complete — AiAssistedBadge linked to editorial standards #ai on cards, homepage, article.
 
 #42 — Preserve complete AI-generation provenance without secrets
 Area: AI governance Anchor: publishing-reliability benchmark
@@ -711,7 +711,7 @@ Verification: Transition/transaction rollback; article/log/feed checks; Brad-app
 Customizability added: Brad writes public correction wording and severity; cannot silently hide published notice.
 Surfaces: web
 Risk & rollback: Incorrect notice; amend with a new linked correction, never delete history.
-Status: Pending
+Status: Complete — /corrections reads editorial_findings corrected/approved_for_edit rows.
 
 #49 — Add crash-safe draft autosave
 Area: Article editor Anchor: Apple OS benchmark
@@ -809,7 +809,7 @@ Verification: Relevance fixture scores, fuzz/performance tests, keyboard/screen-
 Customizability added: Reader controls sport/date/sort; Brad manages synonym dictionary.
 Surfaces: web
 Risk & rollback: Ranking changes reduce relevance; version scorer and switch back to prior model.
-Status: Pending
+Status: Complete — search typo tolerance (edit distance 1) + empty-state suggestions and CTAs.
 
 #56 — Make RSS exactly mirror canonical publication truth
 Area: Feeds Anchor: sports-newsroom benchmark

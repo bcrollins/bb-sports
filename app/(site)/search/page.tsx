@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { Search } from 'lucide-react';
 import { AnalyticsEventBeacon } from '@/components/AnalyticsTracker';
 import ArticleCard from '@/components/ArticleCard';
-import { getAllArticles, sportLabel, type SportSlug } from '@/lib/articles';
+import { getAllArticles, sportLabel, type Article, type SportSlug } from '@/lib/articles';
 import { normalizeSearchQuery, searchArticles, SEARCH_MIN_QUERY_LENGTH } from '@/lib/search';
 import { searchFranchises, type FranchiseSearchHit } from '@/lib/rankings';
 import { sportMeta } from '@/lib/sport-meta';
@@ -106,11 +106,13 @@ export default async function SearchPage({ searchParams }: Props) {
           <EmptyState
             title="Start with two characters."
             text="Search by team, league, article title, or whatever phrase is stuck in your head."
+            suggestions={articles.slice(0, 3)}
           />
         ) : results.length === 0 && franchiseHits.length === 0 ? (
           <EmptyState
             title="No take matched that."
-            text={`No published BB Sports article or ranked franchise matched "${query}"${sport !== 'all' ? ` in ${sportLabel(sport)}` : ''}.`}
+            text={`No published BB Sports article or ranked franchise matched "${query}"${sport !== 'all' ? ` in ${sportLabel(sport)}` : ''}. Typo tolerance is on for longer words — try another spelling, clear the sport filter, or browse the latest.`}
+            suggestions={articles.slice(0, 3)}
           />
         ) : (
           <>
@@ -205,11 +207,44 @@ function FranchiseHitCard({ hit }: { hit: FranchiseSearchHit }) {
   );
 }
 
-function EmptyState({ title, text }: { title: string; text: string }) {
+function EmptyState({
+  title,
+  text,
+  suggestions = [],
+}: {
+  title: string;
+  text: string;
+  suggestions?: Article[];
+}) {
   return (
     <div className="rounded-sm border border-navy/15 bg-white p-8 text-center">
       <h2 className="font-serif text-2xl font-bold text-navy">{title}</h2>
       <p className="mx-auto mt-2 max-w-xl text-charcoal/75">{text}</p>
+      <div className="mt-5 flex flex-wrap justify-center gap-3">
+        <Link href="/articles" className="bb-button-primary min-h-[44px]">
+          Browse all articles
+        </Link>
+        <Link href="/teams" className="bb-button-ghost min-h-[44px]">
+          Teams encyclopedia
+        </Link>
+        <Link href="/rankings" className="bb-button-ghost min-h-[44px]">
+          Rankings
+        </Link>
+      </div>
+      {suggestions.length > 0 ? (
+        <div className="mx-auto mt-8 max-w-2xl text-left">
+          <p className="bb-eyebrow !text-breaking">Latest published</p>
+          <ul className="mt-2 space-y-2">
+            {suggestions.map((article) => (
+              <li key={article.slug}>
+                <Link className="bb-link font-serif text-lg font-bold text-navy" href={`/articles/${article.slug}`}>
+                  {article.title}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
     </div>
   );
 }
