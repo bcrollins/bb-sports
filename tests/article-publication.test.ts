@@ -182,6 +182,14 @@ test('publish request binds an exact revision and lowercase hash to Brad confirm
     expectedContentHash: 'a'.repeat(64),
     confirmation: ARTICLE_PUBLICATION_CONFIRMATION_PHRASE,
     rationale: 'Brad verified every claim and approves this exact revision.',
+    checklistAttestation: [
+      'source_url',
+      'names_spelling',
+      'numbers_fresh',
+      'quotes_attributed',
+      'bias_disclosed',
+      'ai_labeled',
+    ],
   };
 
   assert.deepEqual(articlePublishRequestSchema.parse(valid), valid);

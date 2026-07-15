@@ -71,6 +71,9 @@ test('publication approval binds the exact server revision and hash to Brad conf
   assert.match(publishContract, /expectedContentHash:\s*preparedRevision\.contentHash/);
   assert.match(publishContract, /confirmation,/);
   assert.match(publishContract, /rationale:\s*approvalRationale\.trim\(\)/);
+  assert.match(publishContract, /checklistAttestation:\s*checklistIds/);
+  assert.match(editor, /FactCheckChecklist/);
+  assert.match(editor, /RevisionHistoryPanel/);
   assert.match(
     editor,
     /preparedRevision\.contentHash === publicationStatus\.draftHash/,

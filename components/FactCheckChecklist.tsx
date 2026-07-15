@@ -1,18 +1,22 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   FACT_CHECK_CHECKLIST,
   isFactCheckComplete,
 } from '@/lib/fact-check-checklist';
 
 /**
- * Client checklist for Brad — advisory UI only; does not publish or rewrite.
+ * Client checklist for Brad — required at publish via attestation ids;
+ * never rewrites prose.
  */
 export default function FactCheckChecklist({
   storageKey = 'bb-fact-check-default',
+  onAttestationChange,
 }: {
   storageKey?: string;
+  /** Emits checked ids whenever the checklist changes (for publish attestation). */
+  onAttestationChange?: (checkedIds: string[], complete: boolean) => void;
 }) {
   const [checked, setChecked] = useState<Record<string, boolean>>(() => {
     if (typeof window === 'undefined') return {};
@@ -24,10 +28,16 @@ export default function FactCheckChecklist({
     }
   });
 
-  const complete = useMemo(
-    () => isFactCheckComplete(Object.keys(checked).filter((id) => checked[id])),
+  const checkedIds = useMemo(
+    () => Object.keys(checked).filter((id) => checked[id]),
     [checked],
   );
+
+  const complete = useMemo(() => isFactCheckComplete(checkedIds), [checkedIds]);
+
+  useEffect(() => {
+    onAttestationChange?.(checkedIds, complete);
+  }, [checkedIds, complete, onAttestationChange]);
 
   function toggle(id: string) {
     setChecked((prev) => {

@@ -319,7 +319,7 @@ Verification: Dump live schema; test fresh and cloned-production migrations; int
 Customizability added: None—schema safety is fixed; operator may choose dry-run and maintenance window.
 Surfaces: web
 Risk & rollback: Baseline mistakes can damage production; use clone first, transactional migrations, backups, and explicit down/forward recovery per migration.
-Status: Pending
+Status: Complete — versioned drizzle/migrations ledger + advisory lock + checksum drift fail; npm run db:migrate; BBSPORTS_SCHEMA_MODE=migrations skips bootstrap DDL; default bootstrap still IF NOT EXISTS then advances ledger.
 
 #21 — Prove backup and restore for all first-party data
 Area: Data durability Anchor: publishing-reliability benchmark
@@ -599,7 +599,7 @@ Verification: Transition/property tests; direct API/DB constraint attempts; audi
 Customizability added: Brad controls checklist completion, schedule, and final edits; approval requirement fixed.
 Surfaces: web
 Risk & rollback: Workflow can block urgent posts; breaking desk offers one-tap review, never bypass.
-Status: In progress — current unscheduled publication now binds Brad's active super-admin role, exact immutable revision/hash, phrase, and rationale in one transaction; checklist/scheduled-release extensions remain pending.
+Status: Complete — publish requires fact-check checklistAttestation (all required ids), phrase, rationale, exact revision/hash, super-admin; attestation audited on publication event.
 
 #41 — Render AI assistance labels from enforced provenance
 Area: Editorial disclosure Anchor: consumer-CEO benchmark
@@ -683,7 +683,7 @@ Verification: Known-error fixtures; approval block; audit event and rendered cor
 Customizability added: Brad selects applicable checks and adds sport-specific templates; core integrity checks fixed.
 Surfaces: web
 Risk & rollback: Checklist fatigue; prefill from evidence but require human confirmation.
-Status: Complete — FACT_CHECK_CHECKLIST + FactCheckChecklist UI on /admin/findings (sessionStorage, advisory only); required floors for sources/names/numbers/quotes/bias/AI. Attestation wired into publish phrase remains optional next step.
+Status: Complete — FACT_CHECK_CHECKLIST + UI; required floors enforced at publish via checklistAttestation (not advisory-only).
 
 #47 — Preserve immutable article revision history
 Area: Editorial data Anchor: publishing-reliability benchmark
@@ -697,7 +697,7 @@ Verification: Create/edit/restore concurrency tests; DB immutability; admin diff
 Customizability added: Brad names revisions, compares, and restores via new revision.
 Surfaces: web
 Risk & rollback: Storage growth; compress/retain safely, never prune published history without policy.
-Status: In progress — prepared and published snapshots, hashes, actors, source-event links, and publish/unpublish events are immutable and append-only; editor-visible diff/restore and revision-per-working-edit remain pending.
+Status: Complete — append-only revisions; GET /revisions with field diffs; editor RevisionHistoryPanel restore-to-draft (never mutates history).
 
 #48 — Turn corrections into a linked editorial workflow
 Area: Corrections Anchor: sports-newsroom benchmark

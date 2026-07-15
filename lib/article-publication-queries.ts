@@ -1,5 +1,9 @@
 import { evaluatePublishSourceGate } from './article-source-gate';
 import {
+  formatFactCheckAuditLine,
+  validateFactCheckAttestation,
+} from './fact-check-checklist';
+import {
   and,
   eq,
   inArray,
@@ -708,6 +712,11 @@ export async function publishArticleRevision(
     if (!sourceGate.ok) {
       throw new PublicationError('VALIDATION', 400, sourceGate.reason);
     }
+    const checklist = validateFactCheckAttestation(request.checklistAttestation);
+    if (!checklist.ok) {
+      throw new PublicationError('VALIDATION', 400, checklist.reason);
+    }
+    const auditedRationale = `${request.rationale}\n\n${formatFactCheckAuditLine(checklist.attestedIds)}`;
 
     let editableSnapshot: ArticlePublicationSnapshot;
     try {
@@ -796,7 +805,7 @@ export async function publishArticleRevision(
         actorUserId: actor.userId,
         actorLabel: actor.label,
         exactConfirmation: ARTICLE_PUBLICATION_CONFIRMATION_PHRASE,
-        rationale: request.rationale,
+        rationale: auditedRationale,
       })
       .returning();
     if (!publicationEvent) {
@@ -1188,4 +1197,37 @@ export async function createVerifiedEventArticleDraft(
     });
     return { article, revision, link, created: true };
   });
+}
+
+/** Append-only revision list for the editor history panel (newest first). */
+export async function listArticleRevisions(articleId: string): Promise<
+  Array<{
+    id: string;
+    revisionNumber: number;
+    contentHash: string;
+    createdAt: string;
+    snapshot: ArticlePublicationSnapshot;
+  }>
+> {
+  const database = requireDatabase();
+  await ensureBootstrapped();
+  const rows = await database
+    .select({
+      id: articleRevisions.id,
+      revisionNumber: articleRevisions.revisionNumber,
+      contentHash: articleRevisions.contentHash,
+      createdAt: articleRevisions.createdAt,
+      snapshot: articleRevisions.snapshot,
+    })
+    .from(articleRevisions)
+    .where(eq(articleRevisions.articleId, articleId))
+    .orderBy(sql`${articleRevisions.revisionNumber} DESC`)
+    .limit(100);
+  return rows.map((row) => ({
+    id: row.id,
+    revisionNumber: row.revisionNumber,
+    contentHash: row.contentHash,
+    createdAt: row.createdAt.toISOString(),
+    snapshot: validatedRevisionSnapshot(row),
+  }));
 }

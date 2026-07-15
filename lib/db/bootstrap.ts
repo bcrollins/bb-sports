@@ -183,6 +183,18 @@ export function ensureBootstrapped(): Promise<void> {
 async function bootstrap(): Promise<void> {
   if (!db) return;
 
+  // Schema mode:
+  // - migrations: versioned SQL only (no ad-hoc DDL here). Operator must have
+  //   applied drizzle/migrations (and any future expand files) first.
+  // - bootstrap (default): legacy IF NOT EXISTS DDL for zero-downtime continuity,
+  //   then the versioned migration ledger is still advanced for checksum tracking.
+  const schemaMode = String(process.env.BBSPORTS_SCHEMA_MODE ?? 'bootstrap')
+    .trim()
+    .toLowerCase();
+  if (schemaMode === 'migrations') {
+    const { runVersionedMigrations, defaultMigrationsDir } = await import('./migrate');
+    await runVersionedMigrations({ database: db, migrationsDir: defaultMigrationsDir() });
+  } else {
   // 1. Tables — minimal hand-written DDL so we don't ship `drizzle-kit` to production.
   //    Keep this in lockstep with lib/db/schema.ts.
   await db.execute(sql`
@@ -1696,6 +1708,12 @@ async function bootstrap(): Promise<void> {
   await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_news_event_articles_article ON news_event_articles(article_id);`);
   await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_news_event_articles_revision ON news_event_articles(revision_id);`);
   await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_news_event_articles_actor ON news_event_articles(actor_user_id);`);
+
+  // Advance the versioned migration ledger even after legacy bootstrap DDL so
+  // checksum tracking stays authoritative for future expand/contract files.
+  const { runVersionedMigrations, defaultMigrationsDir } = await import('./migrate');
+  await runVersionedMigrations({ database: db, migrationsDir: defaultMigrationsDir() });
+  } // end BBSPORTS_SCHEMA_MODE !== migrations
 
   // Credential-free intake source. It records a human newsroom observation but
   // is intentionally unverified, so it can never satisfy corroboration alone.

@@ -20,7 +20,8 @@
     "sbom:generate": "node scripts/generate-sbom.mjs",
     "sbom:check": "node scripts/generate-sbom.mjs --check",
     "smoke:production": "node scripts/smoke-production.mjs",
-    "db:push": "drizzle-kit push"
+    "db:push": "drizzle-kit push",
+    "db:migrate": "tsx scripts/db-migrate.ts"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
