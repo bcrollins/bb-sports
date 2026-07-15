@@ -20,6 +20,7 @@ All notable changes to BB Sports. Format loosely follows
 
 ### Security
 
+- Added durable Postgres `auth_attempts` rate limiting for soft-launch gate (8/15m) and admin login (5/15m + lock) with privacy-safe identity digests, Retry-After, success reset, and process-memory fallback when DB is unavailable.
 - Enforced Content-Security-Policy (default-src self, object-src none, frame-ancestors self, form-action self, upgrade-insecure-requests) and HSTS (2-year + includeSubDomains + preload) on every response; Markdown sanitization remains the primary XSS barrier.
 - Upgraded Next.js and its lint peer to 15.5.20, pinned patched PostCSS/esbuild resolutions, and made a zero-moderate-or-higher `npm audit` part of `npm run check`.
 - Made Postgres session rows authoritative for newsroom access: missing, expired, revoked, user-mismatched, or disallowed-role sessions now fail closed even when a JWT signature is valid.
@@ -33,6 +34,7 @@ All notable changes to BB Sports. Format loosely follows
 
 ### Fixed
 
+- Homepage rankings rail copy no longer claims “live” league data; it reads “Brad’s rankings · editorial.”
 - Newsletter unsubscribe GET paths are read-only (link scanners cannot suppress consent). Mutation requires POST (JSON, human form, or RFC 8058 `List-Unsubscribe=One-Click` on `/api/newsletter/unsubscribe`).
 - Renamed the public ticker from false “Breaking” to honest “Desk” for curated/static bumpers; live pulse is reserved for verified `isBreaking` rails only (editorial integrity).
 - Isolated `/coming-soon` from the public site layout so the hidden header, ticker, footer, analytics, and links no longer remain in the DOM or keyboard focus order behind the white wall.

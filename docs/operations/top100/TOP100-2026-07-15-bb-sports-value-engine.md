@@ -17,6 +17,24 @@ Canonical production: https://bbsports.fans
 - Editorial hard limit: no article is published or materially rewritten without Brad's explicit approval. This ledger may quarantine, draft, flag, or queue corrections; it may not silently publish prose.
 - Preservation rule: each implementation interval must preserve existing published routes, real subscriber/contact/comment/donation rows, Brad's approval authority, and the signed access-wall recovery path. Every rollback named below is additive/reversible unless an audited migration says otherwise.
 
+## ESPN Path Truth Model (2026-07-15 continuation)
+
+Goal: take BB Sports from soft-launch personal sports media to **ESPN-website caliber** public surfaces — not by cloning ESPN chrome, but by matching (then beating) its reader-trust floors: always-on reliability, honest labeling, mobile-first scan, complete SEO/feed contracts, and a newsroom that never ships fake urgency or unlicensed scores.
+
+Users: phone-first sports fans; Brad as sole editor; Brandon as operator.
+
+ESPN parity pillars (mapped to this ledger):
+1. Trust/security — wall, admin auth, CSP, rate limits, consent (#1–#13) 
+2. Editorial integrity — desk labels, sources, corrections, Brad approval (#14–#16, #40–#48)
+3. Catalog completeness — DB/sitemap/RSS/search parity (#6, #54–#60)
+4. Glanceable UX — homepage, rankings truth, empty/error states (#60–#65)
+5. Scale rails — licensed scores only when commercial (#18), donations/newsletter when proven (#34–#39)
+6. Ops excellence — health/status/SLO/rollback (#70–#73)
+
+iOS: N/A (web-only v1). Supabase: N/A (Postgres/Drizzle).
+
+Live SHA at ledger refresh start: see `/api/health`.
+
 ## Scoring Method
 
 PRIORITY = (10.0 minus current score) x launch criticality divided by execution cost, rounded to two decimals. Launch criticality is 3 for a P0 that can expose data, publish wrong content, break access, or corrupt money/consent; 2 for a launch P1; 1 for a post-launch P2. Execution cost is estimated at 1 for a narrow patch, 2 for a coherent multi-file interval, 3 for a schema/workflow interval, and 4 for an external-provider or editorial dependency. Ties are ordered by blast radius, irreversible harm, reader trust, then operator time saved. Scores describe verified current behavior, not code intent.
@@ -63,7 +81,7 @@ Verification: npm ci; npm audit --json; dependency-tree review; full check; Dock
 Customizability added: None—security floor is fixed; exceptions require owner, evidence, and expiry.
 Surfaces: web
 Risk & rollback: Overrides can break tooling; rollback one override at a time without returning to an exploitable framework.
-Status: Pending
+Status: Complete — Next 15.5.20 pinned; `npm audit --audit-level=moderate` in `npm run check`; live production reports 0 vulnerabilities at moderate+.
 
 #4 — Eliminate stored XSS and enforce CSP/HSTS
 Area: Rendering and HTTP security Anchor: publishing-reliability benchmark
@@ -77,7 +95,7 @@ Verification: Unit/integration payload corpus; response inspection; CSP reports;
 Customizability added: Brad selects only named approved embed types; core security cannot be disabled.
 Surfaces: web
 Risk & rollback: Legacy embeds may disappear; preserve source and show stripped-node warnings, rollback CSP to report-only but never restore unsafe rendering.
-Status: Pending
+Status: Complete — ARTICLE_MARKDOWN_SANITIZE_SCHEMA enforced; CSP + HSTS live on bbsports.fans (PR #82); Markdown corpus tests green.
 
 #5 — Build a real-time, human-approved breaking-news desk
 Area: Breaking-news operations Anchor: sports-newsroom benchmark
@@ -133,7 +151,7 @@ Verification: Unit-test clock/window math; parallel integration requests; Railwa
 Customizability added: Operator-configurable thresholds within safe min/max; users cannot disable protection.
 Surfaces: web
 Risk & rollback: Shared NATs may be throttled; key on multiple privacy-safe signals, expose operator unlock, and feature-roll back to conservative fixed limits.
-Status: Pending
+Status: Complete — `auth_attempts` table + `lib/auth-rate-limit.ts` (gate 8/15m lock); gate route precheck/failure/success; privacy digests; Retry-After; memory fallback when DB off. Optional: operator unlock UI, retention job.
 
 #9 — Add durable rate limiting and alerting to admin login
 Area: Admin authentication Anchor: publishing-reliability benchmark
@@ -147,7 +165,7 @@ Verification: Statistical timing test, concurrent abuse test, restart test, DB i
 Customizability added: Brad can view lock posture and invoke audited unlock after re-authentication; thresholds remain within safe bounds.
 Surfaces: web
 Risk & rollback: Self-lockout; retain bounded expiry and operator recovery, rollback alert transport independently from enforcement.
-Status: Pending
+Status: Complete — admin_login policy 5/15m + 30m lock; email+IP digests; success reset; generic errors; Resend alert still pending commercial approval.
 
 #10 — Require authorization before every admin API operation
 Area: Admin APIs Anchor: publishing-reliability benchmark
@@ -189,7 +207,7 @@ Verification: Unit-test payload/header generation; integration-test form POST an
 Customizability added: Subscriber chooses topics/frequency elsewhere, but one-click global suppression remains immediate.
 Surfaces: web
 Risk & rollback: Wrong token handling can unsubscribe another reader; use high-entropy unique tokens, transactionally update by token, and restore only with explicit resubscribe consent.
-Status: Pending
+Status: Complete — List-Unsubscribe points at `/api/newsletter/unsubscribe`; POST accepts JSON + One-Click form; human page uses confirm form (PR #84).
 
 #13 — Stop link scanners from mutating newsletter consent
 Area: Newsletter consent Anchor: publishing-reliability benchmark
@@ -203,7 +221,7 @@ Verification: Simulate HEAD/GET/prefetch/scanner UA; assert unchanged DB; submit
 Customizability added: Human form offers “all email” or saved topic preferences; scanner safety is fixed.
 Surfaces: web
 Risk & rollback: Extra confirmation can reduce human completion; keep RFC one-click for clients and rollback only presentation, never GET mutation.
-Status: Pending
+Status: Complete — GET API returns `mutates: false` lookup only; page GET never calls suppress (PR #84).
 
 #14 — Enforce inline sources before an article can publish
 Area: Editorial integrity Anchor: sports-newsroom benchmark
@@ -245,7 +263,7 @@ Verification: Unit-test state normalization and expiry; visual/ARIA test at six 
 Customizability added: Brad can order, schedule, label, and disable desk items; protected Breaking label requires evidence.
 Surfaces: web
 Risk & rollback: Removing urgency may reduce clicks; retain the rail and brand styling, rollback copy only without restoring false claims.
-Status: Pending
+Status: Complete — public rail labels Desk / BB Sports desk; pulse only when all items isBreaking (PR #83). True-breaking source/expiry schema remains for newsroom path.
 
 #17 — Remove unsupported “LIVE” branding from the masthead
 Area: Global header Anchor: consumer-CEO benchmark
@@ -931,7 +949,7 @@ Verification: Copy/build search; history fixtures; six-width/screen-reader ranki
 Customizability added: Reader selects league and baseline/current comparison; Brad controls published rationale.
 Surfaces: web
 Risk & rollback: Extra context can clutter; progressive disclosure with concise default.
-Status: Pending
+Status: In progress — homepage rail copy fixed to “Brad's rankings · editorial”; remaining: methodology block, last-updated stamp, accessible movement history beyond color.
 
 #66 — Separate analytics identity salt from authentication secrets
 Area: Analytics security Anchor: publishing-reliability benchmark
