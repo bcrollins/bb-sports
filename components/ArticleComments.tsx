@@ -26,6 +26,17 @@ export default function ArticleComments({ slug }: { slug: string }) {
         const res = await fetch(`/api/articles/${slug}/comments`, { cache: 'no-store' });
         const json = await res.json();
         if (!mounted) return;
+        if (res.status === 404 || json.available === false) {
+          setComments([]);
+          setCommentsUnavailable(true);
+          setStatus('error');
+          setMessage(
+            typeof json.error === 'string'
+              ? json.error
+              : 'Comments open only on published catalog articles.',
+          );
+          return;
+        }
         if (!res.ok) throw new Error(json.error || 'Comments unavailable.');
         setComments(Array.isArray(json.comments) ? json.comments : []);
         setCommentsUnavailable(false);

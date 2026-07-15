@@ -65,7 +65,12 @@ test('analytics payloads are first-party and privacy-filtered', () => {
   assert.equal(analyticsPayloadSchema.safeParse({ eventName: 'BadEvent' }).success, false);
   const clean = sanitizeAnalyticsProperties(parsed.properties);
   assert.deepEqual(clean, { query_length: 5, result_count: 2, sport: 'nfl' });
-  assert.match(hashAnalyticsValue('203.0.113.1') ?? '', /^[a-f0-9]{64}$/);
+  // Without dedicated ANALYTICS_HASH_SALT, hashing fails closed (no JWT/default salt).
+  assert.equal(hashAnalyticsValue('203.0.113.1', {}), null);
+  assert.match(
+    hashAnalyticsValue('203.0.113.1', { ANALYTICS_HASH_SALT: 'unit-test-salt-ok-16+' }) ?? '',
+    /^[a-f0-9]{64}$/,
+  );
 });
 
 test('access wall update requires a durable password length', () => {

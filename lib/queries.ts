@@ -976,7 +976,8 @@ function toPublicComment(comment: Comment): PublicComment {
   };
 }
 
-async function getPublishedArticleIdBySlug(slug: string): Promise<string | null> {
+/** Published catalog ID for a slug, or null if not in the public canonical set. */
+export async function getPublishedArticleIdBySlug(slug: string): Promise<string | null> {
   if (!db) return null;
   await ensureBootstrapped();
   const rows = await db
