@@ -15,6 +15,7 @@ All notable changes to BB Sports. Format loosely follows
 
 ### Added
 
+- Local-first favorite sports picker + optional “From your sports” homepage rail (#84) — no account, no server PII; Latest feed stays chronological.
 - Offline/reconnect banner (honest, no invented write success).
 - Documented Core Web Vitals / payload budgets (`lib/performance-budgets.ts`).
 - Production smoke checks for soft-launch RSS emptiness and per-article OG cards.

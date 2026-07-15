@@ -3,6 +3,7 @@ import Link from 'next/link';
 import ArticleCard from '@/components/ArticleCard';
 import GeneratedMediaRail from '@/components/GeneratedMediaRail';
 import NewsletterSignup from '@/components/NewsletterSignup';
+import FavoriteArticlesRail from '@/components/FavoriteArticlesRail';
 import RankingsImpactPill from '@/components/RankingsImpactPill';
 import SportTag from '@/components/SportTag';
 import AiAssistedBadge from '@/components/AiAssistedBadge';
@@ -342,6 +343,14 @@ export default async function HomePage() {
           </aside>
         </div>
       </section>
+
+      <FavoriteArticlesRail
+        articles={desk.latest.map((a) => ({
+          slug: a.slug,
+          title: a.title,
+          sport: a.sport,
+        }))}
+      />
     </div>
   );
 }
