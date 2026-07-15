@@ -22,6 +22,7 @@ import {
   type FormEvent,
   type ReactNode,
 } from 'react';
+import NewsroomWatchlistPreview from '@/components/NewsroomWatchlistPreview';
 
 type EventState = 'new' | 'investigating' | 'verification_ready' | 'verified' | 'dismissed';
 type Urgency = 'routine' | 'watch' | 'breaking';
@@ -695,6 +696,17 @@ export default function NewsDesk({
           </div>
         </div>
       </header>
+
+      <NewsroomWatchlistPreview
+        signals={snapshot.events.map((event) => ({
+          id: event.id,
+          text: `${event.headline} ${event.summary}`,
+          sport: event.sport,
+          urgency: event.urgency === 'breaking' ? 90 : event.urgency === 'watch' ? 60 : 30,
+          // Manual desk events are first-party authorized for routing preview.
+          sourceAuthorized: true,
+        }))}
+      />
 
       {snapshot.providerStatus && snapshot.providerStatus.providers.length > 0 ? (
         <section

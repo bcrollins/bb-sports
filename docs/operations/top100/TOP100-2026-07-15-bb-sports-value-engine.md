@@ -109,7 +109,7 @@ Verification: Contract-test manual intake and the persistent stream; prove cron 
 Customizability added: Brad controls source enablement, sport/team watchlists, corroboration thresholds within safe floors, quiet hours, alert channel, draft template, expiry, and one-tap actions.
 Surfaces: web
 Risk & rollback: Misinformation, license breach, SSRF, spam, or accidental publication; adapters default off, manual intake remains, kill switch stops ingestion, and published items can be retracted/corrected without deleting audit history.
-Status: In progress — protected Live Desk + SSE/poll + verification + Brad-only draft/publish gate + provider governance/ingest fail-closed + dry canaries on /admin/launch; paid connectors remain dark until commercial canary proof.
+Status: In progress — Live Desk + SSE/poll + verification + Brad-only publish + provider fail-closed + watchlist preview on desk + dry canaries; paid connectors dark until live commercial canary.
 
 #6 — Converge the published article catalog without data loss
 Area: Editorial data plane Anchor: publishing-reliability benchmark
@@ -515,7 +515,7 @@ Verification: DNS/provider sandbox; outbox tests; raw headers including unsubscr
 Customizability added: Brad selects which existing subscribers receive a catch-up welcome and template variant.
 Surfaces: web
 Risk & rollback: Spam/reputation harm; gate off, small canary, kill switch, and suppress failures.
-Status: Pending
+Status: Pending — fail-closed transport + dry canary + runbook; live approved delivery still required.
 
 #35 — Add newsletter topic and frequency preferences
 Area: Audience retention Anchor: consumer-CEO benchmark
@@ -557,7 +557,7 @@ Verification: Stripe test then approved live canary/refund; DB/admin reconciliat
 Customizability added: Reader chooses allowed preset/custom amount and optional message; operator caps limits.
 Surfaces: web
 Risk & rollback: Money/accounting harm; feature flag off, refund canary, and retain immutable ledger.
-Status: Pending
+Status: Pending — reconcile/refunds + dry canary + runbook; live e2e payment canary still required.
 
 #38 — Make Stripe webhook reconciliation idempotent and complete
 Area: Payments Anchor: publishing-reliability benchmark
@@ -669,7 +669,7 @@ Verification: Provider sandbox/canary; IAM tests; upload/render/delete; cost/egr
 Customizability added: Brad chooses approved rendition/crop/placement, not bucket policy.
 Surfaces: web
 Risk & rollback: Broken CDN or cost spike; retain original, quota/kill switch, and local safe assets.
-Status: Pending
+Status: Pending — fail-closed putR2 + dry canary + runbook; live digest round-trip still required.
 
 #46 — Add a claim-level fact-check checklist
 Area: Editorial quality Anchor: sports-newsroom benchmark

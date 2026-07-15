@@ -21,7 +21,8 @@
     "sbom:check": "node scripts/generate-sbom.mjs --check",
     "smoke:production": "node scripts/smoke-production.mjs",
     "db:push": "drizzle-kit push",
-    "db:migrate": "tsx scripts/db-migrate.ts"
+    "db:migrate": "tsx scripts/db-migrate.ts",
+    "canaries:dry": "tsx scripts/run-provider-canaries.mjs"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
