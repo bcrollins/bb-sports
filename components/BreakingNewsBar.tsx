@@ -1,14 +1,20 @@
 import Link from 'next/link';
 import { getConfig } from '@/lib/queries';
-import { getBreakingItems, type BreakingItem } from '@/lib/breaking';
+import { getDeskRailItems, type DeskRailItem } from '@/lib/breaking';
 
-interface DbBumper { sport: string; text: string; href?: string }
+interface DbBumper {
+  sport: string;
+  text: string;
+  href?: string;
+  isBreaking?: boolean;
+}
 
 /**
- * Reads the breaking ticker from site_config (admin-editable).
- * Falls back to the hand-curated `lib/breaking.ts` defaults if the admin hasn't set one yet.
+ * Public desk rail. Curated / site_config items render as "Desk" — never as
+ * false "Breaking" with a live pulse. Breaking label is reserved for items
+ * that explicitly carry isBreaking=true (verified newsroom path only).
  */
-async function loadItems(): Promise<BreakingItem[]> {
+async function loadItems(): Promise<DeskRailItem[]> {
   const fromDb = await getConfig<DbBumper[] | null>('breaking_ticker', null);
   if (Array.isArray(fromDb) && fromDb.length > 0) {
     return fromDb.map((b, i) => ({
@@ -16,28 +22,42 @@ async function loadItems(): Promise<BreakingItem[]> {
       sport: b.sport,
       text: b.text,
       href: b.href ?? '/articles',
+      // DB bumpers are admin-curated editorial, not verified breaking unless flagged.
+      isBreaking: b.isBreaking === true,
     }));
   }
-  return getBreakingItems();
+  return getDeskRailItems();
 }
 
 export default async function BreakingNewsBar() {
   const items = await loadItems();
   if (items.length === 0) return null;
 
+  // Static / curated rails must not claim "Breaking." Any true-breaking item
+  // would require the whole rail to be in breaking mode; mixed rails stay Desk.
+  const allBreaking = items.every((item) => item.isBreaking === true);
+  const railLabel = allBreaking ? 'Breaking' : 'Desk';
+  const ariaLabel = allBreaking ? 'Breaking sports news' : 'BB Sports desk';
+
   return (
     <div
       className="bg-breaking text-white border-b border-breaking/40 relative z-10"
       role="region"
-      aria-label="Breaking sports news"
+      aria-label={ariaLabel}
+      data-rail-mode={allBreaking ? 'breaking' : 'desk'}
     >
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-2 flex items-stretch gap-3 text-sm">
         <div className="shrink-0 inline-flex items-center px-3 -mx-2 sm:-mx-3 my-[-0.5rem] bg-white text-breaking font-black uppercase tracking-[0.18em] text-[11px]">
-          <span className="block w-2 h-2 rounded-full bg-breaking mr-2 animate-[bb-pulse_1.4s_ease-in-out_infinite]" />
-          Breaking
+          {allBreaking ? (
+            <span
+              className="block w-2 h-2 rounded-full bg-breaking mr-2 animate-[bb-pulse_1.4s_ease-in-out_infinite]"
+              aria-hidden="true"
+            />
+          ) : null}
+          {railLabel}
         </div>
         <div className="min-w-0 flex-1 overflow-hidden flex items-center">
-          <div className="flex gap-10 whitespace-nowrap animate-[bb-marquee_55s_linear_infinite] hover:[animation-play-state:paused]">
+          <div className="flex gap-10 whitespace-nowrap animate-[bb-marquee_55s_linear_infinite] hover:[animation-play-state:paused] motion-reduce:animate-none">
             {[...items, ...items].map((item, i) => (
               <Link
                 key={`${item.id}-${i}`}
@@ -57,6 +77,10 @@ export default async function BreakingNewsBar() {
         @keyframes bb-marquee {
           0% { transform: translateX(0); }
           100% { transform: translateX(-50%); }
+        }
+        @keyframes bb-pulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.35; }
         }
         @media (prefers-reduced-motion: reduce) {
           .animate-\\[bb-marquee_55s_linear_infinite\\] { animation: none !important; }
