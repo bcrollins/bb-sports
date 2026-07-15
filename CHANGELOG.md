@@ -15,6 +15,10 @@ All notable changes to BB Sports. Format loosely follows
 
 ### Added
 
+- Publish checklist attestation + revision history panel + versioned migrations runner (#20/#40/#47).
+
+### Added
+
 - Image optimization budgets, consent-first reader alerts scaffold, editorial calendar conflict gate, device matrix doc; smoke +4 honesty surfaces (#51/#75/#80/#82/#90).
 - Stripe donation reconcile (idempotent, sticky paid, refunds/disputes), AI provenance digests, media rights gate, newsroom watchlist matchers (#38–39/#42–43/#85).
 - Provider commercial registry, SBOM/license policy gate, Top-100 ledger auditor, secret rotation + newsroom handbook, a11y gates doc (#76/#96–#100).

@@ -18,6 +18,8 @@ import {
   type FormEvent,
   type ReactNode,
 } from 'react';
+import FactCheckChecklist from '@/components/FactCheckChecklist';
+import RevisionHistoryPanel from '@/components/RevisionHistoryPanel';
 
 const SPORTS = ['NFL', 'MLB', 'NHL', 'NBA', 'CFB', 'Soccer', 'MMA', 'Op-Ed'];
 
@@ -293,9 +295,16 @@ export function ArticleEditor({
   const [confirmation, setConfirmation] = useState('');
   const [approvalRationale, setApprovalRationale] = useState('');
   const [unpublishRationale, setUnpublishRationale] = useState('');
+  const [checklistIds, setChecklistIds] = useState<string[]>([]);
+  const [checklistComplete, setChecklistComplete] = useState(false);
   const [localAutosaveAt, setLocalAutosaveAt] = useState<string | null>(null);
   const [localRestoreOffer, setLocalRestoreOffer] = useState<ArticleFormValues | null>(null);
   const autosaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const onChecklistAttestation = useCallback((ids: string[], complete: boolean) => {
+    setChecklistIds(ids);
+    setChecklistComplete(complete);
+  }, []);
 
   const isSuperAdmin = userRole === 'super_admin';
   const hasUnsavedChanges = fingerprint(v) !== savedFingerprint;
@@ -596,6 +605,10 @@ export function ArticleEditor({
       setPublicationError('Add an approval rationale of at least 20 characters.');
       return;
     }
+    if (!checklistComplete) {
+      setPublicationError('Complete every required fact-check item before publishing.');
+      return;
+    }
 
     setPublicationOperation('publish');
     try {
@@ -608,6 +621,7 @@ export function ArticleEditor({
           expectedContentHash: preparedRevision.contentHash,
           confirmation,
           rationale: approvalRationale.trim(),
+          checklistAttestation: checklistIds,
         }),
       });
       const data: unknown = await response.json().catch(() => ({}));
@@ -675,6 +689,7 @@ export function ArticleEditor({
     preparedRevisionIsFresh &&
       confirmation === ARTICLE_APPROVAL_CONFIRMATION &&
       approvalRationale.trim().length >= MIN_RATIONALE_LENGTH &&
+      checklistComplete &&
       publicationOperation === null,
   );
   const publicSlug = publicationStatus?.publishedSlug;
@@ -937,8 +952,10 @@ export function ArticleEditor({
           </button>
 
           {mode === 'edit' && v.id ? (
+            <>
             <PublicationApprovalPanel
               isSuperAdmin={isSuperAdmin}
+              articleId={v.id}
               status={publicationStatus}
               statusLoading={statusLoading}
               statusError={statusError}
@@ -955,6 +972,8 @@ export function ArticleEditor({
               unpublishRationale={unpublishRationale}
               needsPublicationApproval={needsPublicationApproval}
               canSubmitApproval={canSubmitApproval}
+              checklistComplete={checklistComplete}
+              onChecklistAttestation={onChecklistAttestation}
               onRetry={() => void refreshPublicationStatus()}
               onPrepare={() => void prepareRevision()}
               onConfirmationChange={setConfirmation}
@@ -963,6 +982,31 @@ export function ArticleEditor({
               onPublish={() => void publishRevision()}
               onUnpublish={() => void unpublishArticle()}
             />
+            <RevisionHistoryPanel
+              articleId={v.id}
+              onRestoreSnapshot={(snapshot) => {
+                setV((current) => ({
+                  ...current,
+                  slug: snapshot.slug,
+                  title: snapshot.title,
+                  dek: snapshot.dek,
+                  body: snapshot.body,
+                  sport: snapshot.sport,
+                  hero: snapshot.hero,
+                  heroAlt: snapshot.heroAlt,
+                  heroCredit: snapshot.heroCredit,
+                  authorName: snapshot.authorName,
+                  aiAssisted: snapshot.aiAssisted,
+                  bradsTake: snapshot.bradsTake,
+                }));
+                setPreparedRevision(null);
+                setPublicationMessage(
+                  'Restored revision into the working draft. Save, then prepare a fresh approval revision.',
+                );
+                setAutoSlug(false);
+              }}
+            />
+            </>
           ) : (
             <div className="rounded border border-navy/10 bg-white p-4 text-sm leading-5 text-navy/70">
               Save this draft first. Exact revision preparation and Brad-only publication
@@ -988,6 +1032,7 @@ export function ArticleEditor({
 
 function PublicationApprovalPanel({
   isSuperAdmin,
+  articleId,
   status,
   statusLoading,
   statusError,
@@ -1004,6 +1049,8 @@ function PublicationApprovalPanel({
   unpublishRationale,
   needsPublicationApproval,
   canSubmitApproval,
+  checklistComplete,
+  onChecklistAttestation,
   onRetry,
   onPrepare,
   onConfirmationChange,
@@ -1013,6 +1060,7 @@ function PublicationApprovalPanel({
   onUnpublish,
 }: {
   isSuperAdmin: boolean;
+  articleId: string;
   status: PublicationStatus | null;
   statusLoading: boolean;
   statusError: string | null;
@@ -1029,6 +1077,8 @@ function PublicationApprovalPanel({
   unpublishRationale: string;
   needsPublicationApproval: boolean;
   canSubmitApproval: boolean;
+  checklistComplete: boolean;
+  onChecklistAttestation: (ids: string[], complete: boolean) => void;
   onRetry: () => void;
   onPrepare: () => void;
   onConfirmationChange: (value: string) => void;
@@ -1200,6 +1250,15 @@ function PublicationApprovalPanel({
 
               {isSuperAdmin ? (
                 <div className="space-y-3 rounded border border-broadcast-red/20 bg-broadcast-red/[0.03] p-3">
+                  <FactCheckChecklist
+                    storageKey={`bb-fact-check-publish:${articleId}`}
+                    onAttestationChange={onChecklistAttestation}
+                  />
+                  {!checklistComplete ? (
+                    <p className="text-xs font-semibold text-breaking" role="status">
+                      Required fact-check items must be checked before Approve &amp; publish.
+                    </p>
+                  ) : null}
                   <Field
                     id="article-publication-confirmation"
                     label="Exact approval phrase"

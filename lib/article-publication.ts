@@ -257,6 +257,11 @@ export const articlePublishRequestSchema = z
     expectedContentHash: z.string().regex(/^[a-f0-9]{64}$/),
     confirmation: z.literal(ARTICLE_PUBLICATION_CONFIRMATION_PHRASE),
     rationale: canonicalRationaleSchema,
+    /** Required claim-level checklist ids Brad attested at publish (see FACT_CHECK_CHECKLIST). */
+    checklistAttestation: z
+      .array(z.string().trim().min(1).max(64))
+      .min(1)
+      .max(32),
   })
   .strict();
 
