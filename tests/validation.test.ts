@@ -14,6 +14,17 @@ import { composeSportsMediaPrompt } from '../lib/xai-media';
 test('newsletter signup normalizes email and rejects invalid addresses', () => {
   assert.equal(newsletterSignupSchema.parse({ email: '  BRAD@BBSPORTS.FANS ' }).email, 'brad@bbsports.fans');
   assert.equal(newsletterSignupSchema.safeParse({ email: 'not-an-email' }).success, false);
+  const withPrefs = newsletterSignupSchema.parse({
+    email: 'fan@example.com',
+    frequency: 'weekly',
+    topics: ['nfl', 'mlb'],
+  });
+  assert.equal(withPrefs.frequency, 'weekly');
+  assert.deepEqual(withPrefs.topics, ['nfl', 'mlb']);
+  assert.equal(
+    newsletterSignupSchema.safeParse({ email: 'a@b.com', frequency: 'hourly' }).success,
+    false,
+  );
 });
 
 test('newsletter unsubscribe token is one-click safe and non-guessable', () => {

@@ -170,6 +170,10 @@ export const newsletterSubscribers = pgTable('newsletter_subscribers', {
   status: varchar('status', { length: 24 }).notNull().default('subscribed'),
   unsubscribeToken: varchar('unsubscribe_token', { length: 96 }).unique(),
   source: varchar('source', { length: 80 }).notNull().default('site'),
+  /** when_i_publish | weekly | major_only */
+  frequency: varchar('frequency', { length: 32 }).notNull().default('when_i_publish'),
+  /** Comma-separated sport keys; empty = all desk takes */
+  topics: text('topics').notNull().default(''),
   consentText: text('consent_text').notNull().default('Newsletter signup on BB Sports. No spam. Unsubscribe in one click.'),
   consentVersion: varchar('consent_version', { length: 32 }).notNull().default('2026-05-07'),
   signupCount: integer('signup_count').notNull().default(1),

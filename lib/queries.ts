@@ -451,18 +451,24 @@ export function createNewsletterUnsubscribeToken(): string {
 export async function upsertNewsletterSubscriber(input: {
   email: string;
   source?: string;
+  frequency?: string;
+  topics?: string[];
   ip?: string | null;
   userAgent?: string | null;
 }): Promise<NewsletterSubscriber> {
   if (!db) throw new Error('Database not available');
   await ensureBootstrapped();
   const unsubscribeToken = createNewsletterUnsubscribeToken();
+  const frequency = input.frequency?.trim() || 'when_i_publish';
+  const topics = (input.topics ?? []).map((t) => t.trim()).filter(Boolean).join(',');
   const rows = await db
     .insert(newsletterSubscribers)
     .values({
       email: input.email,
       unsubscribeToken,
       source: input.source ?? 'site',
+      frequency,
+      topics,
       lastIpAddress: input.ip ?? null,
       lastUserAgent: input.userAgent ?? null,
     })
@@ -471,6 +477,8 @@ export async function upsertNewsletterSubscriber(input: {
       set: {
         status: 'subscribed',
         source: input.source ?? 'site',
+        frequency,
+        topics,
         unsubscribeToken: sql`coalesce(${newsletterSubscribers.unsubscribeToken}, ${unsubscribeToken})`,
         lastIpAddress: input.ip ?? null,
         lastUserAgent: input.userAgent ?? null,
