@@ -15,6 +15,7 @@ All notable changes to BB Sports. Format loosely follows
 
 ### Added
 
+- Stripe donation reconcile (idempotent, sticky paid, refunds/disputes), AI provenance digests, media rights gate, newsroom watchlist matchers (#38–39/#42–43/#85).
 - Provider commercial registry, SBOM/license policy gate, Top-100 ledger auditor, secret rotation + newsroom handbook, a11y gates doc (#76/#96–#100).
 - Contact public receipt IDs (#93) and truthful support payment surface modes (#94).
 - Primary nav personalization (reorder/hide optional links, core protected) (#86); homepage quick-access shortcuts with allowlist (#87).

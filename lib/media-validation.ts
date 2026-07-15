@@ -29,6 +29,18 @@ export const mediaPatchSchema = z.object({
   approved: z.boolean().optional(),
   title: z.string().trim().max(160).optional(),
   altText: z.string().trim().max(500).optional(),
+  credit: z.string().trim().max(500).optional(),
+  license: z
+    .enum([
+      'all-rights-reserved',
+      'bb-sports-original',
+      'ai-generated-xai-approved',
+      'licensed-editorial',
+      'public-domain',
+      'cc0',
+      'cc-by',
+    ])
+    .optional(),
   placement: z.enum(MEDIA_PLACEMENTS).optional(),
   sport: z.string().trim().max(40).optional(),
 });

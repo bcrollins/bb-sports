@@ -9,6 +9,11 @@ const STATUS_LABELS: Record<string, string> = {
   checkout_expired: 'Checkout expired',
   payment_failed: 'Payment failed',
   paid: 'Paid',
+  refunded: 'Refunded',
+  partially_refunded: 'Partially refunded',
+  disputed: 'Disputed',
+  dispute_lost: 'Dispute lost',
+  dispute_won: 'Dispute won',
 };
 
 export function donationStatusLabel(status: string): string {
@@ -16,9 +21,25 @@ export function donationStatusLabel(status: string): string {
 }
 
 export function donationStatusTone(status: string): DonationStatusTone {
-  if (status === 'paid') return 'green';
-  if (status === 'checkout_open' || status === 'checkout_pending' || status === 'ready_to_pay') return 'yellow';
-  if (status === 'checkout_failed' || status === 'checkout_expired' || status === 'payment_failed') return 'red';
+  if (status === 'paid' || status === 'dispute_won') return 'green';
+  if (
+    status === 'checkout_open' ||
+    status === 'checkout_pending' ||
+    status === 'ready_to_pay' ||
+    status === 'partially_refunded' ||
+    status === 'disputed'
+  ) {
+    return 'yellow';
+  }
+  if (
+    status === 'checkout_failed' ||
+    status === 'checkout_expired' ||
+    status === 'payment_failed' ||
+    status === 'refunded' ||
+    status === 'dispute_lost'
+  ) {
+    return 'red';
+  }
   return 'navy';
 }
 

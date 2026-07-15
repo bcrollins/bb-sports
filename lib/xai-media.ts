@@ -1,5 +1,6 @@
 import type { z } from 'zod';
 import type { mediaGenerationSchema } from './media-validation';
+import { buildAiProvenance, type AiProvenanceRecord } from './ai-provenance';
 
 const XAI_BASE_URL = process.env.XAI_BASE_URL ?? 'https://api.x.ai/v1';
 const IMAGE_MODEL = process.env.XAI_IMAGE_MODEL ?? 'grok-imagine-image';
@@ -57,6 +58,24 @@ export function composeSportsMediaPrompt(input: MediaGenerationInput): string {
     'Brand guardrails: do not copy official team logos, league marks, broadcast graphics, Getty/AP watermarks, player likenesses, celebrity likenesses, or copyrighted photos. Use original abstract sports atmosphere, silhouettes, equipment, fields, arenas, textures, color, and motion.',
     'Text guardrail: no readable text inside the image or video unless explicitly requested.',
   ].join(' ');
+}
+
+/** Safe provenance for a generation request — digests only, no API keys. */
+export function provenanceForMediaGeneration(
+  input: MediaGenerationInput,
+  meta?: { requestId?: string; actorId?: string },
+): AiProvenanceRecord {
+  const state = xaiProviderState();
+  return buildAiProvenance({
+    provider: 'xai',
+    model: input.kind === 'video' ? state.videoModel : state.imageModel,
+    kind: input.kind === 'video' ? 'video' : 'image',
+    promptOrBrief: composeSportsMediaPrompt(input),
+    placement: input.placement,
+    sport: input.sport,
+    requestId: meta?.requestId,
+    actorId: meta?.actorId,
+  });
 }
 
 export interface GeneratedImage {

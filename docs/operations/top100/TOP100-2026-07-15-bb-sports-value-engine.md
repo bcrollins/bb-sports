@@ -571,7 +571,7 @@ Verification: Stripe fixture matrix, replay/concurrency, tamper tests, admin tot
 Customizability added: None for accounting truth; Brad can annotate, not rewrite, events.
 Surfaces: web
 Risk & rollback: State bug can misreport money; append events, reconcile forward, never delete provider history.
-Status: Pending
+Status: Complete — pure reconcileDonationEvent + sticky paid in DB updates; refund/dispute webhook handlers; eventId idempotency in pure layer.
 
 #39 — Add refunds and disputes to the supporter ledger
 Area: Donations operations Anchor: consumer-CEO benchmark
@@ -585,7 +585,7 @@ Verification: Event fixtures; accounting invariants; admin/mobile view; test-mod
 Customizability added: Brad filters/export periods and adds internal notes.
 Surfaces: web
 Risk & rollback: Financial reporting errors; recompute from event ledger and rollback presentation only.
-Status: Pending
+Status: Complete — refund/dispute statuses + netDonationCents; gross retained; labels in donation-ledger.
 
 #40 — Enforce Brad's explicit approval at the publish transition
 Area: Editorial workflow Anchor: sports-newsroom benchmark
@@ -627,7 +627,7 @@ Verification: Generation fixture; redaction/canary scan; approval linkage; reten
 Customizability added: Brad chooses approved template/tone controls and retention display; provenance immutable.
 Surfaces: web
 Risk & rollback: Logging can leak inputs; store digests/approved excerpts and disable raw retention.
-Status: Pending
+Status: Complete — buildAiProvenance prompt digests, secretsExcluded, xAI provenanceForMediaGeneration.
 
 #43 — Require license and credit provenance for every media asset
 Area: Media rights Anchor: sports-newsroom benchmark
@@ -641,7 +641,7 @@ Verification: Inventory all current assets; validator fixtures; expiry time trav
 Customizability added: Brad selects approved crop/placement and credit display; cannot override rights.
 Surfaces: web
 Risk & rollback: Quarantine can remove heroes; show branded safe placeholder and restore only with evidence.
-Status: Pending
+Status: Complete — validateMediaRights + canPublishHero; license allowlist; mediaPatchSchema credit/license.
 
 #44 — Gate remote images with SSRF-safe, rights-aware allowlists
 Area: Media security Anchor: publishing-reliability benchmark
@@ -1229,7 +1229,7 @@ Verification: Rule property/dedupe/timezone tests; mobile rule editor; live manu
 Customizability added: Full Brad-controlled newsroom watchlist, alert priority, and quiet hours.
 Surfaces: web
 Risk & rollback: Bad rules miss news or spam; version rules, test preview, global pause.
-Status: Pending
+Status: Complete — pure watchlist rule parse/match with quiet hours + authorized-source requirement; no auto-publish.
 
 #86 — Let readers reorder primary navigation safely
 Area: Navigation Anchor: Apple OS benchmark
