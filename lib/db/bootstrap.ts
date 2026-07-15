@@ -19,6 +19,7 @@ import {
   articleRevisions,
   articles,
   mediaAssets,
+  newsProviders,
   newsSources,
   siteConfig,
   users,
@@ -30,6 +31,10 @@ import {
   normalizeArticlePublicationSnapshot,
 } from '../article-publication';
 import type { ArticlePublicationSnapshot } from '../article-publication';
+import {
+  NEWSROOM_PROVIDER_CATALOG,
+  NEWSROOM_PROVIDER_KEYS,
+} from '../newsroom-providers';
 
 type LegacyPublicationRequiredField =
   | 'slug'
@@ -957,6 +962,162 @@ async function bootstrap(): Promise<void> {
       created_at timestamptz NOT NULL DEFAULT now()
     );
   `);
+  // External provider governance. Defaults keep every connector dark. Secrets
+  // never land here — only env name lists and presence digests.
+  await db.execute(sql`
+    CREATE TABLE IF NOT EXISTS news_providers (
+      provider_key varchar(64) PRIMARY KEY,
+      display_name varchar(200) NOT NULL,
+      provider_kind varchar(32) NOT NULL
+        CHECK (provider_kind IN ('stream', 'firehose', 'poll', 'query')),
+      commercial_status varchar(32) NOT NULL DEFAULT 'review_required'
+        CHECK (commercial_status IN ('approved', 'review_required', 'prohibited', 'enterprise')),
+      commercial_notes text NOT NULL DEFAULT '',
+      terms_url text,
+      terms_reviewed_at timestamptz,
+      terms_review_owner varchar(160) NOT NULL DEFAULT '',
+      approval_owner varchar(160) NOT NULL DEFAULT '',
+      approved_at timestamptz,
+      next_review_at timestamptz,
+      credential_env_names jsonb NOT NULL DEFAULT '[]'::jsonb
+        CHECK (jsonb_typeof(credential_env_names) = 'array'),
+      credential_presence varchar(24) NOT NULL DEFAULT 'absent'
+        CHECK (credential_presence IN ('absent', 'present', 'invalid')),
+      credential_presence_digest varchar(64)
+        CHECK (
+          credential_presence_digest IS NULL
+          OR credential_presence_digest ~ '^[a-f0-9]{64}$'
+        ),
+      retention_posture jsonb NOT NULL DEFAULT '{}'::jsonb
+        CHECK (jsonb_typeof(retention_posture) = 'object'),
+      attribution_posture text NOT NULL DEFAULT '',
+      allowed_use varchar(40) NOT NULL DEFAULT 'none'
+        CHECK (allowed_use IN ('none', 'alerting_only', 'internal_display', 'corroboration_only')),
+      monthly_spend_ceiling_cents integer
+        CHECK (
+          monthly_spend_ceiling_cents IS NULL
+          OR monthly_spend_ceiling_cents >= 0
+        ),
+      config_enabled boolean NOT NULL DEFAULT false,
+      cursor_kind varchar(32) NOT NULL DEFAULT 'none'
+        CHECK (cursor_kind IN ('none', 'opaque', 'time_us', 'rss_etag', 'x_post_id')),
+      last_success_at timestamptz,
+      last_failure_at timestamptz,
+      last_failure_summary text NOT NULL DEFAULT '',
+      consecutive_failures integer NOT NULL DEFAULT 0
+        CHECK (consecutive_failures >= 0),
+      created_at timestamptz NOT NULL DEFAULT now(),
+      updated_at timestamptz NOT NULL DEFAULT now(),
+      CONSTRAINT news_providers_approved_audit CHECK (
+        commercial_status <> 'approved'
+        OR (
+          approved_at IS NOT NULL
+          AND length(trim(approval_owner)) > 0
+        )
+      ),
+      CONSTRAINT news_providers_enabled_requires_review_posture CHECK (
+        config_enabled = false
+        OR commercial_status IN ('approved', 'review_required')
+      )
+    );
+  `);
+  await db.execute(sql`
+    CREATE TABLE IF NOT EXISTS news_provider_leases (
+      provider_key varchar(64) PRIMARY KEY
+        REFERENCES news_providers(provider_key) ON DELETE RESTRICT,
+      owner_id varchar(160) NOT NULL CHECK (length(trim(owner_id)) > 0),
+      fence_token integer NOT NULL CHECK (fence_token > 0),
+      acquired_at timestamptz NOT NULL,
+      renewed_at timestamptz NOT NULL,
+      expires_at timestamptz NOT NULL,
+      heartbeat_at timestamptz NOT NULL,
+      metadata jsonb NOT NULL DEFAULT '{}'::jsonb
+        CHECK (jsonb_typeof(metadata) = 'object'),
+      CONSTRAINT news_provider_leases_time_order CHECK (
+        renewed_at >= acquired_at
+        AND heartbeat_at >= acquired_at
+        AND expires_at > acquired_at
+      )
+    );
+  `);
+  await db.execute(sql`
+    CREATE TABLE IF NOT EXISTS news_provider_checkpoints (
+      provider_key varchar(64) PRIMARY KEY
+        REFERENCES news_providers(provider_key) ON DELETE RESTRICT,
+      cursor_kind varchar(32) NOT NULL DEFAULT 'none'
+        CHECK (cursor_kind IN ('none', 'opaque', 'time_us', 'rss_etag', 'x_post_id')),
+      cursor_value text NOT NULL DEFAULT '',
+      fence_token integer NOT NULL DEFAULT 0 CHECK (fence_token >= 0),
+      last_committed_at timestamptz,
+      last_observed_provider_at timestamptz,
+      metadata jsonb NOT NULL DEFAULT '{}'::jsonb
+        CHECK (jsonb_typeof(metadata) = 'object'),
+      updated_at timestamptz NOT NULL DEFAULT now()
+    );
+  `);
+  await db.execute(sql`
+    CREATE TABLE IF NOT EXISTS news_provider_ingest_attempts (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      provider_key varchar(64) NOT NULL
+        REFERENCES news_providers(provider_key) ON DELETE RESTRICT,
+      attempt_kind varchar(32) NOT NULL
+        CHECK (attempt_kind IN (
+          'connect', 'poll', 'parse', 'persist', 'checkpoint',
+          'reconnect', 'rate_limit', 'shutdown', 'lease'
+        )),
+      outcome varchar(32) NOT NULL
+        CHECK (outcome IN (
+          'success', 'failure', 'rate_limited', 'skipped', 'duplicate', 'dead_lettered'
+        )),
+      started_at timestamptz NOT NULL,
+      finished_at timestamptz NOT NULL,
+      latency_ms integer CHECK (latency_ms IS NULL OR latency_ms >= 0),
+      http_status integer CHECK (http_status IS NULL OR http_status BETWEEN 100 AND 599),
+      retry_after_ms integer CHECK (retry_after_ms IS NULL OR retry_after_ms >= 0),
+      fence_token integer CHECK (fence_token IS NULL OR fence_token > 0),
+      cursor_before text,
+      cursor_after text,
+      external_id varchar(320),
+      payload_hash varchar(64)
+        CHECK (payload_hash IS NULL OR payload_hash ~ '^[a-f0-9]{64}$'),
+      error_code varchar(80),
+      error_summary text NOT NULL DEFAULT '',
+      metadata jsonb NOT NULL DEFAULT '{}'::jsonb
+        CHECK (jsonb_typeof(metadata) = 'object'),
+      created_at timestamptz NOT NULL DEFAULT now(),
+      CONSTRAINT news_provider_ingest_attempts_time_order CHECK (finished_at >= started_at)
+    );
+  `);
+  await db.execute(sql`
+    CREATE TABLE IF NOT EXISTS news_provider_dead_letters (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      provider_key varchar(64) NOT NULL
+        REFERENCES news_providers(provider_key) ON DELETE RESTRICT,
+      reason varchar(80) NOT NULL CHECK (length(trim(reason)) > 0),
+      external_id varchar(320),
+      payload_hash varchar(64)
+        CHECK (payload_hash IS NULL OR payload_hash ~ '^[a-f0-9]{64}$'),
+      observed_at timestamptz NOT NULL DEFAULT now(),
+      error_summary text NOT NULL DEFAULT '',
+      raw_provenance jsonb NOT NULL DEFAULT '{}'::jsonb
+        CHECK (jsonb_typeof(raw_provenance) = 'object'),
+      ingest_attempt_id uuid
+        REFERENCES news_provider_ingest_attempts(id) ON DELETE RESTRICT,
+      resolved_at timestamptz,
+      resolution_summary text NOT NULL DEFAULT '',
+      created_at timestamptz NOT NULL DEFAULT now(),
+      CONSTRAINT news_provider_dead_letters_resolution CHECK (
+        (
+          resolved_at IS NULL
+          AND resolution_summary = ''
+        )
+        OR (
+          resolved_at IS NOT NULL
+          AND length(trim(resolution_summary)) >= 8
+        )
+      )
+    );
+  `);
   await db.execute(sql`
     CREATE TABLE IF NOT EXISTS article_revisions (
       id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -1175,6 +1336,68 @@ async function bootstrap(): Promise<void> {
         BEFORE UPDATE OR DELETE ON newsroom_activity
         FOR EACH ROW EXECUTE FUNCTION bbsports_reject_newsroom_ledger_mutation();
       END IF;
+      IF NOT EXISTS (
+        SELECT 1 FROM pg_trigger
+        WHERE tgname = 'news_provider_ingest_attempts_append_only'
+          AND tgrelid = 'news_provider_ingest_attempts'::regclass
+      ) THEN
+        CREATE TRIGGER news_provider_ingest_attempts_append_only
+        BEFORE UPDATE OR DELETE ON news_provider_ingest_attempts
+        FOR EACH ROW EXECUTE FUNCTION bbsports_reject_newsroom_ledger_mutation();
+      END IF;
+    END;
+    $block$;
+  `);
+  // Dead letters are append-only for provenance. The only allowed mutation is a
+  // one-shot resolve that sets resolved_at + resolution_summary and nothing else.
+  await db.execute(sql`
+    CREATE OR REPLACE FUNCTION bbsports_guard_news_provider_dead_letter()
+    RETURNS trigger
+    LANGUAGE plpgsql
+    AS $function$
+    BEGIN
+      IF TG_OP = 'DELETE' THEN
+        RAISE EXCEPTION 'news_provider_dead_letters is append-only; resolve instead of delete'
+          USING ERRCODE = '55000';
+      END IF;
+      IF OLD.resolved_at IS NOT NULL THEN
+        RAISE EXCEPTION 'news_provider_dead_letters cannot be changed after resolution'
+          USING ERRCODE = '55000';
+      END IF;
+      IF NEW.id IS DISTINCT FROM OLD.id
+        OR NEW.provider_key IS DISTINCT FROM OLD.provider_key
+        OR NEW.reason IS DISTINCT FROM OLD.reason
+        OR NEW.external_id IS DISTINCT FROM OLD.external_id
+        OR NEW.payload_hash IS DISTINCT FROM OLD.payload_hash
+        OR NEW.observed_at IS DISTINCT FROM OLD.observed_at
+        OR NEW.error_summary IS DISTINCT FROM OLD.error_summary
+        OR NEW.raw_provenance IS DISTINCT FROM OLD.raw_provenance
+        OR NEW.ingest_attempt_id IS DISTINCT FROM OLD.ingest_attempt_id
+        OR NEW.created_at IS DISTINCT FROM OLD.created_at
+      THEN
+        RAISE EXCEPTION 'news_provider_dead_letters may only set resolution fields'
+          USING ERRCODE = '55000';
+      END IF;
+      IF NEW.resolved_at IS NULL OR length(trim(NEW.resolution_summary)) < 8 THEN
+        RAISE EXCEPTION 'news_provider_dead_letters resolution requires resolved_at and summary'
+          USING ERRCODE = '55000';
+      END IF;
+      RETURN NEW;
+    END;
+    $function$;
+  `);
+  await db.execute(sql`
+    DO $block$
+    BEGIN
+      IF NOT EXISTS (
+        SELECT 1 FROM pg_trigger
+        WHERE tgname = 'news_provider_dead_letters_guard'
+          AND tgrelid = 'news_provider_dead_letters'::regclass
+      ) THEN
+        CREATE TRIGGER news_provider_dead_letters_guard
+        BEFORE UPDATE OR DELETE ON news_provider_dead_letters
+        FOR EACH ROW EXECUTE FUNCTION bbsports_guard_news_provider_dead_letter();
+      END IF;
     END;
     $block$;
   `);
@@ -1292,6 +1515,19 @@ async function bootstrap(): Promise<void> {
   await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_newsroom_activity_event_sequence ON newsroom_activity(event_id, sequence);`);
   await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_newsroom_activity_signal ON newsroom_activity(signal_id);`);
   await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_newsroom_activity_actor ON newsroom_activity(actor_user_id);`);
+  await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_news_providers_commercial ON news_providers(commercial_status);`);
+  await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_news_providers_enabled ON news_providers(config_enabled);`);
+  await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_news_providers_kind ON news_providers(provider_kind);`);
+  await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_news_provider_leases_expires ON news_provider_leases(expires_at);`);
+  await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_news_provider_leases_owner ON news_provider_leases(owner_id);`);
+  await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_news_provider_checkpoints_updated ON news_provider_checkpoints(updated_at DESC);`);
+  await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_news_provider_ingest_provider_time ON news_provider_ingest_attempts(provider_key, created_at DESC);`);
+  await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_news_provider_ingest_outcome ON news_provider_ingest_attempts(outcome, created_at DESC);`);
+  await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_news_provider_ingest_external ON news_provider_ingest_attempts(provider_key, external_id);`);
+  await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_news_provider_ingest_payload ON news_provider_ingest_attempts(payload_hash);`);
+  await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_news_provider_dead_letters_open ON news_provider_dead_letters(provider_key, resolved_at);`);
+  await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_news_provider_dead_letters_payload ON news_provider_dead_letters(payload_hash);`);
+  await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_news_provider_dead_letters_external ON news_provider_dead_letters(provider_key, external_id);`);
   await db.execute(sql`CREATE UNIQUE INDEX IF NOT EXISTS idx_article_revisions_article_number ON article_revisions(article_id, revision_number);`);
   await db.execute(sql`CREATE UNIQUE INDEX IF NOT EXISTS idx_article_revisions_article_hash ON article_revisions(article_id, content_hash);`);
   await db.execute(sql`CREATE UNIQUE INDEX IF NOT EXISTS idx_article_revisions_article_id_id ON article_revisions(article_id, id);`);
@@ -1323,6 +1559,29 @@ async function bootstrap(): Promise<void> {
       enabled: true,
     })
     .onConflictDoNothing({ target: newsSources.sourceKey });
+
+  // External providers seed dark: review_required, config_enabled=false, no secrets.
+  for (const providerKey of NEWSROOM_PROVIDER_KEYS) {
+    const entry = NEWSROOM_PROVIDER_CATALOG[providerKey];
+    await db
+      .insert(newsProviders)
+      .values({
+        providerKey: entry.providerKey,
+        displayName: entry.displayName,
+        providerKind: entry.providerKind,
+        commercialStatus: entry.commercialStatus,
+        commercialNotes: entry.commercialNotes,
+        termsUrl: entry.termsUrl,
+        credentialEnvNames: [...entry.credentialEnvNames],
+        credentialPresence: 'absent',
+        retentionPosture: entry.retentionPosture,
+        attributionPosture: entry.attributionPosture,
+        allowedUse: entry.allowedUse,
+        configEnabled: entry.configEnabledDefault,
+        cursorKind: entry.cursorKind,
+      })
+      .onConflictDoNothing({ target: newsProviders.providerKey });
+  }
 
   // 2. Admin user seed (idempotent ON CONFLICT DO NOTHING).
   const adminEmail = process.env.ADMIN_EMAIL;

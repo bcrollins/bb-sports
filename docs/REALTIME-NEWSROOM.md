@@ -1,6 +1,6 @@
 # BB Sports Real-Time Newsroom
 
-Status: manual desk and immutable publication gate implemented; external connectors gated off
+Status: manual desk, immutable publication gate, and provider governance persistence implemented; external connectors still gated off with no live transport
 Owner: Brad Benson (editorial approval) / Brandon Rollins (platform)
 Last reviewed: 2026-07-15
 
@@ -20,6 +20,14 @@ the desk a durable state machine, source-independence rules, evidence history,
 review history, and activity history before any paid or third-party connector is
 allowed to create signals. The future streaming layer must use the same domain
 rules; providers do not get a second, weaker path to verification.
+
+A later interval added **provider governance persistence** without activating
+any connector: registered provider rows, commercial/retention/attribution
+posture, credential *presence* (never secret values), durable
+cursor/checkpoints, leases with fencing tokens, ingest-attempt and dead-letter
+ledgers, and pure activation evaluation that always keeps `transportAllowed`
+false until a separate worker proves live ingest. Configuration crumbs and
+parser modules must never be labeled “live monitoring.”
 
 ## What “real time” means
 
@@ -299,6 +307,24 @@ approved connector(s)          manual submission
 Connectors only append normalized candidates and provider lifecycle events. They
 cannot mark an item verified, create a publish approval, or call an article
 publication endpoint.
+
+## Provider governance tables
+
+These tables are present and seeded dark. They do not open connections.
+
+| Table | Role |
+| --- | --- |
+| `news_providers` | Catalog row per provider: commercial status, allowed use, retention/attribution posture, credential env *names*, presence metadata, config enablement (default false). |
+| `news_provider_leases` | Singleton mutable lease per provider with monotonic `fence_token`. |
+| `news_provider_checkpoints` | Durable cursor; writers must present a live matching fence. |
+| `news_provider_ingest_attempts` | Append-only latency/rate-limit/failure/success ledger. |
+| `news_provider_dead_letters` | Append-only dead letters; one-shot resolve only. |
+
+Seeded provider keys: `x_filtered_stream`, `bluesky_jetstream`, `rss`,
+`xai_x_search`. All start `commercial_status=review_required` and
+`config_enabled=false`. Pure evaluation in `lib/newsroom-providers.ts` and
+durable operations in `lib/newsroom-provider-queries.ts` never publish articles
+or mark events verified.
 
 ## Railway service topology
 
