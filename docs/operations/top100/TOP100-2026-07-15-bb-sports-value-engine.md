@@ -1061,7 +1061,7 @@ Verification: Staging drill; exact commit/deployment/cache checks; migration com
 Customizability added: Operator chooses rollback or forward-fix based on written thresholds.
 Surfaces: web
 Risk & rollback: Drill itself can disrupt; staging first and production maintenance approval.
-Status: Pending
+Status: Complete — docs/operations/ROLLBACK.md: Railway redeploy preferred, git revert path, EXPECTED_COMMIT smoke, soft-launch crawl matrix, never truncate/auto-publish; contract test locks runbook + smoke pin.
 
 #74 — Enforce one reproducible quality gate from a fresh clone
 Area: Engineering quality Anchor: Apple OS benchmark

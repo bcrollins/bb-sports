@@ -7,6 +7,7 @@ All notable changes to BB Sports. Format loosely follows
 
 ### Added
 
+- Production rollback runbook (`docs/operations/ROLLBACK.md`) with Railway redeploy, git revert, and EXPECTED_COMMIT smoke.
 - Article loading skeletons and dedicated unpublished/missing take not-found surface.
 - Homepage desk chronology hardened: unique lead+latest slugs, desk-updated timestamp, empty catalog honesty.
 - Explainable related takes on article pages (same sport / tags / title / recency with reason labels).
