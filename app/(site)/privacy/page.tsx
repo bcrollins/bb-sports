@@ -54,9 +54,13 @@ export default function PrivacyPage() {
           </li>
           <li>
             Contact us for access or deletion requests via{' '}
-            <Link className="underline decoration-breaking underline-offset-4" href="/contact">
+            <Link
+              className="underline decoration-breaking underline-offset-4"
+              href="/contact"
+            >
               /contact
-            </Link>
+            </Link>{' '}
+            (choose <strong>Data access</strong> or <strong>Data deletion</strong> on the form)
             .
           </li>
           <li>

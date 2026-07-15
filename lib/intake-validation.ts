@@ -27,7 +27,9 @@ export const newsletterUnsubscribeSchema = z
 
 export const contactSubmissionSchema = z
   .object({
-    mode: z.enum(['general', 'tip', 'press', 'sponsorship']).default('general'),
+    mode: z
+      .enum(['general', 'tip', 'press', 'sponsorship', 'privacy_access', 'privacy_deletion'])
+      .default('general'),
     email,
     name: safeText(100).optional().default(''),
     message: z
