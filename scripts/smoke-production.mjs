@@ -30,6 +30,7 @@ async function main() {
   await runCheck('health endpoint', checkHealth);
   await runCheck('soft-launch gate redirect', checkGateRedirect);
   await runCheck('signed access-wall credential', establishGateCookie);
+  await runCheck('live-newsroom auth boundary', checkNewsroomAuthBoundary);
   await runCheck('gated search page', checkGatedSearchPage);
   await runCheck('search API JSON', checkSearchApi);
   await runCheck('article page render', checkArticlePage);
@@ -128,6 +129,26 @@ async function checkGatedSearchPage() {
   invariant(html.includes(REQUIRED_SEARCH_TEXT), `required result text missing: ${REQUIRED_SEARCH_TEXT}`);
   invariant(!html.includes('Application error'), 'application error rendered');
   return `${SEARCH_QUERY} result rendered`;
+}
+
+async function checkNewsroomAuthBoundary() {
+  const api = await request('/api/admin/news-desk', {
+    headers: { Cookie: gateCookie },
+    redirect: 'manual',
+  });
+  assertStatus(api, 401, '/api/admin/news-desk');
+
+  const page = await request('/admin/news-desk', {
+    headers: { Cookie: gateCookie },
+    redirect: 'manual',
+  });
+  invariant(
+    [302, 303, 307, 308].includes(page.status),
+    `expected newsroom page redirect, received ${page.status}`,
+  );
+  const location = page.headers.get('location') || '';
+  invariant(location.includes('/admin/login'), `expected admin login redirect, received ${location}`);
+  return 'API 401, page redirected to newsroom login';
 }
 
 async function checkSearchApi() {
