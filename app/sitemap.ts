@@ -2,6 +2,12 @@ import type { MetadataRoute } from 'next';
 import { getAllArticles } from '@/lib/articles';
 import { LEAGUE_ORDER, buildLeagueRanking } from '@/lib/rankings';
 
+// The production article catalog is database-backed. Building this route into
+// a static artifact can permanently freeze an empty catalog when the build
+// environment cannot reach Postgres, so resolve immutable live snapshots on
+// each crawler request instead.
+export const dynamic = 'force-dynamic';
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://bbsports.fans';
   const articles = await getAllArticles();

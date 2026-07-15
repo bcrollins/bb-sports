@@ -11,8 +11,12 @@
  */
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import sitemap from '../app/sitemap';
+import sitemap, { dynamic } from '../app/sitemap';
 import { getAllArticles } from '../lib/articles';
+
+test('production sitemap is generated from the live database catalog', () => {
+  assert.equal(dynamic, 'force-dynamic');
+});
 
 test('sitemap includes the franchise rankings + key static routes', async () => {
   const entries = await sitemap();
