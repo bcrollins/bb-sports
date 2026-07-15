@@ -1,7 +1,7 @@
 /**
  * Local-first favorite sports — no account, no server PII.
  */
-import type { SportSlug } from '@/lib/articles';
+import type { SportSlug } from '@/lib/sports';
 
 export const FAVORITE_SPORT_OPTIONS: Array<{ id: SportSlug; label: string }> = [
   { id: 'nfl', label: 'NFL' },

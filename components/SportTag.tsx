@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { sportMeta } from '@/lib/sport-meta';
-import type { SportSlug } from '@/lib/articles';
+import type { SportSlug } from '@/lib/sports';
 
 type Props = {
   sport: SportSlug;

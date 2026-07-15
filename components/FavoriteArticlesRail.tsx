@@ -2,8 +2,8 @@
 
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
-import type { SportSlug } from '@/lib/articles';
-import { sportLabel } from '@/lib/articles';
+import type { SportSlug } from '@/lib/sports';
+import { sportLabel } from '@/lib/sports';
 import FavoriteSports from '@/components/FavoriteSports';
 
 /** Slim article props for the client rail — never ship full body HTML. */

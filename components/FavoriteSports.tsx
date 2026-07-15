@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import type { SportSlug } from '@/lib/articles';
+import type { SportSlug } from '@/lib/sports';
 import {
   FAVORITE_SPORT_OPTIONS,
   loadFavoriteSports,

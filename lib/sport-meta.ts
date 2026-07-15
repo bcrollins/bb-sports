@@ -1,4 +1,4 @@
-import type { SportSlug } from './articles';
+import type { SportSlug } from './sports';
 
 // Per-sport broadcast accents — used for tag pills, eyebrows, card top-rules.
 // Stays inside the BB Sports brand (navy + bone + red as the network primary)

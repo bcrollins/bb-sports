@@ -23,6 +23,11 @@ import {
 import { dbAvailable } from './db/client';
 import type { Article as DbArticle } from './db/schema';
 
+import { type SportSlug } from './sports';
+
+export type { SportSlug } from './sports';
+export { sportLabel } from './sports';
+
 export type Article = {
   id?: string;
   slug: string;
@@ -42,31 +47,6 @@ export type Article = {
   bodyHtml: string;
   authorName?: string;
 };
-
-export type SportSlug =
-  | 'nfl'
-  | 'mlb'
-  | 'nhl'
-  | 'nba'
-  | 'college-football'
-  | 'soccer'
-  | 'mma'
-  | 'general';
-
-const SPORT_LABELS: Record<SportSlug, string> = {
-  nfl: 'NFL',
-  mlb: 'MLB',
-  nhl: 'NHL',
-  nba: 'NBA',
-  'college-football': 'College Football',
-  soccer: 'Soccer',
-  mma: 'MMA',
-  general: 'General',
-};
-
-export function sportLabel(s: SportSlug): string {
-  return SPORT_LABELS[s] ?? 'General';
-}
 
 /** Map an admin-tag (NFL, CFB, Op-Ed…) to a public sport slug. */
 function toSportSlug(input: string | null | undefined): SportSlug {
