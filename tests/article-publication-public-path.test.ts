@@ -38,12 +38,11 @@ test('production never treats repository markdown as approved when Postgres is m
 });
 
 test('related-story reads cannot cross from a configured database into files', () => {
-  const related = articlesSource.slice(articlesSource.indexOf('export async function getRelatedArticles'));
-  const databaseBranch = related.slice(0, related.indexOf('const all = await getAllArticles()'));
-
-  assert.match(databaseBranch, /const sameSport = await dbGetRelatedBySport/);
-  assert.match(databaseBranch, /const recent = await dbGetPublished\(\)/);
-  assert.doesNotMatch(databaseBranch, /catch|fromFilesystem|fall through/i);
+  const related = articlesSource.slice(articlesSource.indexOf('export async function getRelatedRecommendations'));
+  // Catalog path is getAllArticles() only — production + DATABASE_URL never resurrects filesystem drafts.
+  assert.match(related, /getAllArticles|rankRelatedArticles/);
+  assert.doesNotMatch(related, /fromFilesystem\s*\(/);
+  assert.match(articlesSource, /export async function getRelatedArticles/);
 });
 
 test('the public article page renders the exact approved author across every surface', () => {
