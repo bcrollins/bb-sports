@@ -1561,6 +1561,8 @@ async function bootstrap(): Promise<void> {
     .onConflictDoNothing({ target: newsSources.sourceKey });
 
   // External providers seed dark: review_required, config_enabled=false, no secrets.
+  // Matching intake sources stay disabled so the ingest transaction fails closed
+  // until commercial approval + config enablement intentionally turn them on.
   for (const providerKey of NEWSROOM_PROVIDER_KEYS) {
     const entry = NEWSROOM_PROVIDER_CATALOG[providerKey];
     await db
@@ -1581,6 +1583,22 @@ async function bootstrap(): Promise<void> {
         cursorKind: entry.cursorKind,
       })
       .onConflictDoNothing({ target: newsProviders.providerKey });
+
+    await db
+      .insert(newsSources)
+      .values({
+        sourceKey: `provider-intake:${providerKey}`,
+        displayName: `${entry.displayName} intake`,
+        sourceType: 'provider_intake',
+        ownerKey: `provider:${providerKey}`,
+        tier: 'unverified',
+        commercialStatus: 'review_required',
+        commercialNotes:
+          'Synthetic provider intake source. Disabled until the matching provider is commercially approved and config-enabled. Never independent verification by itself.',
+        homepageUrl: entry.termsUrl,
+        enabled: false,
+      })
+      .onConflictDoNothing({ target: newsSources.sourceKey });
   }
 
   // 2. Admin user seed (idempotent ON CONFLICT DO NOTHING).
