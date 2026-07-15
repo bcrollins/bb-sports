@@ -15,6 +15,10 @@ All notable changes to BB Sports. Format loosely follows
 
 ### Added
 
+- Admin catalog freshness risk advisory (aging/stale/archive bands) without auto-rewrite.
+
+### Added
+
 - Request correlation: `x-request-id` on middleware responses + redacted structured log helpers.
 
 ### Added

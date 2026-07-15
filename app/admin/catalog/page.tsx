@@ -1,14 +1,20 @@
 import Link from 'next/link';
 import { requireAdminPage } from '@/lib/admin-auth';
 import { canPublishArticle } from '@/lib/article-publication';
+import { getAllArticles } from '@/lib/articles';
 import { getCatalogReconcileSnapshot } from '@/lib/catalog-import';
+import { listFreshnessRisks } from '@/lib/content-freshness';
 import { CatalogImportControls } from './_components/CatalogImportControls';
 
 export const dynamic = 'force-dynamic';
 
 export default async function CatalogPage() {
   const user = await requireAdminPage('/admin/catalog');
-  const snapshot = await getCatalogReconcileSnapshot();
+  const [snapshot, published] = await Promise.all([
+    getCatalogReconcileSnapshot(),
+    getAllArticles(),
+  ]);
+  const freshnessRisks = listFreshnessRisks(published, Date.now(), 1).slice(0, 12);
   const canImport = canPublishArticle(user.role);
 
   return (
@@ -56,6 +62,35 @@ export default async function CatalogPage() {
           <p className="mt-4 text-sm text-broadcast-red">
             Super-admin role required to import drafts.
           </p>
+        )}
+      </section>
+
+      <section className="mb-8 rounded border border-navy/10 bg-white p-4">
+        <h2 className="font-serif text-xl font-bold text-navy">Freshness risk (advisory)</h2>
+        <p className="mt-1 text-sm text-navy/60">
+          Aging published takes for desk review. Never auto-rewrites or unpublishes — Brad decides.
+        </p>
+        {freshnessRisks.length === 0 ? (
+          <p className="mt-3 text-sm text-navy/55">No aging published takes right now.</p>
+        ) : (
+          <ul className="mt-3 space-y-2 text-sm">
+            {freshnessRisks.map(({ article, freshness }) => (
+              <li
+                key={article.slug}
+                className="flex flex-wrap items-baseline justify-between gap-2 border-b border-navy/5 py-2"
+              >
+                <div>
+                  <Link className="bb-link font-semibold" href={`/articles/${article.slug}`}>
+                    {article.title}
+                  </Link>
+                  <p className="mt-0.5 text-xs text-charcoal/70">{freshness.summary}</p>
+                </div>
+                <span className="font-mono text-[10px] font-black uppercase tracking-[0.14em] text-navy/50">
+                  {freshness.band} · {freshness.ageDays}d
+                </span>
+              </li>
+            ))}
+          </ul>
         )}
       </section>
 

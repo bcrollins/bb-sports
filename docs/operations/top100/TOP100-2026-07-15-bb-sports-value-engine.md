@@ -767,7 +767,7 @@ Verification: Time-travel phrase/source fixtures; queue ordering; ticker expiry;
 Customizability added: Brad sets review date and evergreen/event class within minimum rules.
 Surfaces: web
 Risk & rollback: False positives create noise; allow audited dismiss/snooze without changing content.
-Status: Pending
+Status: Complete — content-freshness bands (fresh/aging/stale/archive) + /admin/catalog advisory queue; never auto-rewrites. Phrase-level claim detectors remain optional next layer.
 
 #53 — Monitor citation links without copying source content
 Area: Editorial sources Anchor: sports-newsroom benchmark
