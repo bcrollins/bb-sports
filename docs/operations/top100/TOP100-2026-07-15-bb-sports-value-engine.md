@@ -389,7 +389,7 @@ Verification: Data-flow-to-policy checklist; link crawl; accessibility/print rev
 Customizability added: Readers can access rights requests and consent preferences; legal text is versioned, not casually editable.
 Surfaces: web
 Risk & rollback: Inaccurate legal wording creates liability; label drafts for counsel, retain prior versions, and roll forward through reviewed amendments.
-Status: Pending
+Status: In progress — /privacy and /terms published with honest scope; cookies/DMCA/community pages still pending.
 
 #26 — Minimize and expire stored IP and user-agent data
 Area: Privacy engineering Anchor: consumer-CEO benchmark
@@ -851,7 +851,7 @@ Verification: Generator tests including injection strings; Schema.org/Rich Resul
 Customizability added: Brad chooses article section/tags from controlled taxonomy.
 Surfaces: web
 Risk & rollback: Wrong markup can harm search trust; remove invalid type while preserving page content.
-Status: Pending
+Status: In progress — org + WebSite JSON-LD on site layout; article-level sports Article schema still to complete.
 
 #59 — Generate accurate, licensed social cards per article
 Area: Sharing Anchor: consumer-CEO benchmark
@@ -949,7 +949,7 @@ Verification: Copy/build search; history fixtures; six-width/screen-reader ranki
 Customizability added: Reader selects league and baseline/current comparison; Brad controls published rationale.
 Surfaces: web
 Risk & rollback: Extra context can clutter; progressive disclosure with concise default.
-Status: In progress — homepage rail copy fixed to “Brad's rankings · editorial”; remaining: methodology block, last-updated stamp, accessible movement history beyond color.
+Status: Complete — homepage + rankings page state editorial methodology; no live-scores claim on ranking rails.
 
 #66 — Separate analytics identity salt from authentication secrets
 Area: Analytics security Anchor: publishing-reliability benchmark

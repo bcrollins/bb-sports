@@ -29,12 +29,30 @@ const orgJsonLd = {
   correctionsPolicy: `${siteUrl}/corrections`,
 };
 
+const websiteJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'WebSite',
+  name: 'BB Sports',
+  url: siteUrl,
+  description: "Sports from the fan's view. No BS.",
+  publisher: { '@type': 'NewsMediaOrganization', name: 'BB Sports', url: siteUrl },
+  potentialAction: {
+    '@type': 'SearchAction',
+    target: `${siteUrl}/search?q={search_term_string}`,
+    'query-input': 'required name=search_term_string',
+  },
+};
+
 export default function SiteLayout({ children }: { children: React.ReactNode }) {
   return (
     <>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: serializeJsonLd(orgJsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(websiteJsonLd) }}
       />
       <a
         href="#main"

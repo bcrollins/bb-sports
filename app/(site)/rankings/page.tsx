@@ -85,6 +85,17 @@ export default async function RankingsPage() {
             argument welcome. When I trash a team in a column, that team drops here
             and you can read exactly why right next to its name.
           </p>
+          <p className="mt-4 max-w-2xl rounded-sm border border-bone/25 bg-white/5 px-4 py-3 text-sm leading-relaxed text-bone/80">
+            <span className="font-black uppercase tracking-[0.18em] text-breaking">
+              Methodology · not live scores
+            </span>
+            <span className="mt-1 block">
+              These are Brad&rsquo;s editorial franchise rankings — not a licensed
+              standings feed, not a box-score scrape, not a real-time product. Movements
+              come from published BB Sports columns (with reasons on the page). Freshness
+              is the date of the latest demotion article, not a live data SLA.
+            </span>
+          </p>
           <div className="mt-6 flex flex-wrap gap-2">
             {LEAGUE_ORDER.map((l) => (
               <a
