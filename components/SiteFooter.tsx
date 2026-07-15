@@ -58,6 +58,16 @@ export default async function SiteFooter() {
         <div className="md:col-span-3">
           <h3 className="text-bone uppercase text-[10.5px] tracking-[0.22em] font-bold mb-3">Read</h3>
           <ul className="space-y-2 text-bone/85 text-[15px]">
+            <li>
+              <Link href="/teams" className="hover:text-breaking">
+                Teams encyclopedia
+              </Link>
+            </li>
+            <li>
+              <Link href="/people" className="hover:text-breaking">
+                People
+              </Link>
+            </li>
             <li><Link href="/articles" className="hover:text-breaking">All articles</Link></li>
             <li><Link href="/search" className="hover:text-breaking">Search</Link></li>
             <li><Link href="/podcast" className="hover:text-breaking">Podcast</Link></li>

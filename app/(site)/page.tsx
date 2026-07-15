@@ -28,10 +28,10 @@ export const revalidate = 60;
 // the face of the website." Static files in /public/images, all original
 // commercial-safe artwork.
 const PLAYER_FACES = [
-  { src: '/images/player-nfl.svg',    label: 'NFL',    href: '/articles?sport=nfl' },
-  { src: '/images/player-mlb.svg',    label: 'MLB',    href: '/articles?sport=mlb' },
-  { src: '/images/player-nba.svg',    label: 'NBA',    href: '/articles?sport=nba' },
-  { src: '/images/player-nhl.svg',    label: 'NHL',    href: '/articles?sport=nhl' },
+  { src: '/images/player-nfl.svg',    label: 'NFL',    href: '/teams/nfl' },
+  { src: '/images/player-mlb.svg',    label: 'MLB',    href: '/teams/mlb' },
+  { src: '/images/player-nba.svg',    label: 'NBA',    href: '/teams/nba' },
+  { src: '/images/player-nhl.svg',    label: 'NHL',    href: '/teams/nhl' },
   { src: '/images/player-cfb.svg',    label: 'CFB',    href: '/articles?sport=college-football' },
   { src: '/images/player-soccer.svg', label: 'Soccer', href: '/articles?sport=soccer' },
 ];
@@ -93,6 +93,12 @@ export default async function HomePage() {
                 className="inline-flex min-h-[48px] items-center border border-bone/40 px-5 text-sm font-black uppercase tracking-[0.2em] text-bone transition-colors hover:bg-bone hover:text-navy"
               >
                 Franchise rankings
+              </Link>
+              <Link
+                href="/teams"
+                className="inline-flex min-h-[48px] items-center border border-bone/40 px-5 text-sm font-black uppercase tracking-[0.2em] text-bone transition-colors hover:bg-bone hover:text-navy"
+              >
+                Teams encyclopedia
               </Link>
             </div>
           </div>
