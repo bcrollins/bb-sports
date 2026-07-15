@@ -33,6 +33,7 @@ All notable changes to BB Sports. Format loosely follows
 
 ### Fixed
 
+- Renamed the public ticker from false “Breaking” to honest “Desk” for curated/static bumpers; live pulse is reserved for verified `isBreaking` rails only (editorial integrity).
 - Isolated `/coming-soon` from the public site layout so the hidden header, ticker, footer, analytics, and links no longer remain in the DOM or keyboard focus order behind the white wall.
 - Taught the production smoke gate to obtain and use a fresh signed access cookie instead of relying on a hard-coded boolean cookie.
 
