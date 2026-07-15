@@ -9,6 +9,7 @@
  * fallback). Sorted newest-first; latest 30 articles.
  */
 import { getAllArticles, type Article } from '@/lib/articles';
+import { shouldEmitRssItems } from '@/lib/crawl-policy';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -42,9 +43,12 @@ function itemXml(article: Article, siteUrl: string): string {
 
 export async function GET() {
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://bbsports.fans';
-  const articles = (await getAllArticles())
-    .sort((a, b) => +new Date(b.date) - +new Date(a.date))
-    .slice(0, FEED_LIMIT);
+  // Soft launch: keep channel shell, omit items so gated catalog is not syndicated.
+  const articles = shouldEmitRssItems()
+    ? (await getAllArticles())
+        .sort((a, b) => +new Date(b.date) - +new Date(a.date))
+        .slice(0, FEED_LIMIT)
+    : [];
 
   const latest = articles[0]?.date ?? new Date().toISOString();
   const channel = [

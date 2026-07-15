@@ -1,7 +1,9 @@
 import type { Metadata, Viewport } from 'next';
+import { evaluateSoftLaunchPosture } from '@/lib/soft-launch';
 import './globals.css';
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://bbsports.fans';
+const searchIndexable = evaluateSoftLaunchPosture().searchIndexable;
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
@@ -51,11 +53,18 @@ export const metadata: Metadata = {
       'Opinion-led sports journalism by Brad Benson. Fan view. No script. No spin.',
     images: ['/og.png']
   },
-  robots: {
-    index: true,
-    follow: true,
-    googleBot: { index: true, follow: true, 'max-image-preview': 'large' }
-  },
+  // Soft launch: noindex until BBSPORTS_PUBLIC_LAUNCH=true (matches robots/sitemap/RSS).
+  robots: searchIndexable
+    ? {
+        index: true,
+        follow: true,
+        googleBot: { index: true, follow: true, 'max-image-preview': 'large' },
+      }
+    : {
+        index: false,
+        follow: false,
+        googleBot: { index: false, follow: false },
+      },
   alternates: {
     canonical: siteUrl,
     types: { 'application/rss+xml': `${siteUrl}/rss.xml` },

@@ -1,5 +1,6 @@
 import type { MetadataRoute } from 'next';
 import { getAllArticles } from '@/lib/articles';
+import { shouldEmitSitemapEntries } from '@/lib/crawl-policy';
 import { LEAGUE_ORDER, buildLeagueRanking } from '@/lib/rankings';
 import { listSportsPeople, listSportsTeams } from '@/lib/sports-encyclopedia/queries';
 
@@ -10,6 +11,11 @@ import { listSportsPeople, listSportsTeams } from '@/lib/sports-encyclopedia/que
 export const dynamic = 'force-dynamic';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  // Soft launch: empty inventory so crawlers that ignore robots still get no map.
+  if (!shouldEmitSitemapEntries()) {
+    return [];
+  }
+
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://bbsports.fans';
   const articles = await getAllArticles();
 
