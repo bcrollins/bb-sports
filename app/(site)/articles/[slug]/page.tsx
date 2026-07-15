@@ -17,6 +17,7 @@ import ArticleComments from '@/components/ArticleComments';
 import NewsletterSignup from '@/components/NewsletterSignup';
 import SportTag from '@/components/SportTag';
 import AiAssistedBadge from '@/components/AiAssistedBadge';
+import ReadingControls from '@/components/ReadingControls';
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -170,7 +171,8 @@ export default async function ArticleDetail({ params }: Props) {
       )}
 
       {/* Body */}
-      <div className="max-w-readable mx-auto px-4 sm:px-6 py-10">
+      <div className="article-reading-column mx-auto max-w-readable px-4 sm:px-6 py-10">
+        <ReadingControls />
         <div
           className="article-body prose-newspaper"
           dangerouslySetInnerHTML={{ __html: article.bodyHtml }}
