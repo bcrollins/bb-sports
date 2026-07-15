@@ -671,6 +671,25 @@ export async function updateDonationIntentStripeStatus(input: {
       ? eq(donationIntents.stripeCheckoutSessionId, input.stripeCheckoutSessionId)
       : null;
   if (!where) return null;
+
+  // Sticky paid / refund / dispute outcomes: never demote to expired/failed.
+  const existing = await db.select().from(donationIntents).where(where).limit(1);
+  const current = existing[0];
+  if (current) {
+    const sticky = new Set([
+      'paid',
+      'refunded',
+      'partially_refunded',
+      'disputed',
+      'dispute_lost',
+      'dispute_won',
+    ]);
+    const demotions = new Set(['checkout_expired', 'payment_failed', 'checkout_failed']);
+    if (sticky.has(current.status) && demotions.has(input.status)) {
+      return current;
+    }
+  }
+
   const rows = await db
     .update(donationIntents)
     .set({
