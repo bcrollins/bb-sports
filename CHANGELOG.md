@@ -7,6 +7,7 @@ All notable changes to BB Sports. Format loosely follows
 
 ### Added
 
+- Archive shareable URL filters: sport, q, sort with clear chips, result count, safe invalid-param reset.
 - Analytics privacy floor: dedicated `ANALYTICS_HASH_SALT` only (no JWT/default), GPC/DNT/`bb_analytics=0` suppress optional events client+server; comments 404 when slug not in published catalog.
 - Public release provenance on health/status (`commit`, `commitShort`, `publicLaunch`) and smoke commit pin with short/full SHA match; soft-launch robots/sitemap smoke checks.
 - Soft-launch crawl policy: robots disallow all, empty sitemap, RSS omits items until `BBSPORTS_PUBLIC_LAUNCH=true`.

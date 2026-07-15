@@ -921,7 +921,7 @@ Verification: URL property tests; browser history/deep-link matrix; six widths a
 Customizability added: Reader selects sport, date, AI disclosure, and sort; saved locally with reset.
 Surfaces: web
 Risk & rollback: Canonicalization can break old links; support documented aliases and 308 only when equivalent.
-Status: Pending
+Status: Complete — parseArchiveFilters + buildArchiveHref + sort/chips/result count; invalid sport/sort fail safe; defaults omitted from URLs; form GET preserves shareable state.
 
 #64 — Validate every rankings movement directive before publication
 Area: Rankings engine Anchor: sports-newsroom benchmark
