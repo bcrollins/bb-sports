@@ -1,6 +1,7 @@
 import type { MetadataRoute } from 'next';
 import { getAllArticles } from '@/lib/articles';
 import { LEAGUE_ORDER, buildLeagueRanking } from '@/lib/rankings';
+import { listSportsTeams } from '@/lib/sports-encyclopedia/queries';
 
 // The production article catalog is database-backed. Building this route into
 // a static artifact can permanently freeze an empty catalog when the build
@@ -18,6 +19,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     '',
     '/articles',
     '/rankings',
+    '/teams',
     '/search',
     '/podcast',
     '/videos',
@@ -81,5 +83,30 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     }
   }
 
-  return [...staticRoutes, ...articleRoutes, ...leagueRoutes, ...teamRoutes];
+  // Full franchise encyclopedia (all active clubs, not only Brad's top-25).
+  const encyclopediaTeams = await listSportsTeams({ limit: 200 }).catch(() => []);
+  const encyclopediaLeagueKeys = [...new Set(encyclopediaTeams.map((t) => t.leagueKey))];
+  const encyclopediaLeagueRoutes: MetadataRoute.Sitemap = encyclopediaLeagueKeys.map(
+    (leagueKey) => ({
+      url: `${baseUrl}/teams/${leagueKey}`,
+      lastModified: new Date(),
+      changeFrequency: 'weekly' as const,
+      priority: 0.72,
+    }),
+  );
+  const encyclopediaTeamRoutes: MetadataRoute.Sitemap = encyclopediaTeams.map((team) => ({
+    url: `${baseUrl}/teams/${team.leagueKey}/${team.teamKey}`,
+    lastModified: team.dataVerifiedDate,
+    changeFrequency: 'monthly' as const,
+    priority: 0.55,
+  }));
+
+  return [
+    ...staticRoutes,
+    ...articleRoutes,
+    ...leagueRoutes,
+    ...teamRoutes,
+    ...encyclopediaLeagueRoutes,
+    ...encyclopediaTeamRoutes,
+  ];
 }

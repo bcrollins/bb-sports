@@ -13,6 +13,8 @@
  *   analytics_events       — first-party privacy-filtered behavior events.
  *   news_providers / leases / checkpoints / ingest_attempts / dead_letters
  *                 — external connector governance (seeded dark; no secrets).
+ *   sports_leagues / sports_teams / sports_people
+ *                 — first-party franchise encyclopedia (public identity + citations).
  *
  * All timestamps stored as Postgres `timestamptz`. All ids are uuid v4.
  */
@@ -657,6 +659,93 @@ export const newsEventArticles = pgTable(
   ],
 );
 
+// ---------- sports encyclopedia (first-party public franchise identity) ----------
+// Public organizational facts only. Not a licensed stats feed and not a scrape
+// of third-party encyclopedias. Every seed row carries source citation fields.
+export const sportsLeagues = pgTable(
+  'sports_leagues',
+  {
+    leagueKey: varchar('league_key', { length: 16 }).primaryKey(),
+    displayName: varchar('display_name', { length: 120 }).notNull(),
+    shortName: varchar('short_name', { length: 16 }).notNull(),
+    sport: varchar('sport', { length: 64 }).notNull(),
+    governingBody: varchar('governing_body', { length: 160 }).notNull(),
+    officialUrl: text('official_url').notNull(),
+    teamCount: integer('team_count').notNull(),
+    dataSource: text('data_source').notNull(),
+    dataSourceUrl: text('data_source_url').notNull(),
+    dataVerifiedDate: timestamp('data_verified_date', { withTimezone: true }).notNull(),
+    dataConfidence: varchar('data_confidence', { length: 24 }).notNull().default('VERIFIED'),
+    dataNotes: text('data_notes').notNull().default(''),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index('idx_sports_leagues_short').on(table.shortName)],
+);
+
+export const sportsTeams = pgTable(
+  'sports_teams',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    leagueKey: varchar('league_key', { length: 16 })
+      .notNull()
+      .references(() => sportsLeagues.leagueKey, { onDelete: 'restrict' }),
+    teamKey: varchar('team_key', { length: 80 }).notNull(),
+    displayName: varchar('display_name', { length: 160 }).notNull(),
+    city: varchar('city', { length: 80 }).notNull(),
+    nickname: varchar('nickname', { length: 80 }).notNull(),
+    abbreviation: varchar('abbreviation', { length: 8 }).notNull(),
+    conference: varchar('conference', { length: 40 }),
+    division: varchar('division', { length: 40 }),
+    foundedYear: integer('founded_year'),
+    officialUrl: text('official_url').notNull(),
+    rankingsId: varchar('rankings_id', { length: 40 }),
+    dataSource: text('data_source').notNull(),
+    dataSourceUrl: text('data_source_url').notNull(),
+    dataVerifiedDate: timestamp('data_verified_date', { withTimezone: true }).notNull(),
+    dataConfidence: varchar('data_confidence', { length: 24 }).notNull().default('VERIFIED'),
+    dataNotes: text('data_notes').notNull().default(''),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex('idx_sports_teams_league_key').on(table.leagueKey, table.teamKey),
+    uniqueIndex('idx_sports_teams_league_abbr').on(table.leagueKey, table.abbreviation),
+    index('idx_sports_teams_rankings').on(table.rankingsId),
+    index('idx_sports_teams_city').on(table.city),
+  ],
+);
+
+export const sportsPeople = pgTable(
+  'sports_people',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    personKey: varchar('person_key', { length: 120 }).notNull().unique(),
+    fullName: varchar('full_name', { length: 160 }).notNull(),
+    commonName: varchar('common_name', { length: 120 }).notNull(),
+    role: varchar('role', { length: 32 }).notNull(),
+    leagueKey: varchar('league_key', { length: 16 })
+      .notNull()
+      .references(() => sportsLeagues.leagueKey, { onDelete: 'restrict' }),
+    teamKey: varchar('team_key', { length: 80 }).notNull(),
+    positionOrTitle: varchar('position_or_title', { length: 80 }).notNull().default(''),
+    summary: text('summary').notNull().default(''),
+    officialUrl: text('official_url'),
+    dataSource: text('data_source').notNull(),
+    dataSourceUrl: text('data_source_url').notNull(),
+    dataVerifiedDate: timestamp('data_verified_date', { withTimezone: true }).notNull(),
+    dataConfidence: varchar('data_confidence', { length: 24 }).notNull().default('CROSS_REFERENCED'),
+    dataNotes: text('data_notes').notNull().default(''),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index('idx_sports_people_league_team').on(table.leagueKey, table.teamKey),
+    index('idx_sports_people_role').on(table.role),
+    index('idx_sports_people_name').on(table.commonName),
+  ],
+);
+
 // ---------- type exports ----------
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
@@ -693,3 +782,6 @@ export type ArticleRevision = typeof articleRevisions.$inferSelect;
 export type NewArticleRevision = typeof articleRevisions.$inferInsert;
 export type ArticlePublicationEvent = typeof articlePublicationEvents.$inferSelect;
 export type NewsEventArticle = typeof newsEventArticles.$inferSelect;
+export type SportsLeague = typeof sportsLeagues.$inferSelect;
+export type SportsTeam = typeof sportsTeams.$inferSelect;
+export type SportsPerson = typeof sportsPeople.$inferSelect;

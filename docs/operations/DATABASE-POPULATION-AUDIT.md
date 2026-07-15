@@ -27,11 +27,15 @@ database rows and must not be confused with a Tier-1 sports registry.
 | Published live articles (production, prior verify) | 5 |
 | Franchise ranking entries (code, 4 leagues × 25) | 100 |
 
-**Conclusion:** Populating “every player profile from every league with full
-history deeper than any sports site” **cannot be executed against this
-database** without designing and shipping a **new product domain** (schema +
-APIs + UI). Doing so with scraped or AI-invented stats would violate the
-project’s data integrity standard and would not survive expert audit.
+**Update (2026-07-15):** A first-party **sports encyclopedia foundation** has
+been shipped: `sports_leagues`, `sports_teams`, `sports_people` with complete
+active franchise registries (124 teams) and a small cited people set. This is
+**public franchise identity only** — not a proprietary box-score scrape and not
+“every player who ever lived.” Full historical stats remain out of scope until
+a licensed feed or multi-year first-party research program is funded.
+
+**Conclusion (historical):** Before the encyclopedia tables existed, player
+encyclopedia inserts were impossible. Invented stats remain forbidden.
 
 What *can* be done within the current product:
 

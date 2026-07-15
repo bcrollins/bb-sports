@@ -22,6 +22,9 @@ import {
   newsProviders,
   newsSources,
   siteConfig,
+  sportsLeagues,
+  sportsPeople,
+  sportsTeams,
   users,
 } from './schema';
 import {
@@ -35,6 +38,9 @@ import {
   NEWSROOM_PROVIDER_CATALOG,
   NEWSROOM_PROVIDER_KEYS,
 } from '../newsroom-providers';
+import { LEAGUE_SEEDS } from '../sports-encyclopedia/leagues.seed';
+import { PERSON_SEEDS } from '../sports-encyclopedia/people.seed';
+import { TEAM_SEEDS } from '../sports-encyclopedia/teams.seed';
 
 type LegacyPublicationRequiredField =
   | 'slug'
@@ -1118,6 +1124,75 @@ async function bootstrap(): Promise<void> {
       )
     );
   `);
+  // First-party sports encyclopedia: public franchise identity only.
+  await db.execute(sql`
+    CREATE TABLE IF NOT EXISTS sports_leagues (
+      league_key varchar(16) PRIMARY KEY,
+      display_name varchar(120) NOT NULL,
+      short_name varchar(16) NOT NULL,
+      sport varchar(64) NOT NULL,
+      governing_body varchar(160) NOT NULL,
+      official_url text NOT NULL,
+      team_count integer NOT NULL CHECK (team_count > 0),
+      data_source text NOT NULL,
+      data_source_url text NOT NULL,
+      data_verified_date timestamptz NOT NULL,
+      data_confidence varchar(24) NOT NULL DEFAULT 'VERIFIED'
+        CHECK (data_confidence IN ('VERIFIED', 'CROSS_REFERENCED', 'FLAGGED')),
+      data_notes text NOT NULL DEFAULT '',
+      created_at timestamptz NOT NULL DEFAULT now(),
+      updated_at timestamptz NOT NULL DEFAULT now()
+    );
+  `);
+  await db.execute(sql`
+    CREATE TABLE IF NOT EXISTS sports_teams (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      league_key varchar(16) NOT NULL
+        REFERENCES sports_leagues(league_key) ON DELETE RESTRICT,
+      team_key varchar(80) NOT NULL,
+      display_name varchar(160) NOT NULL,
+      city varchar(80) NOT NULL,
+      nickname varchar(80) NOT NULL,
+      abbreviation varchar(8) NOT NULL,
+      conference varchar(40),
+      division varchar(40),
+      founded_year integer CHECK (founded_year IS NULL OR founded_year BETWEEN 1800 AND 2100),
+      official_url text NOT NULL,
+      rankings_id varchar(40),
+      data_source text NOT NULL,
+      data_source_url text NOT NULL,
+      data_verified_date timestamptz NOT NULL,
+      data_confidence varchar(24) NOT NULL DEFAULT 'VERIFIED'
+        CHECK (data_confidence IN ('VERIFIED', 'CROSS_REFERENCED', 'FLAGGED')),
+      data_notes text NOT NULL DEFAULT '',
+      created_at timestamptz NOT NULL DEFAULT now(),
+      updated_at timestamptz NOT NULL DEFAULT now()
+    );
+  `);
+  await db.execute(sql`
+    CREATE TABLE IF NOT EXISTS sports_people (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      person_key varchar(120) NOT NULL UNIQUE,
+      full_name varchar(160) NOT NULL,
+      common_name varchar(120) NOT NULL,
+      role varchar(32) NOT NULL
+        CHECK (role IN ('player', 'head_coach', 'general_manager', 'owner', 'executive')),
+      league_key varchar(16) NOT NULL
+        REFERENCES sports_leagues(league_key) ON DELETE RESTRICT,
+      team_key varchar(80) NOT NULL,
+      position_or_title varchar(80) NOT NULL DEFAULT '',
+      summary text NOT NULL DEFAULT '',
+      official_url text,
+      data_source text NOT NULL,
+      data_source_url text NOT NULL,
+      data_verified_date timestamptz NOT NULL,
+      data_confidence varchar(24) NOT NULL DEFAULT 'CROSS_REFERENCED'
+        CHECK (data_confidence IN ('VERIFIED', 'CROSS_REFERENCED', 'FLAGGED')),
+      data_notes text NOT NULL DEFAULT '',
+      created_at timestamptz NOT NULL DEFAULT now(),
+      updated_at timestamptz NOT NULL DEFAULT now()
+    );
+  `);
   await db.execute(sql`
     CREATE TABLE IF NOT EXISTS article_revisions (
       id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -1528,6 +1603,14 @@ async function bootstrap(): Promise<void> {
   await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_news_provider_dead_letters_open ON news_provider_dead_letters(provider_key, resolved_at);`);
   await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_news_provider_dead_letters_payload ON news_provider_dead_letters(payload_hash);`);
   await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_news_provider_dead_letters_external ON news_provider_dead_letters(provider_key, external_id);`);
+  await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_sports_leagues_short ON sports_leagues(short_name);`);
+  await db.execute(sql`CREATE UNIQUE INDEX IF NOT EXISTS idx_sports_teams_league_key ON sports_teams(league_key, team_key);`);
+  await db.execute(sql`CREATE UNIQUE INDEX IF NOT EXISTS idx_sports_teams_league_abbr ON sports_teams(league_key, abbreviation);`);
+  await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_sports_teams_rankings ON sports_teams(rankings_id);`);
+  await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_sports_teams_city ON sports_teams(city);`);
+  await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_sports_people_league_team ON sports_people(league_key, team_key);`);
+  await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_sports_people_role ON sports_people(role);`);
+  await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_sports_people_name ON sports_people(common_name);`);
   await db.execute(sql`CREATE UNIQUE INDEX IF NOT EXISTS idx_article_revisions_article_number ON article_revisions(article_id, revision_number);`);
   await db.execute(sql`CREATE UNIQUE INDEX IF NOT EXISTS idx_article_revisions_article_hash ON article_revisions(article_id, content_hash);`);
   await db.execute(sql`CREATE UNIQUE INDEX IF NOT EXISTS idx_article_revisions_article_id_id ON article_revisions(article_id, id);`);
@@ -1599,6 +1682,72 @@ async function bootstrap(): Promise<void> {
         enabled: false,
       })
       .onConflictDoNothing({ target: newsSources.sourceKey });
+  }
+
+  // First-party sports encyclopedia seeds (public franchise identity only).
+  const sportsVerifiedAt = new Date('2026-07-15T00:00:00.000Z');
+  for (const league of LEAGUE_SEEDS) {
+    await db
+      .insert(sportsLeagues)
+      .values({
+        leagueKey: league.leagueKey,
+        displayName: league.displayName,
+        shortName: league.shortName,
+        sport: league.sport,
+        governingBody: league.governingBody,
+        officialUrl: league.officialUrl,
+        teamCount: league.teamCount,
+        dataSource: league.dataSource,
+        dataSourceUrl: league.dataSourceUrl,
+        dataVerifiedDate: sportsVerifiedAt,
+        dataConfidence: league.dataConfidence,
+        dataNotes: league.dataNotes ?? '',
+      })
+      .onConflictDoNothing({ target: sportsLeagues.leagueKey });
+  }
+  for (const team of TEAM_SEEDS) {
+    await db
+      .insert(sportsTeams)
+      .values({
+        leagueKey: team.leagueKey,
+        teamKey: team.teamKey,
+        displayName: team.displayName,
+        city: team.city,
+        nickname: team.nickname,
+        abbreviation: team.abbreviation,
+        conference: team.conference,
+        division: team.division,
+        foundedYear: team.foundedYear,
+        officialUrl: team.officialUrl,
+        rankingsId: team.rankingsId,
+        dataSource: team.dataSource,
+        dataSourceUrl: team.dataSourceUrl,
+        dataVerifiedDate: sportsVerifiedAt,
+        dataConfidence: team.dataConfidence,
+        dataNotes: team.dataNotes ?? '',
+      })
+      .onConflictDoNothing({ target: [sportsTeams.leagueKey, sportsTeams.teamKey] });
+  }
+  for (const person of PERSON_SEEDS) {
+    await db
+      .insert(sportsPeople)
+      .values({
+        personKey: person.personKey,
+        fullName: person.fullName,
+        commonName: person.commonName,
+        role: person.role,
+        leagueKey: person.leagueKey,
+        teamKey: person.teamKey,
+        positionOrTitle: person.positionOrTitle,
+        summary: person.summary,
+        officialUrl: person.officialUrl,
+        dataSource: person.dataSource,
+        dataSourceUrl: person.dataSourceUrl,
+        dataVerifiedDate: sportsVerifiedAt,
+        dataConfidence: person.dataConfidence,
+        dataNotes: person.dataNotes ?? '',
+      })
+      .onConflictDoNothing({ target: sportsPeople.personKey });
   }
 
   // 2. Admin user seed (idempotent ON CONFLICT DO NOTHING).
