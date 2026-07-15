@@ -9,6 +9,10 @@ All notable changes to BB Sports. Format loosely follows
 
 - Analytics POST validates event schema before privacy/salt short-circuit so invalid events still return 400.
 
+### Documentation
+
+- Ledger: preview/public Markdown body parity (#50) and RSS catalog truth (#56) marked complete with contract tests.
+
 ### Added
 
 - Request correlation: `x-request-id` on middleware responses + redacted structured log helpers.

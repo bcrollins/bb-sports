@@ -260,3 +260,13 @@ test('database-backed about copy uses the same strict Markdown renderer', () => 
   assert.match(aboutPage, /__html:\s*bioHtml/);
   assert.doesNotMatch(aboutPage, /__html:\s*p\b/);
 });
+
+test('preview and public article HTML share one renderMarkdown pipeline', () => {
+  const preview = source('app/api/admin/preview/route.ts');
+  const articles = source('lib/articles.ts');
+  assert.match(preview, /renderMarkdown\s*\(/);
+  assert.match(articles, /renderMarkdown\s*\(/);
+  assert.match(preview, /from '@\/lib\/markdown'|from "\.\.\/\.\.\/lib\/markdown"|from '@\/lib\/markdown'/);
+  assert.match(source('lib/markdown.ts'), /Admin live-preview endpoint/);
+  assert.match(source('lib/markdown.ts'), /Public article pages/);
+});
