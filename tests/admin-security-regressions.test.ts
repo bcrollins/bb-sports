@@ -143,6 +143,7 @@ test('every sensitive admin API handler authenticates before reading request or 
     { file: 'app/api/admin/site/route.ts', method: 'GET', firstSensitiveOperation: /getEditableSiteConfig\s*\(/ },
     { file: 'app/api/admin/site/route.ts', method: 'PUT', firstSensitiveOperation: /req\.json\s*\(/ },
     { file: 'app/api/admin/sessions/revoke/route.ts', method: 'POST', firstSensitiveOperation: /req\.json\s*\(/ },
+    { file: 'app/api/admin/citations/probe/route.ts', method: 'POST', firstSensitiveOperation: /req\.json\s*\(/ },
   ];
 
   for (const contract of contracts) {

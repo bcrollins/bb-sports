@@ -15,6 +15,7 @@ All notable changes to BB Sports. Format loosely follows
 
 ### Added
 
+- Admin citation extract/probe API (SSRF-safe, no body copy).
 - Per-article brand OG cards via `/api/og/article` (1200×630, rights-safe text).
 - Newsletter frequency + topic preferences on signup (schema + UI).
 - Operator SLO document (`docs/operations/SLO.md`).
