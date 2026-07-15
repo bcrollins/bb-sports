@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
 import SupportForm from './SupportForm';
+import { resolveSupportSurfaceMode } from '@/lib/support';
 
 export const metadata: Metadata = {
   title: 'Support',
@@ -9,6 +10,8 @@ export const metadata: Metadata = {
 };
 
 export default function SupportPage() {
+  const surface = resolveSupportSurfaceMode();
+
   return (
     <div className="bg-bone">
       <header className="bg-navy-deep text-bone">
@@ -22,7 +25,7 @@ export default function SupportPage() {
             Free articles.<br />Real opinions.<br />No gambling<br />money.
           </h1>
           <p className="mt-5 max-w-[32ch] break-words text-base leading-relaxed text-bone/85 sm:max-w-2xl sm:text-lg">
-            BB Sports will not sell premium columns or hide Brad's best work behind a paywall.
+            BB Sports will not sell premium columns or hide Brad&apos;s best work behind a paywall.
             Supporter interest is recorded first-party, and payments only move through verified Stripe rails.
           </p>
         </div>
@@ -37,7 +40,13 @@ export default function SupportPage() {
               It does not buy coverage, placement, silence, or a gambling pick.
             </p>
           </div>
-          <SupportForm />
+          <SupportForm
+            surface={surface.surface}
+            headline={surface.headline}
+            detail={surface.detail}
+            primaryCta={surface.primaryCta}
+            acceptsMoneyNow={surface.acceptsMoneyNow}
+          />
         </section>
 
         <aside className="grid gap-4 content-start">

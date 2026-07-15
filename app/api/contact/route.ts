@@ -4,6 +4,7 @@ import { createContactMessage } from '@/lib/queries';
 import { requestMeta } from '@/lib/request-meta';
 import { recordAnalyticsEventSafe } from '@/lib/analytics';
 import { rejectIfMutationBlocked } from '@/lib/mutation-guard';
+import { formatContactReceiptId } from '@/lib/contact-receipt';
 
 const RATE_LIMIT_WINDOW_MS = 60_000;
 const RATE_LIMIT_MAX = 3;
@@ -42,8 +43,10 @@ export async function POST(req: NextRequest) {
   }
   const { mode, email, name, message, secure } = parsed.data;
 
+  let receiptId = '';
+  let ledgerStatus = 'new';
   try {
-    await createContactMessage({
+    const row = await createContactMessage({
       mode,
       email,
       name,
@@ -52,6 +55,8 @@ export async function POST(req: NextRequest) {
       ip,
       userAgent,
     });
+    receiptId = formatContactReceiptId(row.id);
+    ledgerStatus = row.status || 'new';
     await recordAnalyticsEventSafe({
       eventName: 'contact_message_created',
       path: '/api/contact',
@@ -59,6 +64,8 @@ export async function POST(req: NextRequest) {
       properties: {
         mode,
         confidential: secure,
+        // Receipt only — never the message body.
+        receipt_id: receiptId,
       },
     }, { ip, userAgent });
   } catch (err) {
@@ -77,7 +84,13 @@ export async function POST(req: NextRequest) {
           ? 'Thanks for reaching out about a partnership. Brandon (operations) handles sponsorship intake — expect a reply within 2 business days.'
           : 'Got it. Brad will see this.';
 
-  return NextResponse.json({ ok: true, message: reply });
+  return NextResponse.json({
+    ok: true,
+    message: reply,
+    // Public receipt only — no message/email echo (confidential-safe).
+    receiptId,
+    status: ledgerStatus,
+  });
 }
 
 export async function GET() {

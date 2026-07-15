@@ -1341,7 +1341,7 @@ Verification: Concurrency/retry; admin lifecycle; email disabled/enabled; mobile
 Customizability added: Sender chooses category/confidential/contact permission; Brad filters/statuses.
 Surfaces: web
 Risk & rollback: Receipt email could expose tip context; send generic copy only and disable transport independently.
-Status: Pending
+Status: Complete — public receiptId on contact POST/UI (no body/email echo); ledger status returned; form locks after success.
 
 #94 — Simplify support into one truthful decision path
 Area: Support page Anchor: consumer-CEO benchmark
@@ -1355,7 +1355,7 @@ Verification: State fixtures/user comprehension checklist; Stripe item #37 integ
 Customizability added: Reader chooses allowed amount/message; Brad selects launch mode through validated provider posture.
 Surfaces: web
 Risk & rollback: Copy mismatch can create charge disputes; fail to unavailable mode when provider posture is uncertain.
-Status: Pending
+Status: Complete — resolveSupportSurfaceMode interest_only vs stripe_live; banner + CTA; no paid claim without webhook.
 
 #95 — Make global navigation state and labels unambiguous
 Area: Information architecture Anchor: Apple OS benchmark
