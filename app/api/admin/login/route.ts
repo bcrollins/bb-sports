@@ -28,6 +28,7 @@ import {
   recordAuthSuccess,
 } from '@/lib/auth-rate-limit';
 import { requestMeta } from '@/lib/request-meta';
+import { rejectIfMutationBlocked } from '@/lib/mutation-guard';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -43,6 +44,9 @@ function tooMany(retryAfterSec: number) {
 }
 
 export async function POST(req: NextRequest) {
+  const blocked = rejectIfMutationBlocked(req);
+  if (blocked) return blocked;
+
   if (!dbAvailable || !db) {
     return NextResponse.json({ error: 'Database unavailable' }, { status: 503 });
   }

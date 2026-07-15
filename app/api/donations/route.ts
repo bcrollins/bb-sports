@@ -9,6 +9,7 @@ import {
   getStripeDonationConfig,
   getStripeDonationLink,
 } from '@/lib/stripe';
+import { rejectIfMutationBlocked } from '@/lib/mutation-guard';
 
 // Donations remain Stripe-only for money movement. BB Sports owns the
 // first-party supporter-interest ledger even before Stripe Checkout opens.
@@ -36,6 +37,9 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  const blocked = rejectIfMutationBlocked(req);
+  if (blocked) return blocked;
+
   const { ip, userAgent } = requestMeta(req);
   let body: unknown = {};
   try {

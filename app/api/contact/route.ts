@@ -3,6 +3,7 @@ import { contactSubmissionSchema, validationErrorMessage } from '@/lib/intake-va
 import { createContactMessage } from '@/lib/queries';
 import { requestMeta } from '@/lib/request-meta';
 import { recordAnalyticsEventSafe } from '@/lib/analytics';
+import { rejectIfMutationBlocked } from '@/lib/mutation-guard';
 
 const RATE_LIMIT_WINDOW_MS = 60_000;
 const RATE_LIMIT_MAX = 3;
@@ -19,6 +20,9 @@ function rateLimited(ip: string) {
 }
 
 export async function POST(req: NextRequest) {
+  const blocked = rejectIfMutationBlocked(req);
+  if (blocked) return blocked;
+
   const { ip, userAgent } = requestMeta(req);
 
   if (rateLimited(ip)) {

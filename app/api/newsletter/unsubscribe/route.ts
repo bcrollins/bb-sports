@@ -6,6 +6,7 @@ import {
 } from '@/lib/queries';
 import { recordAnalyticsEventSafe } from '@/lib/analytics';
 import { requestMeta } from '@/lib/request-meta';
+import { rejectIfMutationBlocked } from '@/lib/mutation-guard';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -76,6 +77,9 @@ async function extractToken(req: NextRequest): Promise<{ token: string | null; p
 }
 
 export async function POST(req: NextRequest) {
+  const blocked = rejectIfMutationBlocked(req);
+  if (blocked) return blocked;
+
   const { ip, userAgent } = requestMeta(req);
   const contentType = req.headers.get('content-type') ?? '';
   const isBrowserForm =

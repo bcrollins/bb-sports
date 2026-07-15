@@ -1,11 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { analyticsPayloadSchema, recordAnalyticsEvent } from '@/lib/analytics';
 import { requestMeta } from '@/lib/request-meta';
+import { rejectIfMutationBlocked } from '@/lib/mutation-guard';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
+  const blocked = rejectIfMutationBlocked(req);
+  if (blocked) return blocked;
+
   const { ip, userAgent } = requestMeta(req);
   let body: unknown;
   try {

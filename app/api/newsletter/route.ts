@@ -8,6 +8,7 @@ import {
 import { newsletterSignupSchema, validationErrorMessage } from '@/lib/intake-validation';
 import { recordAnalyticsEventSafe } from '@/lib/analytics';
 import { getResendEmailConfig, sendNewsletterWelcomeEmail } from '@/lib/resend';
+import { rejectIfMutationBlocked } from '@/lib/mutation-guard';
 
 // v1 newsletter endpoint:
 // - validates email
@@ -32,6 +33,9 @@ function rateLimited(ip: string) {
 }
 
 export async function POST(req: NextRequest) {
+  const blocked = rejectIfMutationBlocked(req);
+  if (blocked) return blocked;
+
   const { ip, userAgent } = requestMeta(req);
 
   if (rateLimited(ip)) {

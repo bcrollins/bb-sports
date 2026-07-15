@@ -23,6 +23,7 @@ import {
   gateCookieIsConfigured,
 } from '@/lib/gate-cookie';
 import { requestMeta } from '@/lib/request-meta';
+import { rejectIfMutationBlocked } from '@/lib/mutation-guard';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -38,6 +39,9 @@ function tooMany(retryAfterSec: number) {
 }
 
 export async function POST(req: NextRequest) {
+  const blocked = rejectIfMutationBlocked(req);
+  if (blocked) return blocked;
+
   const { ip } = requestMeta(req);
   const precheck = await assertAuthAttemptAllowed({ purpose: 'gate', ip });
   if (!precheck.allowed) return tooMany(precheck.retryAfterSec);

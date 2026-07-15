@@ -3,6 +3,7 @@ import { requestMeta } from '@/lib/request-meta';
 import { commentCreateSchema, validationErrorMessage } from '@/lib/comment-validation';
 import { createCommentForArticleSlug, dbAvailable, getPublicCommentsByArticleSlug } from '@/lib/queries';
 import { recordAnalyticsEventSafe } from '@/lib/analytics';
+import { rejectIfMutationBlocked } from '@/lib/mutation-guard';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -24,6 +25,9 @@ export async function GET(_: NextRequest, { params }: Context) {
 }
 
 export async function POST(req: NextRequest, { params }: Context) {
+  const blocked = rejectIfMutationBlocked(req);
+  if (blocked) return blocked;
+
   const { slug } = await params;
   const { ip, userAgent } = requestMeta(req);
 

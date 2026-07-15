@@ -91,6 +91,9 @@ export default async function SiteFooter() {
             <li><Link href="/support/terms" className="hover:text-breaking">Donation terms</Link></li>
             <li><Link href="/privacy" className="hover:text-breaking">Privacy</Link></li>
             <li><Link href="/terms" className="hover:text-breaking">Terms</Link></li>
+            <li><Link href="/cookies" className="hover:text-breaking">Cookies</Link></li>
+            <li><Link href="/dmca" className="hover:text-breaking">DMCA</Link></li>
+            <li><Link href="/community" className="hover:text-breaking">Community</Link></li>
             <li><Link href="/contact" className="hover:text-breaking">Contact &amp; tips</Link></li>
             <li><Link href="/editorial-standards" className="hover:text-breaking">Editorial standards</Link></li>
             <li><Link href="/corrections" className="hover:text-breaking">Corrections</Link></li>
