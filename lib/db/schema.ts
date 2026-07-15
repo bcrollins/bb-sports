@@ -23,8 +23,13 @@ import {
   timestamp,
   jsonb,
   integer,
+  bigserial,
+  index,
+  primaryKey,
+  uniqueIndex,
   type AnyPgColumn,
 } from 'drizzle-orm/pg-core';
+import { sql } from 'drizzle-orm';
 
 // ---------- users ----------
 export const users = pgTable('users', {
@@ -201,6 +206,182 @@ export const analyticsEvents = pgTable('analytics_events', {
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
+// ---------- real-time newsroom ----------
+// The newsroom is deliberately a verification system, not a publishing
+// system. There is no published state and no article foreign key here: a
+// human-approved editorial workflow must remain a separate boundary.
+export const newsSources = pgTable(
+  'news_sources',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    sourceKey: varchar('source_key', { length: 120 }).notNull().unique(),
+    displayName: varchar('display_name', { length: 200 }).notNull(),
+    sourceType: varchar('source_type', { length: 32 }).notNull().default('manual'),
+    ownerKey: varchar('owner_key', { length: 160 }).notNull(),
+    tier: varchar('tier', { length: 24 }).notNull().default('unverified'),
+    commercialStatus: varchar('commercial_status', { length: 32 }).notNull().default('review_required'),
+    commercialNotes: text('commercial_notes').notNull().default(''),
+    homepageUrl: text('homepage_url'),
+    enabled: boolean('enabled').notNull().default(true),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index('idx_news_sources_enabled_tier').on(table.enabled, table.tier),
+    index('idx_news_sources_owner').on(table.ownerKey),
+    index('idx_news_sources_commercial').on(table.commercialStatus),
+  ],
+);
+
+export const newsSignals = pgTable(
+  'news_signals',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    sourceId: uuid('source_id').notNull().references(() => newsSources.id),
+    externalId: varchar('external_id', { length: 240 }),
+    canonicalUrl: text('canonical_url'),
+    exactUrlHash: varchar('exact_url_hash', { length: 64 }),
+    exactContentHash: varchar('exact_content_hash', { length: 64 }).notNull(),
+    headline: text('headline').notNull(),
+    summary: text('summary').notNull().default(''),
+    sport: varchar('sport', { length: 40 }).notNull().default('General'),
+    sourcePublishedAt: timestamp('source_published_at', { withTimezone: true }),
+    observedAt: timestamp('observed_at', { withTimezone: true }).notNull().defaultNow(),
+    rawPayload: jsonb('raw_payload').notNull().default({}),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index('idx_news_signals_source_time').on(table.sourceId, table.observedAt),
+    index('idx_news_signals_published_time').on(table.sourcePublishedAt),
+    uniqueIndex('idx_news_signals_source_external')
+      .on(table.sourceId, table.externalId)
+      .where(sql`${table.externalId} IS NOT NULL`),
+    uniqueIndex('idx_news_signals_exact_url')
+      .on(table.exactUrlHash)
+      .where(sql`${table.exactUrlHash} IS NOT NULL`),
+    uniqueIndex('idx_news_signals_exact_content').on(table.exactContentHash),
+  ],
+);
+
+export const newsEvents = pgTable(
+  'news_events',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    headline: text('headline').notNull(),
+    summary: text('summary').notNull().default(''),
+    sport: varchar('sport', { length: 40 }).notNull().default('General'),
+    state: varchar('state', { length: 32 }).notNull().default('new'),
+    urgency: varchar('urgency', { length: 24 }).notNull().default('routine'),
+    version: integer('version').notNull().default(1),
+    firstSignalAt: timestamp('first_signal_at', { withTimezone: true }).notNull().defaultNow(),
+    lastSignalAt: timestamp('last_signal_at', { withTimezone: true }).notNull().defaultNow(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index('idx_news_events_state_urgency').on(table.state, table.urgency, table.updatedAt),
+    index('idx_news_events_last_signal').on(table.lastSignalAt),
+  ],
+);
+
+export const newsEventSignals = pgTable(
+  'news_event_signals',
+  {
+    eventId: uuid('event_id').notNull().references(() => newsEvents.id),
+    signalId: uuid('signal_id').notNull().references(() => newsSignals.id),
+    linkage: varchar('linkage', { length: 24 }).notNull().default('manual'),
+    similarityBasisPoints: integer('similarity_basis_points'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.eventId, table.signalId], name: 'news_event_signals_pk' }),
+    index('idx_news_event_signals_signal').on(table.signalId),
+  ],
+);
+
+// Append-only evidence. Source attributes are snapshotted so a later source
+// reclassification cannot rewrite the basis of a historical verification.
+export const newsEvidence = pgTable(
+  'news_evidence',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    eventId: uuid('event_id').notNull().references(() => newsEvents.id),
+    sourceId: uuid('source_id').references(() => newsSources.id, { onDelete: 'set null' }),
+    signalId: uuid('signal_id').references(() => newsSignals.id, { onDelete: 'set null' }),
+    supersedesEvidenceId: uuid('supersedes_evidence_id').references(
+      (): AnyPgColumn => newsEvidence.id,
+    ),
+    stance: varchar('stance', { length: 24 }).notNull(),
+    evidenceClass: varchar('evidence_class', { length: 24 }).notNull(),
+    ownerKey: varchar('owner_key', { length: 160 }).notNull(),
+    sourceTier: varchar('source_tier', { length: 24 }).notNull(),
+    credible: boolean('credible').notNull().default(false),
+    label: text('label').notNull(),
+    url: text('url'),
+    excerpt: text('excerpt').notNull().default(''),
+    notes: text('notes').notNull().default(''),
+    capturedAt: timestamp('captured_at', { withTimezone: true }).notNull().defaultNow(),
+    addedBy: uuid('added_by').references(() => users.id, { onDelete: 'set null' }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index('idx_news_evidence_event_time').on(table.eventId, table.createdAt),
+    index('idx_news_evidence_source').on(table.sourceId),
+    index('idx_news_evidence_signal').on(table.signalId),
+    uniqueIndex('idx_news_evidence_supersedes')
+      .on(table.supersedesEvidenceId)
+      .where(sql`${table.supersedesEvidenceId} IS NOT NULL`),
+    index('idx_news_evidence_owner_stance').on(table.ownerKey, table.stance),
+  ],
+);
+
+// Append-only decision ledger. A new review supersedes an old one without
+// modifying or deleting the original record.
+export const newsVerificationReviews = pgTable(
+  'news_verification_reviews',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    eventId: uuid('event_id').notNull().references(() => newsEvents.id),
+    reviewerId: uuid('reviewer_id').references(() => users.id, { onDelete: 'set null' }),
+    reviewerLabel: varchar('reviewer_label', { length: 160 }).notNull(),
+    decision: varchar('decision', { length: 24 }).notNull(),
+    rationale: text('rationale').notNull(),
+    eventVersion: integer('event_version').notNull(),
+    criteriaSnapshot: jsonb('criteria_snapshot').notNull().default({}),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index('idx_news_verification_event_time').on(table.eventId, table.createdAt),
+    index('idx_news_verification_reviewer').on(table.reviewerId),
+  ],
+);
+
+// Append-only audit and SSE replay ledger. `sequence` is monotonic and is the
+// public cursor; JSON metadata is intentionally excluded from feed queries.
+export const newsroomActivity = pgTable(
+  'newsroom_activity',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    sequence: bigserial('sequence', { mode: 'number' }).notNull().unique(),
+    eventId: uuid('event_id').references(() => newsEvents.id),
+    signalId: uuid('signal_id').references(() => newsSignals.id),
+    actorUserId: uuid('actor_user_id').references(() => users.id, { onDelete: 'set null' }),
+    actorLabel: varchar('actor_label', { length: 160 }).notNull(),
+    action: varchar('action', { length: 64 }).notNull(),
+    fromState: varchar('from_state', { length: 32 }),
+    toState: varchar('to_state', { length: 32 }),
+    summary: text('summary').notNull(),
+    metadata: jsonb('metadata').notNull().default({}),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index('idx_newsroom_activity_sequence').on(table.sequence),
+    index('idx_newsroom_activity_event_sequence').on(table.eventId, table.sequence),
+    index('idx_newsroom_activity_signal').on(table.signalId),
+    index('idx_newsroom_activity_actor').on(table.actorUserId),
+  ],
+);
+
 // ---------- type exports ----------
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
@@ -215,3 +396,14 @@ export type MediaAsset = typeof mediaAssets.$inferSelect;
 export type NewMediaAsset = typeof mediaAssets.$inferInsert;
 export type Comment = typeof comments.$inferSelect;
 export type AnalyticsEvent = typeof analyticsEvents.$inferSelect;
+export type NewsSource = typeof newsSources.$inferSelect;
+export type NewNewsSource = typeof newsSources.$inferInsert;
+export type NewsSignal = typeof newsSignals.$inferSelect;
+export type NewNewsSignal = typeof newsSignals.$inferInsert;
+export type NewsEvent = typeof newsEvents.$inferSelect;
+export type NewNewsEvent = typeof newsEvents.$inferInsert;
+export type NewsEventSignal = typeof newsEventSignals.$inferSelect;
+export type NewsEvidence = typeof newsEvidence.$inferSelect;
+export type NewNewsEvidence = typeof newsEvidence.$inferInsert;
+export type NewsVerificationReview = typeof newsVerificationReviews.$inferSelect;
+export type NewsroomActivity = typeof newsroomActivity.$inferSelect;
