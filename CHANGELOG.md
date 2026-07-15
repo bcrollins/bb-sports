@@ -7,6 +7,11 @@ All notable changes to BB Sports. Format loosely follows
 
 ### Added
 
+- Publish-time source integrity gate (https citations or `opinion-only` rationale for fact-heavy pieces).
+- Editorial findings queue (`editorial_findings` + /admin/findings) seeded with open audit items; never auto-edits live prose.
+- Production env posture on /api/health/ready (missing required vars fail closed, no secret leakage).
+- Confidential tip message redaction for non-super-admin audience viewers.
+
 - Same-origin mutation guard on public POST APIs (contact, newsletter, analytics, donations, gate, comments, unsubscribe, admin login); Stripe webhook remains signature-only.
 - Canonical host 308 redirects from `www` and Railway service hosts to `bbsports.fans` (health/webhook exempt).
 - Legal suite pages: `/cookies`, `/dmca`, `/community` (with `/privacy` and `/terms`).

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { sql } from 'drizzle-orm';
 import pkg from '@/package.json';
 import { db, dbAvailable } from '@/lib/db/client';
+import { productionEnvPublicDto } from '@/lib/production-env';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -12,10 +13,8 @@ export const dynamic = 'force-dynamic';
  * remains ready so filesystem-backed work is not blocked.
  */
 export async function GET() {
-  const productionLike =
-    process.env.NODE_ENV === 'production' ||
-    Boolean(process.env.RAILWAY_ENVIRONMENT) ||
-    Boolean(process.env.RAILWAY_PROJECT_ID);
+  const envPosture = productionEnvPublicDto();
+  const productionLike = envPosture.productionLike;
 
   const reasons: string[] = [];
   let dbLatencyMs: number | null = null;
@@ -32,6 +31,12 @@ export async function GET() {
     }
   }
 
+  if (productionLike && !envPosture.ok) {
+    for (const key of envPosture.missing) {
+      reasons.push(`env_missing:${key}`);
+    }
+  }
+
   const ready = reasons.length === 0;
   return NextResponse.json(
     {
@@ -44,9 +49,10 @@ export async function GET() {
       productionLike,
       db: {
         configured: dbAvailable,
-        reachable: ready || (!productionLike && !dbAvailable),
+        reachable: Boolean(dbAvailable && dbLatencyMs !== null && !reasons.includes('database_unreachable')),
         latencyMs: dbLatencyMs,
       },
+      env: envPosture,
       reasons,
     },
     {

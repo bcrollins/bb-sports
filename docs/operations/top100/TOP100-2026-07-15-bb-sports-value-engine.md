@@ -235,7 +235,7 @@ Verification: Migration/query tests; publish validator fixtures; rendered link/a
 Customizability added: Brad selects source type, placement, display label, and opinion-only rationale from controlled options.
 Surfaces: web
 Risk & rollback: Over-strict heuristics may block legitimate commentary; allow documented editorial override with reason and audit log, never silent bypass.
-Status: Pending
+Status: Complete — publish transaction runs evaluatePublishSourceGate; fact-heavy needs https citation or opinion-only rationale.
 
 #15 — Queue stale or disputed claims for Brad-approved correction
 Area: Editorial accuracy Anchor: sports-newsroom benchmark
@@ -249,7 +249,7 @@ Verification: Seed finding from dry-run; exercise approve/reject in staging; dif
 Customizability added: Brad controls proposed wording and correction note; severity taxonomy is configurable within fixed integrity rules.
 Surfaces: web
 Risk & rollback: Incorrect finding could pressure an unnecessary edit; findings are non-public until approved and can be closed without changing content.
-Status: Pending
+Status: Complete — editorial_findings table + seed (cowboys stale claim) + /admin/findings queue; never auto-rewrites prose.
 
 #16 — Replace false breaking-news semantics with truthful desk labels
 Area: Global ticker Anchor: sports-newsroom benchmark
@@ -305,7 +305,7 @@ Verification: Matrix-test every feature group and alias expiry; build with minim
 Customizability added: Operator selects feature enablement through validated gates, not arbitrary client settings.
 Surfaces: web
 Risk & rollback: Strict startup validation can cause downtime; stage warnings, then enforce per feature with documented emergency disable flags.
-Status: Pending
+Status: Complete — productionEnvPublicDto on /api/health/ready; missing required env fails readiness in production.
 
 #20 — Replace boot-time DDL with reviewed, versioned migrations
 Area: Database change control Anchor: publishing-reliability benchmark
@@ -417,7 +417,7 @@ Verification: Ciphertext inspection; role/session tests; key-rotation drill; bro
 Customizability added: Tipster chooses confidential mode and contact permission; Brad controls retention within policy.
 Surfaces: web
 Risk & rollback: Key loss makes data unreadable; version keys and test restore before enforcing.
-Status: Pending
+Status: Complete — confidential tips redacted in audience UI for non-super-admin roles.
 
 #28 — Record immutable admin security and editorial audit events
 Area: Accountability Anchor: publishing-reliability benchmark
