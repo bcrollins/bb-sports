@@ -1215,7 +1215,7 @@ Verification: Preference/version tests; homepage/archive/rankings at six widths;
 Customizability added: Exact favorite sports and teams, ordering, and show/hide favorite rail.
 Surfaces: web
 Risk & rollback: Personalization can narrow worldview; universal chronological feed remains default and one tap away.
-Status: Pending
+Status: Complete — local-first favorite sports + optional “From your sports” rail after Latest; no server PII; clear favorites control.
 
 #85 — Add a configurable breaking-news watchlist
 Area: Breaking alerts Anchor: sports-newsroom benchmark
