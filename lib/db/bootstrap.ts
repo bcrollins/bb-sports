@@ -755,6 +755,23 @@ async function bootstrap(): Promise<void> {
       revoked_at timestamptz
     );
   `);
+  // Durable auth abuse ledger (gate + admin login). Stores only hashed
+  // identity keys — never passwords and never raw submitted credentials.
+  await db.execute(sql`
+    CREATE TABLE IF NOT EXISTS auth_attempts (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      purpose varchar(32) NOT NULL,
+      identity_hash varchar(64) NOT NULL,
+      window_start timestamptz NOT NULL,
+      failures integer NOT NULL DEFAULT 0,
+      locked_until timestamptz,
+      updated_at timestamptz NOT NULL DEFAULT now(),
+      CONSTRAINT auth_attempts_purpose_identity UNIQUE (purpose, identity_hash)
+    );
+  `);
+  await db.execute(sql`
+    CREATE INDEX IF NOT EXISTS idx_auth_attempts_locked_until ON auth_attempts(locked_until);
+  `);
   await db.execute(sql`
     CREATE TABLE IF NOT EXISTS newsletter_subscribers (
       id uuid PRIMARY KEY DEFAULT gen_random_uuid(),

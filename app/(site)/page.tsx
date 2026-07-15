@@ -227,7 +227,7 @@ export default async function HomePage() {
             <div className="mb-6 flex items-end justify-between gap-3">
               <div>
                 <p className="bb-eyebrow !text-breaking !tracking-[0.32em]">
-                  Franchise rankings · live
+                  Brad&apos;s rankings · editorial
                 </p>
                 <h2 className="mt-2 font-display text-3xl italic uppercase leading-tight sm:text-4xl">
                   Teams Brad just moved

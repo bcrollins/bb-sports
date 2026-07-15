@@ -12,16 +12,36 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyAccessWallPassword } from '@/lib/access-wall';
 import {
+  assertAuthAttemptAllowed,
+  recordAuthFailure,
+  recordAuthSuccess,
+} from '@/lib/auth-rate-limit';
+import {
   createGateCookieToken,
   GATE_COOKIE_MAX_AGE_SECONDS,
   GATE_COOKIE_NAME,
   gateCookieIsConfigured,
 } from '@/lib/gate-cookie';
+import { requestMeta } from '@/lib/request-meta';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
+function tooMany(retryAfterSec: number) {
+  return NextResponse.json(
+    { error: 'Too many attempts. Try again later.' },
+    {
+      status: 429,
+      headers: { 'Retry-After': String(Math.max(1, retryAfterSec)) },
+    },
+  );
+}
+
 export async function POST(req: NextRequest) {
+  const { ip } = requestMeta(req);
+  const precheck = await assertAuthAttemptAllowed({ purpose: 'gate', ip });
+  if (!precheck.allowed) return tooMany(precheck.retryAfterSec);
+
   let body: { password?: string } = {};
   try {
     body = await req.json();
@@ -30,6 +50,8 @@ export async function POST(req: NextRequest) {
   }
   const submitted = String(body.password ?? '');
   if (!submitted || !(await verifyAccessWallPassword(submitted))) {
+    const after = await recordAuthFailure({ purpose: 'gate', ip });
+    if (!after.allowed) return tooMany(after.retryAfterSec);
     return NextResponse.json({ error: 'Wrong password' }, { status: 401 });
   }
 
@@ -37,6 +59,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Access wall is unavailable.' }, { status: 503 });
   }
 
+  await recordAuthSuccess({ purpose: 'gate', ip });
   const token = await createGateCookieToken();
   const res = NextResponse.json({ ok: true });
   res.cookies.set(GATE_COOKIE_NAME, token, {

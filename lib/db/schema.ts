@@ -119,6 +119,26 @@ export const sessions = pgTable('sessions', {
   revokedAt: timestamp('revoked_at', { withTimezone: true }),
 });
 
+// ---------- auth_attempts ----------
+// Durable rate-limit ledger for gate + admin login. identity_hash is a
+// privacy-safe digest (no raw passwords, no full raw IPs).
+export const authAttempts = pgTable(
+  'auth_attempts',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    purpose: varchar('purpose', { length: 32 }).notNull(),
+    identityHash: varchar('identity_hash', { length: 64 }).notNull(),
+    windowStart: timestamp('window_start', { withTimezone: true }).notNull(),
+    failures: integer('failures').notNull().default(0),
+    lockedUntil: timestamp('locked_until', { withTimezone: true }),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex('idx_auth_attempts_purpose_identity').on(table.purpose, table.identityHash),
+    index('idx_auth_attempts_locked_until').on(table.lockedUntil),
+  ],
+);
+
 // ---------- newsletter_subscribers ----------
 export const newsletterSubscribers = pgTable('newsletter_subscribers', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -754,6 +774,7 @@ export type NewArticle = typeof articles.$inferInsert;
 export type PublicationRuntimeControl = typeof publicationRuntimeControls.$inferSelect;
 export type SiteConfigRow = typeof siteConfig.$inferSelect;
 export type Session = typeof sessions.$inferSelect;
+export type AuthAttempt = typeof authAttempts.$inferSelect;
 export type NewsletterSubscriber = typeof newsletterSubscribers.$inferSelect;
 export type ContactMessage = typeof contactMessages.$inferSelect;
 export type DonationIntent = typeof donationIntents.$inferSelect;
