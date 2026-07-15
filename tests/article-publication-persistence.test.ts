@@ -9,6 +9,7 @@ import {
   materializePublishedArticle,
   PublicationError,
 } from '../lib/article-publication-queries';
+import { completeLegacyPublicationMetadata } from '../lib/db/bootstrap';
 import type { Article, ArticleRevision } from '../lib/db/schema';
 
 const bootstrap = readFileSync(new URL('../lib/db/bootstrap.ts', import.meta.url), 'utf8');
@@ -71,6 +72,88 @@ function pointedRevision(article: Article): ArticleRevision {
     createdAt: new Date('2026-07-15T11:00:00.000Z'),
   };
 }
+
+const legacyMetadataRow = {
+  id: '44444444-4444-4444-8444-444444444444',
+  slug: 'legacy-live-story',
+  title: 'Legacy live story',
+  sport: 'NFL',
+  hero: '/images/legacy-live-story.svg',
+  heroAlt: '',
+  heroCredit: '',
+  authorName: 'Brad Benson',
+  aiAssisted: false,
+  bradsTake: '',
+};
+
+test('legacy metadata completion borrows only blank hero attribution from an exact repository match', () => {
+  assert.deepEqual(
+    completeLegacyPublicationMetadata(legacyMetadataRow, {
+      slug: legacyMetadataRow.slug,
+      hero: legacyMetadataRow.hero,
+      heroAlt: '  Exact repository alt text  ',
+      heroCredit: 'BB Sports illustration',
+    }),
+    {
+      heroAlt: 'Exact repository alt text',
+      heroCredit: 'BB Sports illustration',
+    },
+  );
+
+  assert.deepEqual(
+    completeLegacyPublicationMetadata(
+      { ...legacyMetadataRow, heroAlt: 'Existing live alt text' },
+      {
+        slug: legacyMetadataRow.slug,
+        hero: legacyMetadataRow.hero,
+        heroAlt: 'Repository must not replace this value',
+        heroCredit: 'BB Sports illustration',
+      },
+    ),
+    { heroCredit: 'BB Sports illustration' },
+  );
+});
+
+test('legacy metadata completion fails closed on slug, hero, or non-hero gaps without exposing content', () => {
+  for (const repositoryMetadata of [
+    {
+      slug: 'different-slug',
+      hero: legacyMetadataRow.hero,
+      heroAlt: 'Should not be used',
+      heroCredit: 'Should not be used',
+    },
+    {
+      slug: legacyMetadataRow.slug,
+      hero: '/images/different-secret-hero.svg',
+      heroAlt: 'Should not be used',
+      heroCredit: 'Should not be used',
+    },
+  ]) {
+    assert.throws(
+      () => completeLegacyPublicationMetadata(legacyMetadataRow, repositoryMetadata),
+      (error: unknown) => {
+        assert.ok(error instanceof Error);
+        assert.match(error.message, /fields: heroAlt, heroCredit/);
+        assert.doesNotMatch(error.message, /different-secret|Should not be used/);
+        return true;
+      },
+    );
+  }
+
+  assert.throws(
+    () =>
+      completeLegacyPublicationMetadata(
+        { ...legacyMetadataRow, title: '' },
+        {
+          slug: legacyMetadataRow.slug,
+          hero: legacyMetadataRow.hero,
+          heroAlt: 'Exact repository alt text',
+          heroCredit: 'BB Sports illustration',
+        },
+      ),
+    /fields: title/,
+  );
+});
 
 test('published materialization serves the approved snapshot instead of mutable working copy', () => {
   const row = publishedArticle();
@@ -297,6 +380,54 @@ test('rolling deploy installs the full publication-state guard before any backfi
   ]) {
     assert.match(atomicInstall, new RegExp(guard));
   }
+});
+
+test('legacy hero metadata compatibility is exact-match, pointerless-only, and atomic with pointer install', () => {
+  assert.match(bootstrap, /metadataByExactSlug\.set\(data\.slug/);
+  assert.match(bootstrap, /repositoryMetadata\?\.slug === workingCopy\.slug/);
+  assert.match(bootstrap, /repositoryMetadata\.hero === workingCopy\.hero/);
+  assert.match(bootstrap, /missing\.includes\('heroAlt'\)/);
+  assert.match(bootstrap, /missing\.includes\('heroCredit'\)/);
+  assert.match(bootstrap, /Existing nonblank[\s\S]*never replaced/);
+  assert.match(bootstrap, /\[invalid-id\]/);
+  assert.match(bootstrap, /\[invalid-slug\]/);
+
+  const triggerStart = bootstrap.indexOf(
+    'CREATE OR REPLACE FUNCTION bbsports_enforce_article_mutation_contracts',
+  );
+  const triggerEnd = bootstrap.indexOf('DO $block$', triggerStart);
+  assert.ok(triggerStart >= 0 && triggerEnd > triggerStart);
+  const trigger = bootstrap.slice(triggerStart, triggerEnd);
+  assert.match(trigger, /bbsports\.article_legacy_metadata_backfill_contract/);
+  assert.match(trigger, /OLD\.published_snapshot IS NOT NULL/);
+  assert.match(trigger, /OLD\.published_content_hash IS NOT NULL/);
+  assert.match(trigger, /OLD\.published_revision_id IS NOT NULL/);
+  assert.match(trigger, /NEW\.published_snapshot IS NULL/);
+  assert.match(trigger, /NEW\.published_content_hash IS NULL/);
+  assert.match(trigger, /NEW\.published_revision_id IS NULL/);
+  assert.match(trigger, /length\(trim\(OLD\.hero_alt\)\) = 0/);
+  assert.match(trigger, /length\(trim\(OLD\.hero_credit\)\) = 0/);
+  assert.match(trigger, /article_revisions[\s\S]*snapshot = NEW\.published_snapshot/);
+  assert.match(trigger, /article_publication_events[\s\S]*action = 'legacy_backfill'/);
+  assert.match(trigger, /articles_legacy_metadata_backfill_contract/);
+
+  const backfillStart = bootstrap.indexOf('async function backfillPublishedArticleSnapshots');
+  assert.ok(backfillStart >= 0);
+  const backfill = bootstrap.slice(backfillStart);
+  const eventInsert = backfill.indexOf('.insert(articlePublicationEvents)');
+  const capability = backfill.indexOf(
+    "set_config('bbsports.article_legacy_metadata_backfill_contract', 'v1', true)",
+  );
+  const finalUpdate = backfill.indexOf('.update(articles)', capability);
+  assert.ok(eventInsert >= 0 && capability > eventInsert && finalUpdate > capability);
+  const update = backfill.slice(finalUpdate, backfill.indexOf('.returning(', finalUpdate));
+  assert.match(update, /\.\.\.metadataPatch/);
+  assert.match(update, /publishedSnapshot: snapshot/);
+  assert.match(update, /publishedContentHash: contentHash/);
+  assert.match(update, /publishedRevisionId: revision\.id/);
+  assert.match(backfill, /length\(trim\(\$\{articles\.heroAlt\}\)\) = 0/);
+  assert.match(backfill, /length\(trim\(\$\{articles\.heroCredit\}\)\) = 0/);
+  assert.match(backfill, /const \[preserved\] = await tx[\s\S]*normalizeArticlePublicationSnapshot/);
 });
 
 test('publication status refuses to present corrupt live materialization as healthy', () => {

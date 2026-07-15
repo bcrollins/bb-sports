@@ -12,7 +12,7 @@
 import path from 'node:path';
 import fs from 'node:fs/promises';
 import matter from 'gray-matter';
-import { and, eq, sql } from 'drizzle-orm';
+import { and, eq, isNull, sql } from 'drizzle-orm';
 import { db, dbAvailable } from './client';
 import {
   articlePublicationEvents,
@@ -24,10 +24,140 @@ import {
   users,
 } from './schema';
 import {
+  ARTICLE_PUBLICATION_FIELDS,
   articleHeroMediaAssetId,
   hashArticlePublicationSnapshot,
   normalizeArticlePublicationSnapshot,
 } from '../article-publication';
+import type { ArticlePublicationSnapshot } from '../article-publication';
+
+type LegacyPublicationRequiredField =
+  | 'slug'
+  | 'title'
+  | 'sport'
+  | 'heroAlt'
+  | 'heroCredit'
+  | 'authorName'
+  | 'bradsTake';
+
+export interface LegacyPublicationWorkingCopy {
+  id: string;
+  slug: string;
+  title: string;
+  sport: string;
+  hero: string;
+  heroAlt: string;
+  heroCredit: string;
+  authorName: string;
+  aiAssisted: boolean;
+  bradsTake: string;
+}
+
+export interface RepositoryLegacyPublicationMetadata {
+  slug: string;
+  hero: string;
+  heroAlt: string;
+  heroCredit: string;
+}
+
+export interface LegacyPublicationMetadataPatch {
+  heroAlt?: string;
+  heroCredit?: string;
+}
+
+const PUBLICATION_FIELD_NAMES = new Set<string>(ARTICLE_PUBLICATION_FIELDS);
+
+function canonicalRepositoryMetadata(value: string): string {
+  const canonical = value.normalize('NFC').replace(/\r\n?/g, '\n').trim();
+  return canonical.length <= 500 ? canonical : '';
+}
+
+function missingLegacyPublicationFields(
+  workingCopy: LegacyPublicationWorkingCopy,
+): LegacyPublicationRequiredField[] {
+  const missing: LegacyPublicationRequiredField[] = [];
+  if (!workingCopy.slug.trim()) missing.push('slug');
+  if (!workingCopy.title.trim()) missing.push('title');
+  if (!workingCopy.sport.trim()) missing.push('sport');
+  if (workingCopy.hero.trim() && !workingCopy.heroAlt.trim()) missing.push('heroAlt');
+  if (workingCopy.hero.trim() && !workingCopy.heroCredit.trim()) missing.push('heroCredit');
+  if (!workingCopy.authorName.trim()) missing.push('authorName');
+  if (workingCopy.aiAssisted && !workingCopy.bradsTake.trim()) missing.push('bradsTake');
+  return missing;
+}
+
+function safeLegacyArticleReference(workingCopy: LegacyPublicationWorkingCopy): string {
+  const id = /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i.test(workingCopy.id)
+    ? workingCopy.id
+    : '[invalid-id]';
+  const slug = /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(workingCopy.slug)
+    ? workingCopy.slug
+    : '[invalid-slug]';
+  return `${id} (${slug})`;
+}
+
+function legacyPublicationMetadataError(
+  workingCopy: LegacyPublicationWorkingCopy,
+  fields: readonly string[],
+  reason: string,
+): Error {
+  const fieldList = fields.length > 0 ? fields.join(', ') : 'unknown';
+  return new Error(
+    `Legacy live article ${safeLegacyArticleReference(workingCopy)} cannot be preserved: ` +
+      `${reason} [fields: ${fieldList}].`,
+  );
+}
+
+function redactedPublicationValidationFields(error: unknown): string[] {
+  if (!error || typeof error !== 'object' || !('issues' in error)) return [];
+  const issues = (error as { issues?: unknown }).issues;
+  if (!Array.isArray(issues)) return [];
+  const fields = issues.flatMap((issue) => {
+    if (!issue || typeof issue !== 'object' || !('path' in issue)) return [];
+    const path = (issue as { path?: unknown }).path;
+    const field = Array.isArray(path) ? path[0] : undefined;
+    return typeof field === 'string' && PUBLICATION_FIELD_NAMES.has(field) ? [field] : [];
+  });
+  return [...new Set(fields)];
+}
+
+/**
+ * Complete only publication-required hero metadata on an old live row. The
+ * repository record is an authority only when its frontmatter slug and hero
+ * are byte-for-byte identical to the database values. Existing nonblank
+ * working-copy values are never replaced.
+ */
+export function completeLegacyPublicationMetadata(
+  workingCopy: LegacyPublicationWorkingCopy,
+  repositoryMetadata?: RepositoryLegacyPublicationMetadata,
+): LegacyPublicationMetadataPatch {
+  const missing = missingLegacyPublicationFields(workingCopy);
+  if (missing.length === 0) return {};
+
+  const patch: LegacyPublicationMetadataPatch = {};
+  const repositoryMatches =
+    repositoryMetadata?.slug === workingCopy.slug &&
+    repositoryMetadata.hero === workingCopy.hero;
+
+  if (repositoryMatches && missing.includes('heroAlt')) {
+    const heroAlt = canonicalRepositoryMetadata(repositoryMetadata.heroAlt);
+    if (heroAlt) patch.heroAlt = heroAlt;
+  }
+  if (repositoryMatches && missing.includes('heroCredit')) {
+    const heroCredit = canonicalRepositoryMetadata(repositoryMetadata.heroCredit);
+    if (heroCredit) patch.heroCredit = heroCredit;
+  }
+
+  const unresolved = missingLegacyPublicationFields({ ...workingCopy, ...patch });
+  if (unresolved.length > 0) {
+    throw legacyPublicationMetadataError(
+      workingCopy,
+      unresolved,
+      'required metadata is unavailable; repository fallback is restricted to blank heroAlt/heroCredit on an exact-slug record with an identical hero',
+    );
+  }
+  return patch;
+}
 
 let bootstrapPromise: Promise<void> | null = null;
 
@@ -300,23 +430,124 @@ async function bootstrap(): Promise<void> {
           OR OLD.ai_assisted IS DISTINCT FROM NEW.ai_assisted
           OR OLD.brads_take IS DISTINCT FROM NEW.brads_take
         )
-        AND (
-          current_setting(
-            'bbsports.published_working_copy_edit_contract',
-            true
-          ) IS DISTINCT FROM 'v1'
+      THEN
+        IF current_setting(
+          'bbsports.article_legacy_metadata_backfill_contract',
+          true
+        ) IS NOT DISTINCT FROM 'v1'
+        THEN
+          -- This compatibility capability exists solely for the one atomic
+          -- migration that promotes a pointerless legacy live row. It can
+          -- complete blank hero attribution, but cannot rewrite any existing
+          -- content or point at anything other than the matching immutable
+          -- revision and legacy audit event created in the same transaction.
+          IF OLD.published_snapshot IS NOT NULL
+            OR OLD.published_content_hash IS NOT NULL
+            OR OLD.published_revision_id IS NOT NULL
+            OR NEW.published_snapshot IS NULL
+            OR NEW.published_content_hash IS NULL
+            OR NEW.published_revision_id IS NULL
+            OR length(trim(OLD.hero)) = 0
+            OR ROW(
+              OLD.id,
+              OLD.slug,
+              OLD.title,
+              OLD.dek,
+              OLD.body,
+              OLD.sport,
+              OLD.hero,
+              OLD.author_id,
+              OLD.author_name,
+              OLD.ai_assisted,
+              OLD.brads_take,
+              OLD.published,
+              OLD.published_at,
+              OLD.created_under_approval_gate,
+              OLD.created_at,
+              OLD.updated_at
+            ) IS DISTINCT FROM ROW(
+              NEW.id,
+              NEW.slug,
+              NEW.title,
+              NEW.dek,
+              NEW.body,
+              NEW.sport,
+              NEW.hero,
+              NEW.author_id,
+              NEW.author_name,
+              NEW.ai_assisted,
+              NEW.brads_take,
+              NEW.published,
+              NEW.published_at,
+              NEW.created_under_approval_gate,
+              NEW.created_at,
+              NEW.updated_at
+            )
+            OR NOT (
+              OLD.hero_alt IS NOT DISTINCT FROM NEW.hero_alt
+              OR (
+                length(trim(OLD.hero_alt)) = 0
+                AND length(trim(NEW.hero_alt)) BETWEEN 1 AND 500
+              )
+            )
+            OR NOT (
+              OLD.hero_credit IS NOT DISTINCT FROM NEW.hero_credit
+              OR (
+                length(trim(OLD.hero_credit)) = 0
+                AND length(trim(NEW.hero_credit)) BETWEEN 1 AND 500
+              )
+            )
+            OR NEW.published_snapshot IS DISTINCT FROM jsonb_build_object(
+              'slug', NEW.slug,
+              'title', NEW.title,
+              'dek', NEW.dek,
+              'body', NEW.body,
+              'sport', NEW.sport,
+              'hero', NEW.hero,
+              'heroAlt', NEW.hero_alt,
+              'heroCredit', NEW.hero_credit,
+              'authorName', NEW.author_name,
+              'aiAssisted', NEW.ai_assisted,
+              'bradsTake', NEW.brads_take
+            )
+            OR NOT EXISTS (
+              SELECT 1
+              FROM article_revisions
+              WHERE article_id = NEW.id
+                AND id = NEW.published_revision_id
+                AND content_hash = NEW.published_content_hash
+                AND snapshot = NEW.published_snapshot
+            )
+            OR NOT EXISTS (
+              SELECT 1
+              FROM article_publication_events
+              WHERE article_id = NEW.id
+                AND revision_id = NEW.published_revision_id
+                AND content_hash = NEW.published_content_hash
+                AND action = 'legacy_backfill'
+            )
+          THEN
+            RAISE EXCEPTION 'legacy publication metadata completion requires the exact guarded backfill contract'
+              USING
+                ERRCODE = '55000',
+                CONSTRAINT = 'articles_legacy_metadata_backfill_contract';
+          END IF;
+        ELSIF current_setting(
+          'bbsports.published_working_copy_edit_contract',
+          true
+        ) IS DISTINCT FROM 'v1'
           OR NOT EXISTS (
             SELECT 1
             FROM publication_runtime_controls
             WHERE control_key = 'published_working_copy_edits_v1'
               AND enabled = true
           )
-        )
-      THEN
-        RAISE EXCEPTION 'published working-copy edits require the guarded edit contract'
-          USING
-            ERRCODE = '55000',
-            CONSTRAINT = 'articles_published_working_copy_edit_contract';
+        THEN
+          RAISE EXCEPTION 'published working-copy edits require the guarded edit contract'
+            USING
+              ERRCODE = '55000',
+              CONSTRAINT = 'articles_published_working_copy_edit_contract';
+        END IF;
       END IF;
       RETURN NEW;
     END;
@@ -1336,8 +1567,47 @@ async function bootstrap(): Promise<void> {
   `);
 }
 
+async function loadRepositoryLegacyPublicationMetadata(): Promise<
+  ReadonlyMap<string, RepositoryLegacyPublicationMetadata>
+> {
+  const directory = path.join(process.cwd(), 'content', 'articles');
+  let entries: string[];
+  try {
+    entries = (await fs.readdir(directory)).filter((entry) => entry.endsWith('.md')).sort();
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return new Map();
+    throw new Error('Repository publication metadata directory could not be read safely.');
+  }
+
+  const metadataByExactSlug = new Map<string, RepositoryLegacyPublicationMetadata>();
+  for (const entry of entries) {
+    let data: Record<string, unknown>;
+    try {
+      const parsed = matter(await fs.readFile(path.join(directory, entry), 'utf8'));
+      data = parsed.data;
+    } catch {
+      throw new Error('Repository publication metadata could not be parsed safely.');
+    }
+    if (typeof data.slug !== 'string' || data.slug.length === 0) continue;
+    if (metadataByExactSlug.has(data.slug)) {
+      throw new Error('Repository publication metadata contains an ambiguous exact slug.');
+    }
+    metadataByExactSlug.set(data.slug, {
+      slug: data.slug,
+      hero: typeof data.hero === 'string' ? data.hero : '',
+      heroAlt: typeof data.heroAlt === 'string' ? data.heroAlt : '',
+      heroCredit: typeof data.heroCredit === 'string' ? data.heroCredit : '',
+    });
+  }
+  return metadataByExactSlug;
+}
+
 async function backfillPublishedArticleSnapshots(): Promise<void> {
   if (!db) return;
+
+  let repositoryMetadataPromise:
+    | Promise<ReadonlyMap<string, RepositoryLegacyPublicationMetadata>>
+    | null = null;
 
   while (true) {
     const candidates = await db
@@ -1357,6 +1627,16 @@ async function backfillPublishedArticleSnapshots(): Promise<void> {
       .limit(100);
     if (candidates.length === 0) return;
 
+    if (
+      candidates.some((candidate) =>
+        missingLegacyPublicationFields(candidate).some(
+          (field) => field === 'heroAlt' || field === 'heroCredit',
+        ),
+      )
+    ) {
+      repositoryMetadataPromise ??= loadRepositoryLegacyPublicationMetadata();
+    }
+
     for (const candidate of candidates) {
       await db.transaction(async (tx) => {
         await tx.execute(sql`SELECT id FROM articles WHERE id = ${candidate.id} FOR UPDATE`);
@@ -1373,6 +1653,22 @@ async function backfillPublishedArticleSnapshots(): Promise<void> {
         ) {
           return;
         }
+
+        const missingFields = missingLegacyPublicationFields(current);
+        const needsRepositoryHeroMetadata = missingFields.some(
+          (field) => field === 'heroAlt' || field === 'heroCredit',
+        );
+        if (needsRepositoryHeroMetadata) {
+          repositoryMetadataPromise ??= loadRepositoryLegacyPublicationMetadata();
+        }
+        const repositoryMetadata = repositoryMetadataPromise
+          ? (await repositoryMetadataPromise).get(current.slug)
+          : undefined;
+        const metadataPatch = completeLegacyPublicationMetadata(
+          current,
+          repositoryMetadata,
+        );
+        const completedWorkingCopy = { ...current, ...metadataPatch };
 
         const internalHeroMediaId = articleHeroMediaAssetId(current.hero);
         if (internalHeroMediaId) {
@@ -1401,19 +1697,28 @@ async function backfillPublishedArticleSnapshots(): Promise<void> {
           }
         }
 
-        const snapshot = normalizeArticlePublicationSnapshot({
-          slug: current.slug,
-          title: current.title,
-          dek: current.dek,
-          body: current.body,
-          sport: current.sport,
-          hero: current.hero,
-          heroAlt: current.heroAlt,
-          heroCredit: current.heroCredit,
-          authorName: current.authorName,
-          aiAssisted: current.aiAssisted,
-          bradsTake: current.bradsTake,
-        });
+        let snapshot: ArticlePublicationSnapshot;
+        try {
+          snapshot = normalizeArticlePublicationSnapshot({
+            slug: completedWorkingCopy.slug,
+            title: completedWorkingCopy.title,
+            dek: completedWorkingCopy.dek,
+            body: completedWorkingCopy.body,
+            sport: completedWorkingCopy.sport,
+            hero: completedWorkingCopy.hero,
+            heroAlt: completedWorkingCopy.heroAlt,
+            heroCredit: completedWorkingCopy.heroCredit,
+            authorName: completedWorkingCopy.authorName,
+            aiAssisted: completedWorkingCopy.aiAssisted,
+            bradsTake: completedWorkingCopy.bradsTake,
+          });
+        } catch (error) {
+          throw legacyPublicationMetadataError(
+            current,
+            redactedPublicationValidationFields(error),
+            'publication snapshot validation failed',
+          );
+        }
         const contentHash = hashArticlePublicationSnapshot(snapshot);
 
         let [revision] = await tx
@@ -1470,24 +1775,96 @@ async function backfillPublishedArticleSnapshots(): Promise<void> {
           })
           .onConflictDoNothing();
 
-        await tx
+        if (Object.keys(metadataPatch).length > 0) {
+          await tx.execute(
+            sql`SELECT set_config('bbsports.article_legacy_metadata_backfill_contract', 'v1', true)`,
+          );
+        }
+
+        const updatePredicates = [
+          eq(articles.id, current.id),
+          eq(articles.published, true),
+          eq(articles.slug, current.slug),
+          eq(articles.hero, current.hero),
+          isNull(articles.publishedSnapshot),
+          isNull(articles.publishedContentHash),
+          isNull(articles.publishedRevisionId),
+        ];
+        if (metadataPatch.heroAlt !== undefined) {
+          updatePredicates.push(sql`length(trim(${articles.heroAlt})) = 0`);
+        }
+        if (metadataPatch.heroCredit !== undefined) {
+          updatePredicates.push(sql`length(trim(${articles.heroCredit})) = 0`);
+        }
+
+        const updated = await tx
           .update(articles)
           .set({
+            ...metadataPatch,
             publishedSnapshot: snapshot,
             publishedContentHash: contentHash,
             publishedRevisionId: revision.id,
           })
-          .where(
-            and(
-              eq(articles.id, current.id),
-              eq(articles.published, true),
-              sql`(
-                ${articles.publishedSnapshot} IS NULL
-                OR ${articles.publishedContentHash} IS NULL
-                OR ${articles.publishedRevisionId} IS NULL
-              )`,
-            ),
+          .where(and(...updatePredicates))
+          .returning({ id: articles.id });
+        if (updated.length !== 1) {
+          throw legacyPublicationMetadataError(
+            current,
+            Object.keys(metadataPatch),
+            'the guarded atomic metadata and publication-pointer update did not apply',
           );
+        }
+
+        const [preserved] = await tx
+          .select()
+          .from(articles)
+          .where(eq(articles.id, current.id))
+          .limit(1);
+        if (!preserved?.publishedSnapshot) {
+          throw legacyPublicationMetadataError(
+            current,
+            [],
+            'the guarded backfill row and publication snapshot could not be reread',
+          );
+        }
+        let preservedPublishedSnapshot: ArticlePublicationSnapshot;
+        let rereadSnapshot: ArticlePublicationSnapshot;
+        try {
+          preservedPublishedSnapshot = normalizeArticlePublicationSnapshot(
+            preserved.publishedSnapshot,
+          );
+          rereadSnapshot = normalizeArticlePublicationSnapshot({
+            slug: preserved.slug,
+            title: preserved.title,
+            dek: preserved.dek,
+            body: preserved.body,
+            sport: preserved.sport,
+            hero: preserved.hero,
+            heroAlt: preserved.heroAlt,
+            heroCredit: preserved.heroCredit,
+            authorName: preserved.authorName,
+            aiAssisted: preserved.aiAssisted,
+            bradsTake: preserved.bradsTake,
+          });
+        } catch (error) {
+          throw legacyPublicationMetadataError(
+            current,
+            redactedPublicationValidationFields(error),
+            'the guarded backfill reread failed publication validation',
+          );
+        }
+        if (
+          preserved.publishedContentHash !== contentHash ||
+          preserved.publishedRevisionId !== revision.id ||
+          JSON.stringify(preservedPublishedSnapshot) !== JSON.stringify(snapshot) ||
+          JSON.stringify(rereadSnapshot) !== JSON.stringify(snapshot)
+        ) {
+          throw legacyPublicationMetadataError(
+            current,
+            Object.keys(metadataPatch),
+            'the guarded backfill reread did not match its immutable revision',
+          );
+        }
       });
     }
   }

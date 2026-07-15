@@ -10,6 +10,7 @@ import { eq, sql } from 'drizzle-orm';
 import {
   ARTICLE_PUBLICATION_CONFIRMATION_PHRASE,
   hashArticleEditableState,
+  hashArticlePublicationSnapshot,
 } from '../lib/article-publication';
 import {
   createArticleRevision,
@@ -29,6 +30,7 @@ import {
   newsEventArticles,
   newsEvents,
   newsSources,
+  publicationRuntimeControls,
   users,
 } from '../lib/db/schema';
 import {
@@ -185,6 +187,116 @@ async function runPublicationVerification(): Promise<void> {
   assert(database, 'Application database client was not initialized.');
   await assertBootstrapContracts();
 
+  const legacyBackfills = await database
+    .select({
+      articleId: articles.id,
+      slug: articles.slug,
+      title: articles.title,
+      dek: articles.dek,
+      body: articles.body,
+      sport: articles.sport,
+      hero: articles.hero,
+      heroAlt: articles.heroAlt,
+      heroCredit: articles.heroCredit,
+      authorName: articles.authorName,
+      aiAssisted: articles.aiAssisted,
+      bradsTake: articles.bradsTake,
+      published: articles.published,
+      publishedAt: articles.publishedAt,
+      publishedSnapshot: articles.publishedSnapshot,
+      publishedContentHash: articles.publishedContentHash,
+      publishedRevisionId: articles.publishedRevisionId,
+      revisionId: articleRevisions.id,
+      revisionArticleId: articleRevisions.articleId,
+      revisionContentHash: articleRevisions.contentHash,
+      revisionSnapshot: articleRevisions.snapshot,
+      eventId: articlePublicationEvents.id,
+      eventArticleId: articlePublicationEvents.articleId,
+      eventRevisionId: articlePublicationEvents.revisionId,
+      eventContentHash: articlePublicationEvents.contentHash,
+    })
+    .from(articlePublicationEvents)
+    .innerJoin(articles, eq(articlePublicationEvents.articleId, articles.id))
+    .innerJoin(articleRevisions, eq(articlePublicationEvents.revisionId, articleRevisions.id))
+    .where(eq(articlePublicationEvents.action, 'legacy_backfill'));
+  assert(legacyBackfills.length === 1, 'Expected exactly one legacy_backfill audit event.');
+  const legacy = legacyBackfills[0];
+  assert(legacy, 'Legacy backfill verification row is missing.');
+  assert(
+    /^rolling-legacy-live-[a-f0-9]{12}$/.test(legacy.slug),
+    'Legacy backfill did not preserve the exact disposable slug.',
+  );
+  const expectedLegacySnapshot = {
+    slug: legacy.slug,
+    title: 'Pointerless legacy live article',
+    dek: '',
+    body: 'An old replica must not unpublish this row before backfill finishes.',
+    sport: 'Op-Ed',
+    hero: '/images/publication-verifier-legacy-hero.png',
+    heroAlt: 'Disposable exact-match legacy hero',
+    heroCredit: 'BB Sports publication verifier',
+    authorName: 'Publication Verifier',
+    aiAssisted: false,
+    bradsTake: '',
+  } as const;
+  const readerVisibleFields = [
+    'slug',
+    'title',
+    'dek',
+    'body',
+    'sport',
+    'hero',
+    'heroAlt',
+    'heroCredit',
+    'authorName',
+    'aiAssisted',
+    'bradsTake',
+  ] as const;
+  assert(
+    readerVisibleFields.every((field) => legacy[field] === expectedLegacySnapshot[field]),
+    'Legacy backfill changed reader-visible fields beyond hero metadata.',
+  );
+  assert(legacy.published, 'Legacy backfill unpublished the live article.');
+  assert(legacy.publishedAt, 'Legacy backfill removed the original publication time.');
+  assert(legacy.publishedSnapshot, 'Legacy backfill did not create an immutable snapshot.');
+  assert(
+    readerVisibleFields.every(
+      (field) => legacy.publishedSnapshot?.[field] === expectedLegacySnapshot[field],
+    ),
+    'Legacy immutable snapshot does not match the preserved reader-visible fields.',
+  );
+  assert(
+    readerVisibleFields.every(
+      (field) => legacy.revisionSnapshot[field] === expectedLegacySnapshot[field],
+    ),
+    'Legacy immutable revision does not match the preserved reader-visible fields.',
+  );
+  const expectedLegacyHash = hashArticlePublicationSnapshot(expectedLegacySnapshot);
+  assert(
+    legacy.publishedRevisionId === legacy.revisionId &&
+      legacy.revisionArticleId === legacy.articleId &&
+      legacy.eventArticleId === legacy.articleId &&
+      legacy.eventRevisionId === legacy.revisionId,
+    'Legacy backfill pointers do not identify the immutable same-article revision.',
+  );
+  assert(
+    legacy.publishedContentHash === expectedLegacyHash &&
+      legacy.revisionContentHash === expectedLegacyHash &&
+      legacy.eventContentHash === expectedLegacyHash,
+    'Legacy backfill hash is not bound consistently across article, revision, and event.',
+  );
+  const publicLegacy = await getPublishedArticleBySlug(legacy.slug);
+  assert(
+    publicLegacy?.title === expectedLegacySnapshot.title &&
+      publicLegacy.body === expectedLegacySnapshot.body &&
+      publicLegacy.heroAlt === expectedLegacySnapshot.heroAlt &&
+      publicLegacy.heroCredit === expectedLegacySnapshot.heroCredit,
+    'Public legacy read did not materialize the completed immutable snapshot.',
+  );
+  console.info(
+    '[publication-db-verify] PASS legacy metadata completion preserves and immutably snapshots the live story',
+  );
+
   const suffix = (process.env[CHILD_TOKEN_ENV] ?? '').slice(0, 12);
   const [superAdmin] = await database
     .insert(users)
@@ -232,14 +344,74 @@ async function runPublicationVerification(): Promise<void> {
   assert(publicArticle?.title === originalTitle, 'Public read did not materialize approved content.');
   console.info('[publication-db-verify] PASS prepare and publish exact immutable revision');
 
+  const editedTitle = `${originalTitle} — working-copy edit`;
+  const blockedEditable = await getArticleById(article.id);
+  assert(blockedEditable, 'Published article disappeared before release-gate verification.');
+  const blockedEditToken = hashArticleEditableState(blockedEditable);
+  await expectPublicationRejection(
+    'published working-copy edit is blocked before activation',
+    'RELEASE_CONVERGENCE',
+    () => updateArticle(article.id, { title: editedTitle }, blockedEditToken),
+  );
+  const afterBlockedEdit = await getArticleById(article.id);
+  assert(
+    afterBlockedEdit?.title === originalTitle,
+    'Release-convergence rejection changed the working copy.',
+  );
+
+  // The production release command deliberately rejects verifier databases.
+  // Exercise the same guarded database transition directly, but only after
+  // re-validating the parent-issued disposable-database capability.
+  currentDatabaseName();
+  const activationTime = new Date();
+  await database.transaction(async (transaction) => {
+    const [disabledControl] = await transaction
+      .select({ enabled: publicationRuntimeControls.enabled })
+      .from(publicationRuntimeControls)
+      .where(
+        eq(
+          publicationRuntimeControls.controlKey,
+          'published_working_copy_edits_v1',
+        ),
+      )
+      .limit(1)
+      .for('update');
+    assert(disabledControl, 'Published working-copy control row is missing.');
+    assert(!disabledControl.enabled, 'Published working-copy control was not fail-closed by default.');
+    await transaction.execute(sql`
+      SELECT set_config(
+        'bbsports.publication_activation_contract',
+        'v1',
+        true
+      )
+    `);
+    const [activatedControl] = await transaction
+      .update(publicationRuntimeControls)
+      .set({
+        enabled: true,
+        deploymentSha: (process.env[CHILD_TOKEN_ENV] ?? '').slice(0, 40),
+        changedAt: activationTime,
+        changedBy: 'Disposable publication verifier',
+        updatedAt: activationTime,
+      })
+      .where(
+        eq(
+          publicationRuntimeControls.controlKey,
+          'published_working_copy_edits_v1',
+        ),
+      )
+      .returning({ enabled: publicationRuntimeControls.enabled });
+    assert(activatedControl?.enabled, 'Disposable working-copy control activation did not persist.');
+  });
+  console.info('[publication-db-verify] PASS disposable release activation is guarded and explicit');
+
   const currentEditable = await getArticleById(article.id);
   assert(currentEditable, 'Published article disappeared before edit-CAS verification.');
-  const editToken = hashArticleEditableState(currentEditable);
-  const editedTitle = `${originalTitle} — working-copy edit`;
-  const edited = await updateArticle(article.id, { title: editedTitle }, editToken);
+  const freshEditToken = hashArticleEditableState(currentEditable);
+  const edited = await updateArticle(article.id, { title: editedTitle }, freshEditToken);
   assert(edited?.title === editedTitle, 'Correct edit precondition did not update the draft.');
   await expectPublicationRejection('stale article edit CAS is rejected', 'CONFLICT', () =>
-    updateArticle(article.id, { dek: 'This stale write must not win.' }, editToken),
+    updateArticle(article.id, { dek: 'This stale write must not win.' }, freshEditToken),
   );
   const publicAfterEdit = await getPublishedArticleBySlug(slug);
   assert(
