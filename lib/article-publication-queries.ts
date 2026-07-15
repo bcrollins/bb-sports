@@ -1223,11 +1223,21 @@ export async function listArticleRevisions(articleId: string): Promise<
     .where(eq(articleRevisions.articleId, articleId))
     .orderBy(sql`${articleRevisions.revisionNumber} DESC`)
     .limit(100);
-  return rows.map((row) => ({
-    id: row.id,
-    revisionNumber: row.revisionNumber,
-    contentHash: row.contentHash,
-    createdAt: row.createdAt.toISOString(),
-    snapshot: validatedRevisionSnapshot(row),
-  }));
+  return rows.map((row) => {
+    const parsed = articlePublicationSnapshotSchema.safeParse(row.snapshot);
+    if (!parsed.success || hashArticlePublicationSnapshot(parsed.data) !== row.contentHash) {
+      throw new PublicationError(
+        'CONFLICT',
+        409,
+        'The immutable article revision failed its content-integrity check.',
+      );
+    }
+    return {
+      id: row.id,
+      revisionNumber: row.revisionNumber,
+      contentHash: row.contentHash,
+      createdAt: row.createdAt.toISOString(),
+      snapshot: parsed.data,
+    };
+  });
 }
