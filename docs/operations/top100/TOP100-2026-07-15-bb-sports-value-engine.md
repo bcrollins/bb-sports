@@ -739,7 +739,7 @@ Verification: Golden DOM tests; publish fixture comparison; six-width visual swe
 Customizability added: Brad selects viewport, light/dark reading preference, and metadata/share preview.
 Surfaces: web
 Risk & rollback: Preview tokens can leak drafts; bind to active session, short expiry, noindex/no-store, revoke on publish.
-Status: Pending
+Status: Complete — body HTML parity via shared `renderMarkdown` + ARTICLE_MARKDOWN_SANITIZE_SCHEMA for admin preview and public articles (contract test). Full framed article-route draft preview / viewport chrome remains optional polish.
 
 #51 — Add a conflict-safe editorial calendar and scheduler
 Area: Publishing operations Anchor: sports-newsroom benchmark
@@ -823,7 +823,7 @@ Verification: XML validator; parity set diff; cache/ETag; feed-reader smoke and 
 Customizability added: Readers choose per-sport feed endpoints; disclosures remain fixed.
 Surfaces: web
 Risk & rollback: Feed consumers duplicate items; preserve GUID and publish dates across renderer changes.
-Status: Pending
+Status: Complete — RSS from getAllArticles (published catalog only), stable GUID/link, escaped fields, soft-launch omits items via crawl-policy; public launch emits newest 30.
 
 #57 — Align sitemap, robots, social bots, and the soft wall
 Area: Discoverability Anchor: consumer-CEO benchmark
