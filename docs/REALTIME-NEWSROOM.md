@@ -1,6 +1,6 @@
 # BB Sports Real-Time Newsroom
 
-Status: manual desk, immutable publication gate, and provider governance persistence implemented; external connectors still gated off with no live transport
+Status: manual desk, immutable publication gate, provider governance, ingest transaction, worker skeleton, desk provider status, and RSS SSRF policy implemented; external connectors still gated off with no live transport
 Owner: Brad Benson (editorial approval) / Brandon Rollins (platform)
 Last reviewed: 2026-07-15
 

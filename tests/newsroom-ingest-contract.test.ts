@@ -50,6 +50,7 @@ test('raw provider bodies are excluded from durable provenance by contract', () 
 });
 
 test('desk still does not claim live external monitoring from parsers alone', () => {
-  assert.match(desk, /Sources: Manual only/);
+  assert.match(desk, /deskSourcesLabel \?\? 'Manual only'/);
   assert.match(desk, /external X, Bluesky, and RSS monitoring is not active/);
+  assert.match(desk, /transportAllowed: false/);
 });

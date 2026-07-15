@@ -68,6 +68,28 @@ type SerializedActivity = {
   createdAt: string;
 };
 
+type SerializedProviderDeskStatus = {
+  providerKey: string;
+  displayName: string;
+  commercialStatus: string;
+  configEnabled: boolean;
+  credentialPresence: string;
+  operationalLabel: 'inactive' | 'degraded' | 'live';
+  transportAllowed: false;
+  blockers: string[];
+  lastSuccessAt: string | null;
+  lastFailureAt: string | null;
+  lastFailureSummary: string;
+  leaseHeld: boolean;
+  leaseExpiresAt: string | null;
+};
+
+type SerializedProviderStatusSummary = {
+  deskSourcesLabel: 'Manual only' | 'Monitoring configured' | 'Live monitoring' | 'Degraded monitoring';
+  openDeadLetters: number;
+  providers: SerializedProviderDeskStatus[];
+};
+
 export type SerializedNewsroomSnapshot = {
   generatedAt: string;
   latestActivitySeq: number;
@@ -75,6 +97,7 @@ export type SerializedNewsroomSnapshot = {
   events: SerializedNewsEvent[];
   sources: SerializedNewsSource[];
   recentActivity: SerializedActivity[];
+  providerStatus?: SerializedProviderStatusSummary;
 };
 
 type SerializedSignal = {
@@ -648,7 +671,13 @@ export default function NewsDesk({
               Capture fast-moving leads, document independent evidence, and enforce a human verification gate.
             </p>
             <p className="mt-2 text-xs font-semibold text-amber-200">
-              Sources: Manual only · external X, Bluesky, and RSS monitoring is not active.
+              Sources: {snapshot.providerStatus?.deskSourcesLabel ?? 'Manual only'}
+              {snapshot.providerStatus?.deskSourcesLabel === 'Live monitoring'
+                ? ' · external monitoring has recent worker success evidence'
+                : ' · external X, Bluesky, and RSS monitoring is not active'}
+              {snapshot.providerStatus && snapshot.providerStatus.openDeadLetters > 0
+                ? ` · ${snapshot.providerStatus.openDeadLetters} open dead letter${snapshot.providerStatus.openDeadLetters === 1 ? '' : 's'}`
+                : ''}
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
@@ -666,6 +695,90 @@ export default function NewsDesk({
           </div>
         </div>
       </header>
+
+      {snapshot.providerStatus && snapshot.providerStatus.providers.length > 0 ? (
+        <section
+          className="rounded-2xl border border-navy/10 bg-white p-4 shadow-sm"
+          aria-label="External provider status"
+        >
+          <div className="flex flex-wrap items-end justify-between gap-2">
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-[0.16em] text-navy/50">
+                External providers
+              </p>
+              <p className="mt-1 text-sm text-navy/70">
+                Configuration and lease posture only. A green commercial flag is not a live feed.
+              </p>
+            </div>
+            <p className="rounded-full bg-ink/5 px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-navy/70">
+              {snapshot.providerStatus.deskSourcesLabel}
+            </p>
+          </div>
+          <ul className="mt-3 grid gap-2 sm:grid-cols-2">
+            {snapshot.providerStatus.providers.map((provider) => {
+              const label =
+                provider.operationalLabel === 'live'
+                  ? 'Live'
+                  : provider.operationalLabel === 'degraded'
+                    ? 'Degraded'
+                    : 'Inactive';
+              const tone =
+                provider.operationalLabel === 'live'
+                  ? 'bg-green-100 text-green-900'
+                  : provider.operationalLabel === 'degraded'
+                    ? 'bg-amber-100 text-amber-950'
+                    : 'bg-ink/5 text-navy/70';
+              return (
+                <li
+                  key={provider.providerKey}
+                  className="rounded-xl border border-navy/10 px-3 py-3"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <p className="text-sm font-bold text-navy-deep">{provider.displayName}</p>
+                      <p className="text-[11px] text-navy/55">{provider.providerKey}</p>
+                    </div>
+                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-black uppercase ${tone}`}>
+                      {label}
+                    </span>
+                  </div>
+                  <dl className="mt-2 grid grid-cols-2 gap-x-2 gap-y-1 text-[11px] text-navy/70">
+                    <div>
+                      <dt className="font-semibold text-navy/45">Commercial</dt>
+                      <dd>{provider.commercialStatus}</dd>
+                    </div>
+                    <div>
+                      <dt className="font-semibold text-navy/45">Config</dt>
+                      <dd>{provider.configEnabled ? 'enabled' : 'disabled'}</dd>
+                    </div>
+                    <div>
+                      <dt className="font-semibold text-navy/45">Credentials</dt>
+                      <dd>{provider.credentialPresence}</dd>
+                    </div>
+                    <div>
+                      <dt className="font-semibold text-navy/45">Lease</dt>
+                      <dd>{provider.leaseHeld ? 'held' : 'none'}</dd>
+                    </div>
+                    <div className="col-span-2">
+                      <dt className="font-semibold text-navy/45">Last success</dt>
+                      <dd>{provider.lastSuccessAt ? new Date(provider.lastSuccessAt).toLocaleString() : 'never'}</dd>
+                    </div>
+                    {provider.blockers.length > 0 ? (
+                      <div className="col-span-2">
+                        <dt className="font-semibold text-navy/45">Blockers</dt>
+                        <dd className="break-words">{provider.blockers.join(', ')}</dd>
+                      </div>
+                    ) : null}
+                  </dl>
+                  <p className="mt-2 text-[10px] font-semibold uppercase tracking-wide text-navy/40">
+                    transportAllowed: false
+                  </p>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      ) : null}
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4" aria-label="Desk totals">
         {[

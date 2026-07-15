@@ -11,6 +11,8 @@ All notable changes to BB Sports. Format loosely follows
 - Added provider governance persistence without activating any connector: `news_providers`, lease/fencing, checkpoint, ingest-attempt, and dead-letter tables; pure activation evaluation that never allows transport from configuration alone; credential presence without secret exposure; and filtered handling of known-harmless Postgres bootstrap notices.
 - Added the authoritative provider ingest transaction: bounded normalization, fail-closed commercial/config/source gates, exact dedupe, atomic signal/event/activity writes, ingest-attempt ledger, X/Bluesky lead mappers, and dark `provider-intake:*` sources — still no live transport.
 - Added the always-on newsroom worker skeleton (bundled `ops/newsroom-worker.mjs`): lease heartbeats, bounded queue/backpressure, backoff helpers, health/readiness HTTP, SIGTERM drain — default-off, never claims active ingest, no provider transport in the Next.js request process.
+- Surfaced honest external provider status on the news desk snapshot/UI (inactive/degraded/live labels, commercial/config/credential/lease posture, dead-letter count) while keeping `transportAllowed: false` and Manual-only default copy.
+- Added SSRF-safe RSS URL policy helpers and default-off RSS static preflight (HTTPS-only, blocked private IPs, redirect/size/XML hardening contract) without enabling live feed fetch.
 
 ### Security
 
