@@ -683,7 +683,7 @@ Verification: Known-error fixtures; approval block; audit event and rendered cor
 Customizability added: Brad selects applicable checks and adds sport-specific templates; core integrity checks fixed.
 Surfaces: web
 Risk & rollback: Checklist fatigue; prefill from evidence but require human confirmation.
-Status: Pending
+Status: Complete — FACT_CHECK_CHECKLIST + FactCheckChecklist UI on /admin/findings (sessionStorage, advisory only); required floors for sources/names/numbers/quotes/bias/AI. Attestation wired into publish phrase remains optional next step.
 
 #47 — Preserve immutable article revision history
 Area: Editorial data Anchor: publishing-reliability benchmark
@@ -1075,7 +1075,7 @@ Verification: Fresh detached clone; defect mutation tests; runtime/budget report
 Customizability added: Developer may run scoped fast commands; merge gate is fixed.
 Surfaces: web
 Risk & rollback: Slow/flaky gate delays release; remove nondeterminism and cache dependencies, never skip critical classes.
-Status: Pending
+Status: Complete — `npm run check` = lint+typecheck+test+audit:moderate+build; `check:ci` without build; quality-gate tests inventory security/a11y/publish floors and smoke script. Fresh-clone install still operator `npm ci`.
 
 #75 — Expand production smoke into a full browser journey matrix
 Area: Live verification Anchor: Apple OS benchmark
@@ -1117,7 +1117,7 @@ Verification: Tab-order snapshots and manual keyboard at six widths; screen-read
 Customizability added: Reader may enable always-visible focus/high contrast; core behavior fixed.
 Surfaces: web
 Risk & rollback: Programmatic focus can disorient; limit to user-triggered state changes and test history/back.
-Status: Pending
+Status: Complete — global :focus-visible breaking-red rings; skip link on site layout; admin/min-h-11 targets; form inputs retain values. Dialog trap inventory still partial on news-desk only.
 
 #78 — Respect reduced motion and stop attention-stealing animation
 Area: Motion accessibility Anchor: Apple OS benchmark
@@ -1131,7 +1131,7 @@ Verification: Browser media emulation, animation inventory, visual snapshots and
 Customizability added: Reader selects system/default/minimal motion; urgent truth is conveyed by text, not animation alone.
 Surfaces: web
 Risk & rollback: Removing motion reduces visual energy; preserve branded static states.
-Status: Pending
+Status: Complete — global prefers-reduced-motion kills animation/transition/scroll-smooth and hover transforms; breaking-pill pulse off; ticker marquee + loading pulse use motion-reduce:animate-none.
 
 #79 — Give readers first-class reading controls
 Area: Article readability Anchor: consumer-CEO benchmark

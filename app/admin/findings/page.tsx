@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { requireAdminPage } from '@/lib/admin-auth';
+import FactCheckChecklist from '@/components/FactCheckChecklist';
 import { db, dbAvailable } from '@/lib/db/client';
 import { editorialFindings } from '@/lib/db/schema';
 import { ensureBootstrapped } from '@/lib/db/bootstrap';
@@ -62,6 +63,10 @@ export default async function EditorialFindingsPage() {
           external links.
         </p>
       </header>
+
+      <div className="mb-8 max-w-2xl">
+        <FactCheckChecklist storageKey="bb-fact-check-findings" />
+      </div>
 
       {rows.length === 0 ? (
         <p className="text-sm text-navy/60">No open findings.</p>

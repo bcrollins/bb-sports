@@ -15,6 +15,9 @@ All notable changes to BB Sports. Format loosely follows
 
 ### Added
 
+- Global keyboard focus-visible rings + hardened prefers-reduced-motion (hover transforms/pulse off).
+- Brad fact-check checklist on findings queue (advisory, sessionStorage).
+- `npm run check:ci` and quality-gate inventory tests.
 - Rankings `bb:trash` directive validation (known league/team, drop clamp) before movements apply.
 - Privacy data-access and data-deletion contact modes wired from /privacy → /contact.
 - Admin catalog freshness risk advisory (aging/stale/archive bands) without auto-rewrite.

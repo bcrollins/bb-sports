@@ -278,11 +278,53 @@
 }
 .article-body strong { font-weight: 700; color: var(--bb-navy-deep); }
 
-/* Reduce motion preference */
+/* Keyboard focus — visible, brand-consistent, never outline:none without replacement */
+@layer base {
+  :focus-visible {
+    outline: 3px solid var(--bb-breaking);
+    outline-offset: 3px;
+  }
+
+  /* Mouse users keep quieter focus; keyboard gets the ring above */
+  :focus:not(:focus-visible) {
+    outline: none;
+  }
+
+  a:focus-visible,
+  button:focus-visible,
+  summary:focus-visible,
+  [role='button']:focus-visible,
+  input:focus-visible,
+  textarea:focus-visible,
+  select:focus-visible {
+    outline: 3px solid var(--bb-breaking);
+    outline-offset: 3px;
+  }
+}
+
+/* Reduce motion — kill decorative animation/transition/transform; keep essential opacity */
 @media (prefers-reduced-motion: reduce) {
-  * {
+  html {
+    scroll-behavior: auto !important;
+  }
+
+  *,
+  *::before,
+  *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+    transition-delay: 0ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .bb-card:hover,
+  .bb-button-primary:active {
+    transform: none !important;
+  }
+
+  .bb-breaking-pill::before {
+    animation: none !important;
+    opacity: 1 !important;
   }
 }
