@@ -4,6 +4,7 @@ import { requireAdminPage } from '@/lib/admin-auth';
 import { getAudienceSnapshot, getCommentModerationCounts } from '@/lib/queries';
 import { getAllArticles } from '@/lib/articles';
 import { buildAllRankings, readTrashedTeams } from '@/lib/rankings';
+import { runAllProviderCanaries } from '@/lib/provider-canary';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,16 +18,20 @@ const PROVIDERS = [
   { name: 'Resend commercial gate', env: 'BBSPORTS_APPROVED_RESEND', owner: 'Commercial-use approval flag' },
   { name: 'xAI Grok key', env: 'XAI_API_KEY', owner: 'AI draft/media assistance' },
   { name: 'xAI commercial gate', env: 'BBSPORTS_APPROVED_XAI', owner: 'Commercial-use approval flag' },
-  { name: 'Cloudflare R2', env: 'R2_BUCKET_NAME', owner: 'Media storage' },
+  { name: 'Cloudflare R2 bucket', env: 'R2_BUCKET_NAME', owner: 'Media storage' },
+  { name: 'R2 commercial gate', env: 'BBSPORTS_APPROVED_R2', owner: 'Commercial-use approval flag' },
+  { name: 'Live scores commercial gate', env: 'BBSPORTS_APPROVED_LIVE_SCORES', owner: 'Licensed scores only' },
 ];
 
 export default async function LaunchPage() {
   await requireAdminPage('/admin/launch');
-  const [articles, audience, commentCounts] = await Promise.all([
+  const [articles, audience, commentCounts, canaries] = await Promise.all([
     getAllArticles(),
     getAudienceSnapshot(),
     getCommentModerationCounts(),
+    runAllProviderCanaries({ liveResend: false }),
   ]);
+  const canariesOk = canaries.every((c) => c.ok);
   const published = articles.length;
   const aiLabelOk = articles.every((a) => !a.aiAssisted || Boolean(a.bradsTake));
   const commentsUnderControl = Boolean(process.env.DATABASE_URL);
@@ -114,11 +119,15 @@ export default async function LaunchPage() {
       <section className="rounded-xl border border-navy/10 bg-white shadow-sm">
         <div className="border-b border-navy/10 px-5 py-4">
           <h2 className="font-serif text-xl font-bold text-navy">Provider posture</h2>
-          <p className="text-sm text-navy/55">GREEN means configured in this runtime; YELLOW means intentionally degraded or queued.</p>
+          <p className="text-sm text-navy/55">
+            GREEN means configured in this runtime; YELLOW means intentionally degraded or queued.
+            Approval flags only count when exactly <code className="font-mono text-xs">true</code>.
+          </p>
         </div>
         <div className="divide-y divide-navy/10">
           {PROVIDERS.map((provider) => {
-            const configured = provider.env === 'BBSPORTS_APPROVED_XAI' || provider.env === 'BBSPORTS_APPROVED_RESEND'
+            const isGate = provider.env.startsWith('BBSPORTS_APPROVED_');
+            const configured = isGate
               ? process.env[provider.env] === 'true'
               : Boolean(process.env[provider.env]);
             return (
@@ -137,6 +146,55 @@ export default async function LaunchPage() {
               </div>
             );
           })}
+        </div>
+      </section>
+
+      <section className="rounded-xl border border-navy/10 bg-white shadow-sm">
+        <div className="border-b border-navy/10 px-5 py-4">
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <h2 className="font-serif text-xl font-bold text-navy">Dry-run provider canaries</h2>
+              <p className="text-sm text-navy/55">
+                Fail-closed is success. No email, charge, or R2 upload runs from this panel.
+              </p>
+            </div>
+            <span
+              className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-[11px] font-bold uppercase tracking-[0.16em] ${
+                canariesOk ? 'bg-emerald-50 text-emerald-700' : 'bg-broadcast-red/10 text-broadcast-red'
+              }`}
+            >
+              {canariesOk ? <CheckCircle2 size={13} /> : <CircleAlert size={13} />}
+              {canariesOk ? 'All dry canaries green' : 'Canary failure'}
+            </span>
+          </div>
+        </div>
+        <div className="divide-y divide-navy/10">
+          {canaries.map((result) => (
+            <div key={result.provider} className="grid gap-2 px-5 py-4 sm:grid-cols-[120px_minmax(0,1fr)_100px] sm:items-start">
+              <div className="font-mono text-xs font-bold uppercase tracking-[0.14em] text-navy">
+                {result.provider}
+              </div>
+              <div>
+                <p className="text-sm text-charcoal/80">{result.detail}</p>
+                {result.blockers.length > 0 ? (
+                  <p className="mt-1 font-mono text-[11px] text-navy/50">
+                    blockers: {result.blockers.join(', ')}
+                  </p>
+                ) : null}
+              </div>
+              <span
+                className={`inline-flex w-fit items-center gap-1 rounded-full px-2 py-1 text-[10px] font-bold uppercase tracking-[0.14em] ${
+                  result.ok ? 'bg-emerald-50 text-emerald-700' : 'bg-broadcast-red/10 text-broadcast-red'
+                }`}
+              >
+                {result.ok ? 'ok' : 'fail'} · {result.mode}
+              </span>
+            </div>
+          ))}
+        </div>
+        <div className="border-t border-navy/10 px-5 py-3 text-xs text-navy/55">
+          Super-admin JSON:{' '}
+          <code className="font-mono">GET /api/admin/canaries</code>
         </div>
       </section>
     </div>
