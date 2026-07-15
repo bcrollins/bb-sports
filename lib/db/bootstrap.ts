@@ -824,6 +824,8 @@ async function bootstrap(): Promise<void> {
       status varchar(24) NOT NULL DEFAULT 'subscribed',
       unsubscribe_token varchar(96) UNIQUE,
       source varchar(80) NOT NULL DEFAULT 'site',
+      frequency varchar(32) NOT NULL DEFAULT 'when_i_publish',
+      topics text NOT NULL DEFAULT '',
       consent_text text NOT NULL DEFAULT 'Newsletter signup on BB Sports. No spam. Unsubscribe in one click.',
       consent_version varchar(32) NOT NULL DEFAULT '2026-05-07',
       signup_count integer NOT NULL DEFAULT 1,
@@ -841,6 +843,12 @@ async function bootstrap(): Promise<void> {
   await db.execute(sql`ALTER TABLE newsletter_subscribers ADD COLUMN IF NOT EXISTS welcome_sent_at timestamptz;`);
   await db.execute(sql`ALTER TABLE newsletter_subscribers ADD COLUMN IF NOT EXISTS welcome_provider_id varchar(160);`);
   await db.execute(sql`ALTER TABLE newsletter_subscribers ADD COLUMN IF NOT EXISTS welcome_error text;`);
+  await db.execute(
+    sql`ALTER TABLE newsletter_subscribers ADD COLUMN IF NOT EXISTS frequency varchar(32) NOT NULL DEFAULT 'when_i_publish';`,
+  );
+  await db.execute(
+    sql`ALTER TABLE newsletter_subscribers ADD COLUMN IF NOT EXISTS topics text NOT NULL DEFAULT '';`,
+  );
   await db.execute(sql`
     CREATE TABLE IF NOT EXISTS contact_messages (
       id uuid PRIMARY KEY DEFAULT gen_random_uuid(),

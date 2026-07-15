@@ -58,6 +58,8 @@ export async function POST(req: NextRequest) {
     const subscriber = await upsertNewsletterSubscriber({
       email: parsed.data.email,
       source: parsed.data.source,
+      frequency: parsed.data.frequency,
+      topics: parsed.data.topics,
       ip,
       userAgent,
     });

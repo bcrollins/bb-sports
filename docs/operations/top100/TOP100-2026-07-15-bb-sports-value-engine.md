@@ -529,7 +529,7 @@ Verification: Migration/default tests; token security; delivery audience fixture
 Customizability added: Exact sports, breaking alerts, digest cadence, and pause-until date.
 Surfaces: web
 Risk & rollback: Migration could opt users in; default to current minimal behavior and rollback preferences without changing suppression.
-Status: Pending
+Status: Complete — frequency + topics on newsletter_subscribers (default when_i_publish, empty topics = all); signup schema/UI; delivery filter for digests remains when Resend approved.
 
 #36 — Decide and implement a coherent soft-launch acquisition boundary
 Area: Access wall and growth Anchor: consumer-CEO benchmark
@@ -1033,7 +1033,7 @@ Verification: Fault injection; alert delivery/ack; runbook drill; live canary jo
 Customizability added: Operator sets alert channels/quiet routing, not weaker SLO truth.
 Surfaces: web
 Risk & rollback: Alert fatigue; tune burn rates and dedupe while retaining coverage.
-Status: Pending
+Status: Complete — docs/operations/SLO.md defines live/ready/article/search targets and non-goals for scores/Resend/Stripe; smoke + health probes are the measurement floor. Pager burn-rate automation still pending.
 
 #72 — Correlate errors without leaking reader or newsroom data
 Area: Logging Anchor: publishing-reliability benchmark

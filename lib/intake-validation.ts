@@ -9,10 +9,27 @@ const email = z
 
 const safeText = (max: number) => z.string().trim().max(max);
 
+export const NEWSLETTER_FREQUENCIES = ['when_i_publish', 'weekly', 'major_only'] as const;
+export const NEWSLETTER_TOPIC_KEYS = [
+  'nfl',
+  'mlb',
+  'nhl',
+  'nba',
+  'college-football',
+  'soccer',
+  'mma',
+] as const;
+
 export const newsletterSignupSchema = z
   .object({
     email,
     source: safeText(80).optional().default('site'),
+    frequency: z.enum(NEWSLETTER_FREQUENCIES).optional().default('when_i_publish'),
+    topics: z
+      .array(z.enum(NEWSLETTER_TOPIC_KEYS))
+      .max(NEWSLETTER_TOPIC_KEYS.length)
+      .optional()
+      .default([]),
   })
   .strict();
 

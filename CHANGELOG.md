@@ -15,6 +15,8 @@ All notable changes to BB Sports. Format loosely follows
 
 ### Added
 
+- Newsletter frequency + topic preferences on signup (schema + UI).
+- Operator SLO document (`docs/operations/SLO.md`).
 - Article reading controls (text size + column width) with localStorage persistence.
 - Global keyboard focus-visible rings + hardened prefers-reduced-motion (hover transforms/pulse off).
 - Brad fact-check checklist on findings queue (advisory, sessionStorage).
