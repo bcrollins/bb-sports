@@ -112,6 +112,10 @@ test('child verifier runs actual bootstrap and publication persistence boundarie
   assert.match(child, /article_publication_events_revision_integrity/);
   assert.match(child, /articles_published_snapshot_complete/);
   assert.match(child, /articles_published_revision_same_article/);
+  assert.match(
+    child,
+    /incomplete live-state CHECK constraint[\s\S]*bbsports\.article_publication_contract[\s\S]*cross-article live revision pointer FK[\s\S]*bbsports\.article_publication_contract/,
+  );
   assert.match(child, /action, 'legacy_backfill'/);
   assert.match(child, /Pointerless legacy live article/);
   assert.match(child, /An old replica must not unpublish this row before backfill finishes\./);

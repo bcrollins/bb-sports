@@ -493,29 +493,39 @@ async function runPublicationVerification(): Promise<void> {
     'incomplete live-state CHECK constraint',
     '23514',
     () =>
-      database
-        .update(articles)
-        .set({ published: true, publishedAt: new Date() })
-        .where(eq(articles.id, corruptionDraft.id)),
+      database.transaction(async (transaction) => {
+        await transaction.execute(sql`
+          SELECT set_config('bbsports.article_publication_contract', 'v1', true)
+        `);
+        return transaction
+          .update(articles)
+          .set({ published: true, publishedAt: new Date() })
+          .where(eq(articles.id, corruptionDraft.id));
+      }),
     'articles_published_snapshot_complete',
   );
   await expectPostgresRejection(
     'cross-article live revision pointer FK',
     '23503',
     () =>
-      database
-        .update(articles)
-        .set({
-          published: true,
-          publishedAt: new Date(),
-          publishedSnapshot: {
-            ...prepared.revision.snapshot,
-            slug: `publication-wrong-pointer-${suffix}`,
-          },
-          publishedContentHash: prepared.revision.contentHash,
-          publishedRevisionId: prepared.revision.id,
-        })
-        .where(eq(articles.id, corruptionDraft.id)),
+      database.transaction(async (transaction) => {
+        await transaction.execute(sql`
+          SELECT set_config('bbsports.article_publication_contract', 'v1', true)
+        `);
+        return transaction
+          .update(articles)
+          .set({
+            published: true,
+            publishedAt: new Date(),
+            publishedSnapshot: {
+              ...prepared.revision.snapshot,
+              slug: `publication-wrong-pointer-${suffix}`,
+            },
+            publishedContentHash: prepared.revision.contentHash,
+            publishedRevisionId: prepared.revision.id,
+          })
+          .where(eq(articles.id, corruptionDraft.id));
+      }),
     'articles_published_revision_same_article',
   );
 
