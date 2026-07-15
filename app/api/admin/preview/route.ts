@@ -9,12 +9,15 @@
  * in the editor preview matches what readers see when published.
  */
 import { NextRequest, NextResponse } from 'next/server';
+import { getCurrentUser } from '@/lib/auth';
 import { renderMarkdown } from '@/lib/markdown';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
+  const user = await getCurrentUser();
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   let body: { body?: string } = {};
   try {
     body = await req.json();

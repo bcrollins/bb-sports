@@ -6,6 +6,7 @@
  * database before any external transport is wired in.
  */
 import type { ReactNode } from 'react';
+import { requireAdminPage } from '@/lib/admin-auth';
 import { getAnalyticsSnapshot } from '@/lib/analytics';
 import {
   compactStripeId,
@@ -18,6 +19,7 @@ import { getAudienceSnapshot } from '@/lib/queries';
 export const dynamic = 'force-dynamic';
 
 export default async function AudiencePage() {
+  await requireAdminPage('/admin/audience');
   const [snapshot, analytics] = await Promise.all([
     getAudienceSnapshot(),
     getAnalyticsSnapshot(),

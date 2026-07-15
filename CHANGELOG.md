@@ -7,6 +7,12 @@ All notable changes to BB Sports. Format loosely follows
 
 ### Security
 
+- Upgraded Next.js and its lint peer to 15.5.20, pinned patched PostCSS/esbuild resolutions, and made a zero-moderate-or-higher `npm audit` part of `npm run check`.
+- Made Postgres session rows authoritative for newsroom access: missing, expired, revoked, user-mismatched, or disallowed-role sessions now fail closed even when a JWT signature is valid.
+- Added issuer, audience, purpose, subject, JTI, and current-role validation to the admin session boundary; login records the session before issuing its cookie and logout no longer hides failed revocation.
+- Added page-level guards to every protected newsroom page and handler-level guards to every protected admin API method.
+- Replaced unrestricted `site_config` reads/writes with four typed, validated, non-secret settings and prevented unapproved media access with signature-only/revoked sessions.
+- Added an idempotent cleanup for the malformed historical access-wall JSONB row so its retired alternate credential cannot survive deployment.
 - Removed the committed access-wall fallback credential. The operator recovery password now lives only in Railway.
 - Replaced the forgeable `bb_gate=1` access cookie with an HS256-signed, expiring cookie whose secret can be rotated to revoke every existing wall session.
 - Kept the public access wall and newsroom authentication as separate security boundaries.

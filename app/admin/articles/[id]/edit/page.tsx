@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation';
+import { requireAdminPage } from '@/lib/admin-auth';
 import { getArticleById } from '@/lib/queries';
 import { ArticleEditor } from '../../_components/ArticleEditor';
 
@@ -6,6 +7,7 @@ export const dynamic = 'force-dynamic';
 
 export default async function EditArticlePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  await requireAdminPage(`/admin/articles/${id}/edit`);
   const a = await getArticleById(id);
   if (!a) notFound();
   return (

@@ -1,4 +1,5 @@
 import { getMediaAssets } from '@/lib/queries';
+import { requireAdminPage } from '@/lib/admin-auth';
 import { serializeMediaAsset } from '@/lib/media-assets';
 import { xaiProviderState } from '@/lib/xai-media';
 import MediaStudio from './MediaStudio';
@@ -6,6 +7,7 @@ import MediaStudio from './MediaStudio';
 export const dynamic = 'force-dynamic';
 
 export default async function AdminMediaPage() {
+  await requireAdminPage('/admin/media');
   const assets = await getMediaAssets({ limit: 48 });
   return (
     <div className="space-y-8">

@@ -63,11 +63,12 @@ export async function POST(req: NextRequest) {
     name: user.name,
     role: user.role,
   });
-  await setSessionCookie(token, exp);
-
   const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? null;
   const ua = req.headers.get('user-agent');
+  // Persist the authoritative row before issuing a replayable browser token.
+  // A database failure therefore fails closed and never leaves an orphan JWT.
   await recordSession({ userId: user.id, jti, ip, ua, exp });
+  await setSessionCookie(token, exp);
 
   return NextResponse.json({
     ok: true,

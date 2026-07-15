@@ -9,6 +9,7 @@
  *   3. A copy-pasteable directive template + link to the spec.
  */
 import Link from 'next/link';
+import { requireAdminPage } from '@/lib/admin-auth';
 import { getAllArticles, sportLabel, type Article } from '@/lib/articles';
 import {
   buildAllRankings,
@@ -31,6 +32,7 @@ type DirectiveTrace = {
 };
 
 export default async function AdminRankingsPage() {
+  await requireAdminPage('/admin/rankings');
   const articles = await getAllArticles();
   const rankings = buildAllRankings(articles);
 

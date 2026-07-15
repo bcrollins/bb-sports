@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { CheckCircle2, CircleAlert, CircleDashed } from 'lucide-react';
+import { requireAdminPage } from '@/lib/admin-auth';
 import { getAudienceSnapshot, getCommentModerationCounts } from '@/lib/queries';
 import { getAllArticles } from '@/lib/articles';
 import { buildAllRankings, readTrashedTeams } from '@/lib/rankings';
@@ -20,6 +21,7 @@ const PROVIDERS = [
 ];
 
 export default async function LaunchPage() {
+  await requireAdminPage('/admin/launch');
   const [articles, audience, commentCounts] = await Promise.all([
     getAllArticles(),
     getAudienceSnapshot(),

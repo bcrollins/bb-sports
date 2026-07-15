@@ -10,7 +10,8 @@
     "lint": "eslint app components lib scripts tests middleware.ts next.config.mjs tailwind.config.ts",
     "typecheck": "tsc --noEmit",
     "test": "tsx --test tests/**/*.test.ts",
-    "check": "npm run lint && npm run typecheck && npm run test && npm run build",
+    "audit:security": "npm audit --audit-level=moderate",
+    "check": "npm run lint && npm run typecheck && npm run test && npm run audit:security && npm run build",
     "smoke:production": "node scripts/smoke-production.mjs",
     "db:push": "drizzle-kit push"
   },
@@ -20,7 +21,7 @@
     "gray-matter": "^4.0.3",
     "jose": "^5.9.6",
     "lucide-react": "^0.468.0",
-    "next": "^15.5.15",
+    "next": "15.5.20",
     "postgres": "^3.4.5",
     "react": "18.3.1",
     "react-dom": "18.3.1",
@@ -39,11 +40,15 @@
     "autoprefixer": "^10.4.20",
     "drizzle-kit": "^0.31.10",
     "eslint": "^9.39.4",
-    "eslint-config-next": "^15.5.15",
-    "postcss": "^8.4.47",
+    "eslint-config-next": "15.5.20",
+    "postcss": "8.5.19",
     "tailwindcss": "^3.4.13",
     "tsx": "^4.21.0",
     "typescript": "^5.6.2"
+  },
+  "overrides": {
+    "esbuild": "0.28.1",
+    "postcss": "8.5.19"
   },
   "engines": {
     "node": ">=20"

@@ -17,6 +17,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { jwtVerify } from 'jose';
 import { GATE_COOKIE_NAME, verifyGateCookieToken } from '@/lib/gate-cookie';
+import {
+  ADMIN_SESSION_AUDIENCE,
+  ADMIN_SESSION_ISSUER,
+  ADMIN_SESSION_PURPOSE,
+  isAdminRole,
+} from '@/lib/admin-session-contract';
 
 const SESSION_COOKIE = 'bb_session';
 
@@ -94,8 +100,17 @@ async function hasValidSession(req: NextRequest): Promise<boolean> {
   const secret = process.env.JWT_SECRET;
   if (!token || !secret) return false;
   try {
-    await jwtVerify(token, new TextEncoder().encode(secret), { algorithms: ['HS256'] });
-    return true;
+    const { payload } = await jwtVerify(token, new TextEncoder().encode(secret), {
+      algorithms: ['HS256'],
+      issuer: ADMIN_SESSION_ISSUER,
+      audience: ADMIN_SESSION_AUDIENCE,
+    });
+    return Boolean(
+      payload.sub &&
+        payload.jti &&
+        payload.purpose === ADMIN_SESSION_PURPOSE &&
+        isAdminRole(payload.role),
+    );
   } catch {
     return false;
   }
