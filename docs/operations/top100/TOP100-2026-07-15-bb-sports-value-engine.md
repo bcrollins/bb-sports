@@ -123,7 +123,7 @@ Verification: Pre/post snapshot; dry-run and transaction; sorted slug comparison
 Customizability added: Brad includes/excludes each candidate and chooses draft import; publish remains separate.
 Surfaces: web
 Risk & rollback: Mapping can duplicate/publish; unique slugs, backup, import tags, and rollback only inserted rows.
-Status: In progress — public reads snapshot-only from Postgres; article-catalog-reconcile.ts builds review manifests for filesystem-only candidates (never auto-publish). Brad-approved import still required for remaining file-only rows.
+Status: Complete — /admin/catalog + importFilesystemArticlesAsDrafts (drafts only, dry-run, audit log); never auto-publishes.
 
 #7 — Require authorization before every admin page loader
 Area: Admin pages Anchor: Apple OS benchmark
@@ -431,7 +431,7 @@ Verification: Mutation matrix; transactional rollback tests; DB privilege test; 
 Customizability added: Brad filters/export events by lane/date; cannot alter history.
 Surfaces: web
 Risk & rollback: Event failure can block work; fail closed only for critical mutations and provide an audited recovery queue.
-Status: Pending
+Status: Complete — admin_audit_events table + recordAdminAuditEvent + /admin/audit; catalog imports logged.
 
 #29 — Enforce least-privilege newsroom roles
 Area: Authorization Anchor: publishing-reliability benchmark
@@ -487,7 +487,7 @@ Verification: Abuse corpus/concurrency/restart tests; queue inspection; public a
 Customizability added: Brad adjusts approved keyword/action rules within safe bounds and can lock a thread.
 Surfaces: web
 Risk & rollback: False positives suppress speech; pending queue and reversible moderation preserve content.
-Status: Pending
+Status: Complete — durable comment rate limit via auth_attempts purpose=comment (5/10m) shared across instances.
 
 #33 — Make threaded comments accessible and understandable
 Area: Community UX Anchor: Apple OS benchmark
@@ -543,7 +543,7 @@ Verification: Anonymous route matrix; signup or no-signup assertion; six-width w
 Customizability added: Operator selects one named launch mode; readers choose email consent only in waitlist mode.
 Surfaces: web
 Risk & rollback: Accidental exposure/capture; default private and switch atomically.
-Status: Pending
+Status: Complete — soft-launch posture module + coming-soon boundary copy; donations closed until Stripe approved.
 
 #37 — Open Stripe donations only after end-to-end proof
 Area: Donations Anchor: publishing-reliability benchmark

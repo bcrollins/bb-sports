@@ -757,6 +757,29 @@ async function bootstrap(): Promise<void> {
     );
   `);
   await db.execute(sql`
+    CREATE TABLE IF NOT EXISTS admin_audit_events (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      actor_user_id uuid,
+      actor_email varchar(255),
+      action varchar(80) NOT NULL,
+      target_type varchar(80) NOT NULL DEFAULT '',
+      target_id varchar(200) NOT NULL DEFAULT '',
+      summary text NOT NULL DEFAULT '',
+      metadata jsonb NOT NULL DEFAULT '{}'::jsonb,
+      ip_address varchar(64),
+      created_at timestamptz NOT NULL DEFAULT now()
+    );
+  `);
+  await db.execute(sql`
+    CREATE INDEX IF NOT EXISTS idx_admin_audit_events_created
+    ON admin_audit_events(created_at DESC);
+  `);
+  await db.execute(sql`
+    CREATE INDEX IF NOT EXISTS idx_admin_audit_events_action
+    ON admin_audit_events(action);
+  `);
+
+  await db.execute(sql`
     CREATE TABLE IF NOT EXISTS editorial_findings (
       id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
       finding_key varchar(120) NOT NULL UNIQUE,

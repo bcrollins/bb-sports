@@ -29,6 +29,7 @@ import {
 import { ensureBootstrapped } from './db/bootstrap';
 import { moderateComment } from './comment-moderation';
 import type { CommentCreateInput, CommentStatus } from './comment-validation';
+import { assertAuthAttemptAllowed, recordAuthFailure } from './auth-rate-limit';
 import { hashArticleEditableState } from './article-publication';
 import {
   isPostgresConstraintViolation,
@@ -1025,14 +1026,13 @@ export async function createCommentForArticleSlug(input: {
   if (!articleId) throw new Error('Article not found');
 
   const ip = input.ip ?? 'unknown';
-  const recentLimit = new Date(Date.now() - 10 * 60 * 1000);
-  const recent = await db
-    .select({ count: sql<number>`count(*)::int` })
-    .from(comments)
-    .where(and(eq(comments.ipAddress, ip), gt(comments.createdAt, recentLimit)));
-  if ((recent[0]?.count ?? 0) >= 5) {
+  // Durable shared rate limit (survives restarts / multi-instance).
+  const rate = await assertAuthAttemptAllowed({ purpose: 'comment', ip });
+  if (!rate.allowed) {
     throw new Error('Too many comments from this connection. Try again later.');
   }
+  // Count this attempt toward the window (success and spam both consume budget).
+  await recordAuthFailure({ purpose: 'comment', ip });
 
   if (input.comment.parentId) {
     const parentRows = await db
