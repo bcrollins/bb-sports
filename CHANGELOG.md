@@ -7,6 +7,7 @@ All notable changes to BB Sports. Format loosely follows
 
 ### Added
 
+- Rankings methodology callout (editorial, not live scores), sitewide WebSite JSON-LD with SearchAction, and public `/privacy` + `/terms` pages linked from the footer.
 - Split production health into `/api/health/live` (process), `/api/health/ready` (DB readiness), kept combined `/api/health` for smoke, and shipped public `/status` with honest component posture (including live-scores not-enabled).
 - Locked live scores behind commercial approval + credentials (`lib/live-scores.ts`) so unlicensed scrapes cannot ship as product surface.
 - Added filesystem↔DB article catalog reconciliation helpers (review manifest only — never auto-publish).

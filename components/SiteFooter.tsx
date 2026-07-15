@@ -89,6 +89,8 @@ export default async function SiteFooter() {
           <ul className="space-y-2 text-bone/85 text-[15px]">
             <li><Link href="/about" className="hover:text-breaking">About Brad</Link></li>
             <li><Link href="/support/terms" className="hover:text-breaking">Donation terms</Link></li>
+            <li><Link href="/privacy" className="hover:text-breaking">Privacy</Link></li>
+            <li><Link href="/terms" className="hover:text-breaking">Terms</Link></li>
             <li><Link href="/contact" className="hover:text-breaking">Contact &amp; tips</Link></li>
             <li><Link href="/editorial-standards" className="hover:text-breaking">Editorial standards</Link></li>
             <li><Link href="/corrections" className="hover:text-breaking">Corrections</Link></li>
