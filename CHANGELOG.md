@@ -8,6 +8,7 @@ All notable changes to BB Sports. Format loosely follows
 ### Added
 
 - Defined the zero-credential real-time newsroom foundation, deterministic owner-independent verification threshold, Brad-only publish boundary, protected SSE/fallback contract, Railway worker topology, provider kill switches, incident/correction runbooks, and source-by-source commercial activation posture.
+- Added provider governance persistence without activating any connector: `news_providers`, lease/fencing, checkpoint, ingest-attempt, and dead-letter tables; pure activation evaluation that never allows transport from configuration alone; credential presence without secret exposure; and filtered handling of known-harmless Postgres bootstrap notices.
 
 ### Security
 

@@ -8,20 +8,45 @@
  */
 import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
+import { isHarmlessBootstrapNotice } from '../newsroom-providers';
 import * as schema from './schema';
 
 declare global {
   var __bbsportsPg: ReturnType<typeof postgres> | undefined;
 }
 
+function onPostgresNotice(notice: {
+  severity?: string;
+  message?: string;
+  code?: string;
+}): void {
+  // Cold bootstrap re-runs CREATE IF NOT EXISTS / ADD COLUMN IF NOT EXISTS and
+  // can flood Railway with known-harmless duplicate-object notices. Real
+  // warnings and errors must remain observable.
+  if (isHarmlessBootstrapNotice(notice)) return;
+  const severity = notice.severity ?? 'NOTICE';
+  const message = notice.message ?? '';
+  console.error(`[postgres ${severity}] ${message}`);
+}
+
 function getClient() {
   const url = process.env.DATABASE_URL;
   if (!url) return null;
   if (process.env.NODE_ENV === 'production') {
-    return postgres(url, { max: 10, idle_timeout: 30, ssl: 'prefer' });
+    return postgres(url, {
+      max: 10,
+      idle_timeout: 30,
+      ssl: 'prefer',
+      onnotice: onPostgresNotice,
+    });
   }
   if (!globalThis.__bbsportsPg) {
-    globalThis.__bbsportsPg = postgres(url, { max: 5, idle_timeout: 30, ssl: 'prefer' });
+    globalThis.__bbsportsPg = postgres(url, {
+      max: 5,
+      idle_timeout: 30,
+      ssl: 'prefer',
+      onnotice: onPostgresNotice,
+    });
   }
   return globalThis.__bbsportsPg!;
 }

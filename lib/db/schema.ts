@@ -11,6 +11,8 @@
  *   donation_intents       — supporter-interest ledger before Stripe Checkout opens.
  *   media_assets           — internally tracked AI/generated/editorial media library.
  *   analytics_events       — first-party privacy-filtered behavior events.
+ *   news_providers / leases / checkpoints / ingest_attempts / dead_letters
+ *                 — external connector governance (seeded dark; no secrets).
  *
  * All timestamps stored as Postgres `timestamptz`. All ids are uuid v4.
  */
@@ -411,6 +413,154 @@ export const newsroomActivity = pgTable(
   ],
 );
 
+// ---------- external provider governance ----------
+// Configuration, leases, checkpoints, and operational ledgers for future
+// connectors. No table here publishes articles or verifies newsroom events.
+// Secrets never live in these rows — only credential presence metadata.
+export const newsProviders = pgTable(
+  'news_providers',
+  {
+    providerKey: varchar('provider_key', { length: 64 }).primaryKey(),
+    displayName: varchar('display_name', { length: 200 }).notNull(),
+    providerKind: varchar('provider_kind', { length: 32 }).notNull(),
+    commercialStatus: varchar('commercial_status', { length: 32 })
+      .notNull()
+      .default('review_required'),
+    commercialNotes: text('commercial_notes').notNull().default(''),
+    termsUrl: text('terms_url'),
+    termsReviewedAt: timestamp('terms_reviewed_at', { withTimezone: true }),
+    termsReviewOwner: varchar('terms_review_owner', { length: 160 }).notNull().default(''),
+    approvalOwner: varchar('approval_owner', { length: 160 }).notNull().default(''),
+    approvedAt: timestamp('approved_at', { withTimezone: true }),
+    nextReviewAt: timestamp('next_review_at', { withTimezone: true }),
+    // Env var names only — never secret values.
+    credentialEnvNames: jsonb('credential_env_names').$type<string[]>().notNull().default([]),
+    credentialPresence: varchar('credential_presence', { length: 24 }).notNull().default('absent'),
+    credentialPresenceDigest: varchar('credential_presence_digest', { length: 64 }),
+    retentionPosture: jsonb('retention_posture').notNull().default({}),
+    attributionPosture: text('attribution_posture').notNull().default(''),
+    allowedUse: varchar('allowed_use', { length: 40 }).notNull().default('none'),
+    monthlySpendCeilingCents: integer('monthly_spend_ceiling_cents'),
+    // DB-side enablement. Still requires env gates + commercial approval.
+    configEnabled: boolean('config_enabled').notNull().default(false),
+    cursorKind: varchar('cursor_kind', { length: 32 }).notNull().default('none'),
+    lastSuccessAt: timestamp('last_success_at', { withTimezone: true }),
+    lastFailureAt: timestamp('last_failure_at', { withTimezone: true }),
+    lastFailureSummary: text('last_failure_summary').notNull().default(''),
+    consecutiveFailures: integer('consecutive_failures').notNull().default(0),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index('idx_news_providers_commercial').on(table.commercialStatus),
+    index('idx_news_providers_enabled').on(table.configEnabled),
+    index('idx_news_providers_kind').on(table.providerKind),
+  ],
+);
+
+// Singleton mutable lease per provider. fence_token only increases on acquire.
+export const newsProviderLeases = pgTable(
+  'news_provider_leases',
+  {
+    providerKey: varchar('provider_key', { length: 64 })
+      .primaryKey()
+      .references(() => newsProviders.providerKey, { onDelete: 'restrict' }),
+    ownerId: varchar('owner_id', { length: 160 }).notNull(),
+    fenceToken: integer('fence_token').notNull(),
+    acquiredAt: timestamp('acquired_at', { withTimezone: true }).notNull(),
+    renewedAt: timestamp('renewed_at', { withTimezone: true }).notNull(),
+    expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+    heartbeatAt: timestamp('heartbeat_at', { withTimezone: true }).notNull(),
+    metadata: jsonb('metadata').notNull().default({}),
+  },
+  (table) => [
+    index('idx_news_provider_leases_expires').on(table.expiresAt),
+    index('idx_news_provider_leases_owner').on(table.ownerId),
+  ],
+);
+
+// Durable cursor/checkpoint. Writers must present a live matching fence token.
+export const newsProviderCheckpoints = pgTable(
+  'news_provider_checkpoints',
+  {
+    providerKey: varchar('provider_key', { length: 64 })
+      .primaryKey()
+      .references(() => newsProviders.providerKey, { onDelete: 'restrict' }),
+    cursorKind: varchar('cursor_kind', { length: 32 }).notNull().default('none'),
+    cursorValue: text('cursor_value').notNull().default(''),
+    fenceToken: integer('fence_token').notNull().default(0),
+    lastCommittedAt: timestamp('last_committed_at', { withTimezone: true }),
+    lastObservedProviderAt: timestamp('last_observed_provider_at', { withTimezone: true }),
+    metadata: jsonb('metadata').notNull().default({}),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index('idx_news_provider_checkpoints_updated').on(table.updatedAt)],
+);
+
+// Append-only ingest attempt ledger: latency, rate limits, failures, reconnects.
+export const newsProviderIngestAttempts = pgTable(
+  'news_provider_ingest_attempts',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    providerKey: varchar('provider_key', { length: 64 })
+      .notNull()
+      .references(() => newsProviders.providerKey, { onDelete: 'restrict' }),
+    attemptKind: varchar('attempt_kind', { length: 32 }).notNull(),
+    outcome: varchar('outcome', { length: 32 }).notNull(),
+    startedAt: timestamp('started_at', { withTimezone: true }).notNull(),
+    finishedAt: timestamp('finished_at', { withTimezone: true }).notNull(),
+    latencyMs: integer('latency_ms'),
+    httpStatus: integer('http_status'),
+    retryAfterMs: integer('retry_after_ms'),
+    fenceToken: integer('fence_token'),
+    cursorBefore: text('cursor_before'),
+    cursorAfter: text('cursor_after'),
+    externalId: varchar('external_id', { length: 320 }),
+    payloadHash: varchar('payload_hash', { length: 64 }),
+    errorCode: varchar('error_code', { length: 80 }),
+    errorSummary: text('error_summary').notNull().default(''),
+    metadata: jsonb('metadata').notNull().default({}),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index('idx_news_provider_ingest_provider_time').on(table.providerKey, table.createdAt),
+    index('idx_news_provider_ingest_outcome').on(table.outcome, table.createdAt),
+    index('idx_news_provider_ingest_external').on(table.providerKey, table.externalId),
+    index('idx_news_provider_ingest_payload').on(table.payloadHash),
+  ],
+);
+
+// Append-only dead-letter ledger. Resolution appends a new activity/attempt;
+// resolved_at may be set once via the controlled resolve path.
+export const newsProviderDeadLetters = pgTable(
+  'news_provider_dead_letters',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    providerKey: varchar('provider_key', { length: 64 })
+      .notNull()
+      .references(() => newsProviders.providerKey, { onDelete: 'restrict' }),
+    reason: varchar('reason', { length: 80 }).notNull(),
+    externalId: varchar('external_id', { length: 320 }),
+    payloadHash: varchar('payload_hash', { length: 64 }),
+    observedAt: timestamp('observed_at', { withTimezone: true }).notNull().defaultNow(),
+    errorSummary: text('error_summary').notNull().default(''),
+    // Bounded non-secret provenance only. Never full restricted provider bodies.
+    rawProvenance: jsonb('raw_provenance').notNull().default({}),
+    ingestAttemptId: uuid('ingest_attempt_id').references(
+      () => newsProviderIngestAttempts.id,
+      { onDelete: 'restrict' },
+    ),
+    resolvedAt: timestamp('resolved_at', { withTimezone: true }),
+    resolutionSummary: text('resolution_summary').notNull().default(''),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index('idx_news_provider_dead_letters_open').on(table.providerKey, table.resolvedAt),
+    index('idx_news_provider_dead_letters_payload').on(table.payloadHash),
+    index('idx_news_provider_dead_letters_external').on(table.providerKey, table.externalId),
+  ],
+);
+
 // ---------- immutable article publication ----------
 // Revisions are content-addressed, append-only snapshots of the complete
 // reader-visible surface. Creating a revision does not make it public.
@@ -533,6 +683,12 @@ export type NewsEvidence = typeof newsEvidence.$inferSelect;
 export type NewNewsEvidence = typeof newsEvidence.$inferInsert;
 export type NewsVerificationReview = typeof newsVerificationReviews.$inferSelect;
 export type NewsroomActivity = typeof newsroomActivity.$inferSelect;
+export type NewsProvider = typeof newsProviders.$inferSelect;
+export type NewNewsProvider = typeof newsProviders.$inferInsert;
+export type NewsProviderLease = typeof newsProviderLeases.$inferSelect;
+export type NewsProviderCheckpoint = typeof newsProviderCheckpoints.$inferSelect;
+export type NewsProviderIngestAttempt = typeof newsProviderIngestAttempts.$inferSelect;
+export type NewsProviderDeadLetter = typeof newsProviderDeadLetters.$inferSelect;
 export type ArticleRevision = typeof articleRevisions.$inferSelect;
 export type NewArticleRevision = typeof articleRevisions.$inferInsert;
 export type ArticlePublicationEvent = typeof articlePublicationEvents.$inferSelect;
