@@ -53,10 +53,11 @@ const GATE_BYPASS_EXACT = new Set<string>([
 const GATE_BYPASS_PREFIX = [
   '/_next/',
   '/api/media/assets/',
+  '/api/og/',
   '/brand/',
   '/images/',
   '/api/health/',
-]; // Static assets + health probes always pass the gate.
+]; // Static assets, social cards, and health probes always pass the gate.
 const ADMIN_PUBLIC = new Set<string>(['/admin/login', '/api/admin/login', '/api/admin/logout']);
 
 function attachRequestId(req: NextRequest, res: NextResponse): NextResponse {

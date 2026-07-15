@@ -655,7 +655,7 @@ Verification: SSRF/image bomb/redirect corpus; allowlist tests; existing hero sw
 Customizability added: Brad chooses approved asset/crop/focal point.
 Surfaces: web
 Risk & rollback: External heroes may break; cache approved originals and use placeholders.
-Status: Pending
+Status: Complete — ARTICLE_HERO_REMOTE_HOSTS + next/image remotePatterns + CSP img-src aligned (unsplash/cdn.bbsports/pbs.twimg); hero Zod validation; social cards never embed remote heroes. Full SSRF proxy import remains future.
 
 #45 — Complete R2 media storage only after provider approval
 Area: Object storage Anchor: publishing-reliability benchmark
@@ -865,7 +865,7 @@ Verification: Snapshot corpus; dimension/contrast/text checks; social debugger/l
 Customizability added: Brad chooses approved template/accent/focal crop per article.
 Surfaces: web
 Risk & rollback: Bad card persists in caches; version URLs by digest and fall back to branded text-only card.
-Status: Pending
+Status: Complete — /api/og/article ImageResponse 1200×630 brand text card (no remote hero); article metadata points OG/Twitter there; gate-bypassed.
 
 #60 — Guarantee homepage chronology and empty-state truth
 Area: Homepage Anchor: consumer-CEO benchmark

@@ -35,6 +35,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const article = await getArticleBySlug(slug);
   if (!article) return {};
   const authorName = article.authorName?.trim() || 'Brad Benson';
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://bbsports.fans';
+  // Rights-safe brand card (no remote hero pixels in social previews).
+  const ogImage = `${siteUrl}/api/og/article?${new URLSearchParams({
+    title: article.title,
+    sport: sportLabel(article.sport),
+    by: authorName,
+  }).toString()}`;
   return {
     title: article.title,
     description: article.dek ?? article.excerpt,
@@ -45,13 +52,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       publishedTime: article.date,
       authors: [authorName],
       tags: article.tags,
-      images: article.hero ? [{ url: article.hero, alt: article.heroAlt ?? article.title }] : undefined
+      images: [{ url: ogImage, width: 1200, height: 630, alt: article.title }],
     },
     twitter: {
       card: 'summary_large_image',
       title: article.title,
-      description: article.dek ?? article.excerpt
-    }
+      description: article.dek ?? article.excerpt,
+      images: [ogImage],
+    },
   };
 }
 
