@@ -31,8 +31,20 @@ export function getResendEmailConfig(env: EnvLike = process.env): {
   };
 }
 
+/** Human confirmation page (GET is read-only; form POST mutates). */
 export function newsletterUnsubscribeUrl(origin: string, token: string): string {
   const url = new URL('/newsletter/unsubscribe', origin);
+  url.searchParams.set('token', token);
+  return url.toString();
+}
+
+/**
+ * RFC 8058 one-click endpoint. Must accept form body
+ * `List-Unsubscribe=One-Click` without a confirmation step.
+ * Token lives only in the URL query (never logged).
+ */
+export function newsletterOneClickUnsubscribeUrl(origin: string, token: string): string {
+  const url = new URL('/api/newsletter/unsubscribe', origin);
   url.searchParams.set('token', token);
   return url.toString();
 }
@@ -41,6 +53,8 @@ export function buildNewsletterWelcomeEmail(input: {
   to: string;
   from: string;
   unsubscribeUrl: string;
+  /** RFC 8058 machine one-click URL (API). Defaults to human page only if omitted. */
+  oneClickUnsubscribeUrl?: string;
 }): {
   from: string;
   to: string[];
@@ -49,6 +63,7 @@ export function buildNewsletterWelcomeEmail(input: {
   html: string;
   headers: Record<string, string>;
 } {
+  const oneClickUrl = input.oneClickUnsubscribeUrl ?? input.unsubscribeUrl;
   return {
     from: input.from,
     to: [input.to],
@@ -66,10 +81,11 @@ export function buildNewsletterWelcomeEmail(input: {
       '<p>You are on the BB Sports list.</p>',
       '<p>Brad Benson writes sports from the fan view. No spin, no script, no paywall.</p>',
       '<p>You will get launch notes and new-take alerts when BB Sports publishes.</p>',
-      `<p><a href="${escapeHtml(input.unsubscribeUrl)}">Unsubscribe in one click</a></p>`,
+      `<p><a href="${escapeHtml(input.unsubscribeUrl)}">Manage email preferences / unsubscribe</a></p>`,
     ].join(''),
     headers: {
-      'List-Unsubscribe': `<${input.unsubscribeUrl}>`,
+      // Machine clients POST One-Click to the API URL; humans use the page link above.
+      'List-Unsubscribe': `<${oneClickUrl}>`,
       'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
     },
   };
@@ -94,10 +110,15 @@ export async function sendNewsletterWelcomeEmail(input: {
   }
 
   const unsubscribeUrl = newsletterUnsubscribeUrl(input.origin, input.unsubscribeToken);
+  const oneClickUnsubscribeUrl = newsletterOneClickUnsubscribeUrl(
+    input.origin,
+    input.unsubscribeToken,
+  );
   const payload = buildNewsletterWelcomeEmail({
     to: input.to,
     from: config.from,
     unsubscribeUrl,
+    oneClickUnsubscribeUrl,
   });
 
   let response: Response;

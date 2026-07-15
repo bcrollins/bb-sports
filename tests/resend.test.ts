@@ -23,18 +23,20 @@ test('Resend newsletter config fails closed behind approval and required env', (
 
 test('newsletter welcome email includes visible and header unsubscribe paths', () => {
   const unsubscribeUrl = newsletterUnsubscribeUrl('https://bbsports.fans', 'a'.repeat(48));
+  const oneClick = `https://bbsports.fans/api/newsletter/unsubscribe?token=${'a'.repeat(48)}`;
   const payload = buildNewsletterWelcomeEmail({
     to: 'fan@example.com',
     from: 'Brad Benson <brad@mail.bbsports.fans>',
     unsubscribeUrl,
+    oneClickUnsubscribeUrl: oneClick,
   });
 
   assert.equal(unsubscribeUrl, `https://bbsports.fans/newsletter/unsubscribe?token=${'a'.repeat(48)}`);
   assert.deepEqual(payload.to, ['fan@example.com']);
-  assert.equal(payload.headers['List-Unsubscribe'], `<${unsubscribeUrl}>`);
+  assert.equal(payload.headers['List-Unsubscribe'], `<${oneClick}>`);
   assert.equal(payload.headers['List-Unsubscribe-Post'], 'List-Unsubscribe=One-Click');
   assert.match(payload.text, /Unsubscribe:/);
-  assert.match(payload.html, /Unsubscribe in one click/);
+  assert.match(payload.html, /Manage email preferences \/ unsubscribe/);
 });
 
 test('newsletter welcome send is disabled until Resend is approved', async () => {
