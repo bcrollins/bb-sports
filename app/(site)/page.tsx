@@ -204,7 +204,15 @@ export default async function HomePage() {
       {desk.lead ? (
         <section className="bg-bone">
           <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 sm:py-16">
-            <p className="bb-eyebrow !text-breaking">Lead take</p>
+            <div className="flex flex-wrap items-end justify-between gap-3">
+              <p className="bb-eyebrow !text-breaking">Lead take</p>
+              {desk.lastUpdated ? (
+                <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-navy/45">
+                  Desk updated{' '}
+                  <time dateTime={desk.lastUpdated}>{formatDate(desk.lastUpdated)}</time>
+                </p>
+              ) : null}
+            </div>
             <LeadStory article={desk.lead} />
           </div>
         </section>

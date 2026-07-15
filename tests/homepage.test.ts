@@ -32,6 +32,18 @@ test('homepage desk orders stories by date with no sport categorisation', () => 
 
   assert.equal(desk.lead?.slug, 'new-nhl');
   assert.deepEqual(desk.latest.map((a) => a.slug), ['cfb', 'old-nfl']);
+  assert.equal(desk.lastUpdated, '2026-05-03T12:00:00.000Z');
+  assert.deepEqual(desk.renderedSlugs, ['new-nhl', 'cfb', 'old-nfl']);
+  assert.equal(new Set(desk.renderedSlugs).size, desk.renderedSlugs.length);
+  assert.ok(!desk.latest.some((a) => a.slug === desk.lead?.slug));
+});
+
+test('homepage desk empty catalog is honest', () => {
+  const desk = buildHomepageDesk([], {});
+  assert.equal(desk.lead, null);
+  assert.equal(desk.latest.length, 0);
+  assert.equal(desk.lastUpdated, null);
+  assert.deepEqual(desk.renderedSlugs, []);
 });
 
 test('franchise rankings apply demotions from articles', () => {

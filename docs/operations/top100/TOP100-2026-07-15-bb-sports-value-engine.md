@@ -879,7 +879,7 @@ Verification: Feed fixtures; fault injection; six-width visual/keyboard/performa
 Customizability added: Reader may prioritize favorite sports after default chronological feed; “all latest” remains one tap.
 Surfaces: web
 Risk & rollback: Personalization can create filter bubbles; default remains chronological and reset visible.
-Status: Pending
+Status: Complete — buildHomepageDesk chronological newest-first, lead excluded from latest (no card dupes), lastUpdated stamp, empty EmptyFrontPage + archive warming copy; rankings rail honest editorial labeling.
 
 #61 — Complete every article loading, empty, error, and unavailable state
 Area: Article UX Anchor: Apple OS benchmark
