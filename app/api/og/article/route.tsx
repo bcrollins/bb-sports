@@ -35,7 +35,7 @@ export async function GET(req: NextRequest) {
               fontSize: 22,
               letterSpacing: 4,
               textTransform: 'uppercase',
-              color: '#D7263D',
+              color: '#6B7280',
               fontWeight: 700,
               marginBottom: 20,
             }}

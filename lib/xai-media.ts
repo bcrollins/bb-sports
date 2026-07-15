@@ -54,7 +54,7 @@ export function composeSportsMediaPrompt(input: MediaGenerationInput): string {
     `Create a ${format} for BB Sports.`,
     `Placement: ${input.placement}. Sport/context: ${input.sport || 'general sports'}.`,
     `Creative brief: ${input.brief}.`,
-    'Visual style: premium modern sports desk, Apple-level polish, New York Times editorial restraint, broadcast energy, navy #0A1F44, bone #F5F2EC, breaking-news red #D7263D, crisp lighting, useful negative space for headlines.',
+    'Visual style: premium modern sports desk, Apple-level polish, New York Times editorial restraint, broadcast energy, navy #0A1F44, bone #F5F2EC, accent grey #6B7280, crisp lighting, useful negative space for headlines.',
     'Brand guardrails: do not copy official team logos, league marks, broadcast graphics, Getty/AP watermarks, player likenesses, celebrity likenesses, or copyrighted photos. Use original abstract sports atmosphere, silhouettes, equipment, fields, arenas, textures, color, and motion.',
     'Text guardrail: no readable text inside the image or video unless explicitly requested.',
   ].join(' ');

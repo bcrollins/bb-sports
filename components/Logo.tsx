@@ -35,7 +35,7 @@ export default function Logo({
   asLink = false
 }: Props) {
   const fg = scheme === 'bone-on-navy' ? '#F5F2EC' : '#0A1F44';
-  const accent = '#D7263D';
+  const accent = '#6B7280';
   const bugBg = scheme === 'bone-on-navy' ? '#F5F2EC' : scheme === 'red-bug' ? accent : '#0A1F44';
   const bugFg = scheme === 'bone-on-navy' ? '#0A1F44' : scheme === 'red-bug' ? '#F5F2EC' : '#F5F2EC';
 

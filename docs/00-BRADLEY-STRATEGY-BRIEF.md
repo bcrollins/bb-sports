@@ -26,7 +26,7 @@
 | **Aesthetic** | Classic newspaper — serif headlines, generous white space, news-grid feel — **not** sterile or corporate |
 | **Primary color** | Navy `#0A1F44` |
 | **Accent** | Bone/cream `#F5F2EC`, charcoal `#1A1A1A`, gray `#6B7280` |
-| **Breaking-news red** | `#D7263D` (used sparingly — only for breaking-news labels and primary CTAs) |
+| **Accent grey** | `#6B7280` (used sparingly — labels, CTAs, hover accents; formerly breaking-news red) |
 | **Type** | Headlines: serif (Playfair Display / Source Serif). Body: Inter. Stats/scores: JetBrains Mono. |
 | **Logo** | None yet. Wordmark `BB Sports` set in serif italic with a navy underline rule; favicon is a navy square with bone "BB". |
 | **Vibe in three adjectives** | Free-flowing, fiery, conversational. |

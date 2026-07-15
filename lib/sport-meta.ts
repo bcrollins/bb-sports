@@ -1,7 +1,7 @@
 import type { SportSlug } from './sports';
 
 // Per-sport broadcast accents — used for tag pills, eyebrows, card top-rules.
-// Stays inside the BB Sports brand (navy + bone + red as the network primary)
+// Stays inside the BB Sports brand (navy + bone + grey as the network primary)
 // while giving each section a recognisable cue, the way ESPN colour-codes
 // NFL Live vs SportsCenter vs College GameDay.
 
@@ -14,14 +14,14 @@ export type SportAccent = {
 };
 
 const META: Record<SportSlug, SportAccent> = {
-  nfl:                { label: 'NFL',              short: 'NFL', bg: '#0A1F44', fg: '#F5F2EC', accent: '#D7263D' },
+  nfl:                { label: 'NFL',              short: 'NFL', bg: '#0A1F44', fg: '#F5F2EC', accent: '#6B7280' },
   mlb:                { label: 'MLB',              short: 'MLB', bg: '#0A1F44', fg: '#F5F2EC', accent: '#1B7F3B' },
   nhl:                { label: 'NHL',              short: 'NHL', bg: '#06122A', fg: '#F5F2EC', accent: '#7BB3FF' },
   nba:                { label: 'NBA',              short: 'NBA', bg: '#C9082A', fg: '#F5F2EC', accent: '#1A5BC1' },
   'college-football': { label: 'College Football', short: 'CFB', bg: '#FF6B00', fg: '#0A1F44', accent: '#0A1F44' },
   soccer:             { label: 'Soccer',           short: 'PL',  bg: '#1B5E20', fg: '#F5F2EC', accent: '#FFC107' },
-  mma:                { label: 'MMA',              short: 'MMA', bg: '#0E0E10', fg: '#F5F2EC', accent: '#D7263D' },
-  general:            { label: 'BB Sports',        short: 'BB',  bg: '#0A1F44', fg: '#F5F2EC', accent: '#D7263D' }
+  mma:                { label: 'MMA',              short: 'MMA', bg: '#0E0E10', fg: '#F5F2EC', accent: '#6B7280' },
+  general:            { label: 'BB Sports',        short: 'BB',  bg: '#0A1F44', fg: '#F5F2EC', accent: '#6B7280' }
 };
 
 export function sportMeta(s: SportSlug): SportAccent {

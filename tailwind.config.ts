@@ -26,9 +26,9 @@ const config: Config = {
         },
         charcoal: '#1A1A1A',
         ink: '#0E0E10',
-        breaking: '#D7263D',
+        breaking: '#6B7280',
         'navy-deep': '#06122A',
-        'broadcast-red': '#D7263D'
+        'broadcast-red': '#6B7280'
       },
       fontFamily: {
         // Internal CSS variables are defined in app/globals.css. No build-time

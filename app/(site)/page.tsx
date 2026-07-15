@@ -375,7 +375,7 @@ function LeadStory({ article }: { article: Article }) {
             className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
           />
         ) : (
-          <div className="absolute inset-0 bg-[linear-gradient(135deg,#06122A,#0A1F44_60%,#D7263D)]" />
+          <div className="absolute inset-0 bg-[linear-gradient(135deg,#06122A,#0A1F44_60%,#6B7280)]" />
         )}
         <div className="absolute left-4 top-4 flex flex-wrap gap-2">
           <SportTag sport={article.sport} size="sm" asLink={false} />
