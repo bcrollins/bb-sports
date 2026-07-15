@@ -92,6 +92,7 @@ export default async function SiteFooter() {
             <li><Link href="/contact" className="hover:text-breaking">Contact &amp; tips</Link></li>
             <li><Link href="/editorial-standards" className="hover:text-breaking">Editorial standards</Link></li>
             <li><Link href="/corrections" className="hover:text-breaking">Corrections</Link></li>
+            <li><Link href="/status" className="hover:text-breaking">Status</Link></li>
             <li><Link href="/coming-soon" className="hover:text-breaking">Newsletter</Link></li>
           </ul>
         </div>

@@ -28,6 +28,9 @@ async function main() {
   if (config.expectedCommit) console.log(`Expected commit: ${config.expectedCommit}`);
 
   await runCheck('health endpoint', checkHealth);
+  await runCheck('health live probe', checkHealthLive);
+  await runCheck('health ready probe', checkHealthReady);
+  await runCheck('public status page', checkStatusPage);
   await runCheck('soft-launch gate redirect', checkGateRedirect);
   await runCheck('signed access-wall credential', establishGateCookie);
   await runCheck('live-newsroom auth boundary', checkNewsroomAuthBoundary);
@@ -105,6 +108,34 @@ async function checkHealth() {
     invariant(body.db.reachable === true, 'database is configured but not reachable');
   }
   return `commit ${body.commit || 'unknown'}, db ${body.db?.reachable ? 'reachable' : 'not configured'}`;
+}
+
+async function checkHealthLive() {
+  const response = await request('/api/health/live');
+  assertStatus(response, 200, '/api/health/live');
+  const body = await parseJson(response, '/api/health/live');
+  invariant(body.check === 'live', 'live probe missing check=live');
+  invariant(body.status === 'ok', 'live probe not ok');
+  return 'process live';
+}
+
+async function checkHealthReady() {
+  const response = await request('/api/health/ready');
+  assertStatus(response, 200, '/api/health/ready');
+  const body = await parseJson(response, '/api/health/ready');
+  invariant(body.check === 'ready', 'ready probe missing check=ready');
+  invariant(body.status === 'ready', `expected ready, got ${body.status}`);
+  return `ready db latency ${body.db?.latencyMs ?? 'n/a'}ms`;
+}
+
+async function checkStatusPage() {
+  const response = await request('/status');
+  assertStatus(response, 200, '/status');
+  const html = await response.text();
+  invariant(html.includes('BB Sports status'), 'status page heading missing');
+  invariant(html.includes('Live scores'), 'status page missing live scores posture');
+  invariant(!html.includes('Application error'), 'status page application error');
+  return 'public status page';
 }
 
 async function checkGateRedirect() {

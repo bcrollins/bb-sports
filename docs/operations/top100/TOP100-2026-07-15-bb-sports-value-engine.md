@@ -123,7 +123,7 @@ Verification: Pre/post snapshot; dry-run and transaction; sorted slug comparison
 Customizability added: Brad includes/excludes each candidate and chooses draft import; publish remains separate.
 Surfaces: web
 Risk & rollback: Mapping can duplicate/publish; unique slugs, backup, import tags, and rollback only inserted rows.
-Status: In progress — public runtime reads are snapshot-only from Postgres, missing production DB fails closed, and fresh Markdown imports remain drafts; the six historical file-only candidates still require a reviewed reconciliation manifest before any publication decision.
+Status: In progress — public reads snapshot-only from Postgres; article-catalog-reconcile.ts builds review manifests for filesystem-only candidates (never auto-publish). Brad-approved import still required for remaining file-only rows.
 
 #7 — Require authorization before every admin page loader
 Area: Admin pages Anchor: Apple OS benchmark
@@ -137,7 +137,7 @@ Verification: Direct-request all 12 pages with missing/forged/revoked/valid cook
 Customizability added: Safe return-to-requested-page behavior; guard policy is fixed.
 Surfaces: web
 Risk & rollback: Login lockout; keep route inventory tests and rollback shell layout only, not page guards.
-Status: Pending
+Status: Complete — every protected admin page calls requireAdminPage before loaders; login remains ungated behind site wall.
 
 #8 — Add durable rate limiting to the access wall
 Area: Access wall abuse prevention Anchor: publishing-reliability benchmark
@@ -179,7 +179,7 @@ Verification: Exercise all 11 route files/methods; test middleware bypass; inspe
 Customizability added: None—authorization is invariant.
 Surfaces: web
 Risk & rollback: Hidden anonymous caller may break; fix the caller and never restore an unguarded route.
-Status: Pending
+Status: Complete — protected admin API handlers call getCurrentUser before work; login/logout intentionally public.
 
 #11 — Enforce CSRF, origin, and Zod validation at every mutation boundary
 Area: API integrity Anchor: publishing-reliability benchmark
@@ -291,7 +291,7 @@ Verification: Config-schema and fail-closed tests; provider contract fixture; ti
 Customizability added: Readers may later choose favorite leagues/teams once licensed data exists; they cannot hide freshness or attribution.
 Surfaces: web
 Risk & rollback: Provider outage can empty a surface; preserve editorial feed fallback and disable provider adapter independently.
-Status: Pending
+Status: Complete — evaluateLiveScoresPosture fails closed without BBSPORTS_APPROVED_LIVE_SCORES + credentials; status page reports not_enabled; no scrape path.
 
 #19 — Validate every production environment variable from one schema
 Area: Configuration reliability Anchor: publishing-reliability benchmark
@@ -347,7 +347,7 @@ Verification: Unit/integration fault injection for each dependency; Railway heal
 Customizability added: Operator can tune non-security latency thresholds; dependency requirements follow active features.
 Surfaces: web
 Risk & rollback: Strict readiness can restart a recoverable service; keep liveness separate and rollback Railway probe target without weakening diagnostics.
-Status: Pending
+Status: Complete — /api/health/live process-only; /api/health/ready requires DB in production; combined /api/health retained for smoke with endpoint map.
 
 #23 — Make deploy provenance exact and publicly verifiable
 Area: Release integrity Anchor: publishing-reliability benchmark
@@ -1019,7 +1019,7 @@ Verification: Fault/time-travel fixtures; accessibility/mobile; live health/stat
 Customizability added: Brad/operator writes incident copy and maintenance windows; system state source fixed.
 Surfaces: web
 Risk & rollback: Same-app outage hides status; document external status provider as later optional, not falsely claim independence.
-Status: Pending
+Status: Complete — public /status with overall + web/db/editorial/scores posture, release SHA, machine probe links; gate-bypassed.
 
 #71 — Define SLOs and alert on reader-impacting failures
 Area: Observability Anchor: publishing-reliability benchmark
