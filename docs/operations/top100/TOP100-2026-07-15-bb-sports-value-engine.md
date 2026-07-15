@@ -403,7 +403,7 @@ Verification: Time-travel cleanup tests; before/after clone counts; privacy inve
 Customizability added: Readers can request deletion; operator chooses retention only within approved maxima.
 Surfaces: web
 Risk & rollback: Over-deletion harms investigations; back up, stage dry-run, and roll forward from policy—not restore expired PII.
-Status: Pending
+Status: Complete — NETWORK_METADATA_RETENTION policy + dry-run SQL builder + IP-RETENTION.md; analytics salt independent of JWT; APPLY is manual operator SQL only.
 
 #27 — Protect confidential tips end to end
 Area: Tips inbox Anchor: sports-newsroom benchmark
