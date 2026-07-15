@@ -32,6 +32,8 @@ async function main() {
   await runCheck('health ready probe', checkHealthReady);
   await runCheck('public status page', checkStatusPage);
   await runCheck('soft-launch robots.txt', checkRobotsSoftLaunch);
+  await runCheck('soft-launch RSS posture', checkRssSoftLaunch);
+  await runCheck('article OG card', checkArticleOgCard);
   await runCheck('soft-launch gate redirect', checkGateRedirect);
   await runCheck('signed access-wall credential', establishGateCookie);
   await runCheck('live-newsroom auth boundary', checkNewsroomAuthBoundary);
@@ -171,6 +173,34 @@ async function checkRobotsSoftLaunch() {
   }
   invariant(/Disallow:\s*\//i.test(text), 'soft launch robots must Disallow: /');
   return 'soft launch robots Disallow: /';
+}
+
+async function checkRssSoftLaunch() {
+  const response = await request('/rss.xml');
+  assertStatus(response, 200, '/rss.xml');
+  const body = await response.text();
+  invariant(/<rss version="2\.0"/.test(body), 'RSS missing version 2.0 root');
+  if (healthSnapshot?.release?.publicLaunch === true) {
+    invariant(body.includes('<item>'), 'public launch RSS should include items when articles exist');
+    return 'public launch RSS has items';
+  }
+  invariant(!body.includes('<item>'), 'soft launch RSS must not syndicate article items');
+  return 'soft launch RSS channel without items';
+}
+
+async function checkArticleOgCard() {
+  const qs = new URLSearchParams({
+    title: ARTICLE_TITLE,
+    sport: 'NFL',
+    by: 'Brad Benson',
+  });
+  const response = await request(`/api/og/article?${qs.toString()}`);
+  assertStatus(response, 200, '/api/og/article');
+  const type = response.headers.get('content-type') || '';
+  invariant(/image\/(png|jpeg)/i.test(type), `expected image content-type, got ${type}`);
+  const buf = Buffer.from(await response.arrayBuffer());
+  invariant(buf.length > 1000, `OG image too small (${buf.length} bytes)`);
+  return `og card ${buf.length} bytes`;
 }
 
 async function checkGateRedirect() {

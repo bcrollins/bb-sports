@@ -44,7 +44,7 @@ export default function SiteHeader() {
             Follow @bbsports
           </a>
           <span className="opacity-30">|</span>
-          <Link className="hover:text-breaking transition-colors" href="/coming-soon">
+          <Link className="hover:text-breaking transition-colors" href="/support#newsletter">
             Newsletter
           </Link>
           <span className="opacity-30">|</span>
