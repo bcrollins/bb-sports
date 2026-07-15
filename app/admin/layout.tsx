@@ -38,9 +38,11 @@ const NAV = [
   { href: '/admin/comments', label: 'Comments', icon: MessageSquare },
   { href: '/admin/audience', label: 'Audience', icon: Users },
   { href: '/admin/findings', label: 'Findings', icon: FileText },
+  { href: '/admin/catalog', label: 'Catalog', icon: ListOrdered },
   { href: '/admin/rankings', label: 'Rankings', icon: ListOrdered },
   { href: '/admin/site', label: 'Site', icon: Settings },
   { href: '/admin/access-wall', label: 'Access wall', icon: LockKeyhole },
+  { href: '/admin/audit', label: 'Audit', icon: LockKeyhole },
   { href: '/admin/launch', label: 'Launch', icon: Rocket },
 ];
 

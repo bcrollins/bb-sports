@@ -7,6 +7,10 @@ All notable changes to BB Sports. Format loosely follows
 
 ### Added
 
+- Catalog reconcile admin: dry-run + draft-only import for filesystem Markdown (never publish).
+- Durable comment rate limiting via shared auth_attempts (comment purpose).
+- Admin audit event ledger + /admin/audit UI.
+- Soft-launch acquisition boundary (wall on, donations closed by default) on the access wall.
 - Publish-time source integrity gate (https citations or `opinion-only` rationale for fact-heavy pieces).
 - Editorial findings queue (`editorial_findings` + /admin/findings) seeded with open audit items; never auto-edits live prose.
 - Production env posture on /api/health/ready (missing required vars fail closed, no secret leakage).

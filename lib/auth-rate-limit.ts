@@ -11,7 +11,7 @@ import { sql } from 'drizzle-orm';
 import { db, dbAvailable } from './db/client';
 import { ensureBootstrapped } from './db/bootstrap';
 
-export type AuthRatePurpose = 'gate' | 'admin_login';
+export type AuthRatePurpose = 'gate' | 'admin_login' | 'comment';
 
 export type AuthRatePolicy = Readonly<{
   maxFailures: number;
@@ -29,6 +29,12 @@ export const AUTH_RATE_POLICIES: Record<AuthRatePurpose, AuthRatePolicy> = {
     maxFailures: 5,
     windowMs: 15 * 60_000,
     lockMs: 30 * 60_000,
+  },
+  /** Comment abuse: 5 posts / 10 minutes, then 10 minute lock. */
+  comment: {
+    maxFailures: 5,
+    windowMs: 10 * 60_000,
+    lockMs: 10 * 60_000,
   },
 };
 
