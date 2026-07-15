@@ -64,7 +64,9 @@ export function evaluateProductionEnv(
     flags: {
       resendApproved: env.BBSPORTS_APPROVED_RESEND === 'true',
       xaiApproved: env.BBSPORTS_APPROVED_XAI === 'true',
-      liveScoresApproved: env.BBSPORTS_APPROVED_LIVE_SCORES === 'true',
+      liveScoresApproved:
+        env.BBSPORTS_APPROVED_LIVE_SCORES === 'true' ||
+        env.BBSPORTS_APPROVED_LIVE_SCORES_FEED === 'true',
     },
   };
 }

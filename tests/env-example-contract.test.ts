@@ -34,3 +34,23 @@ test('code live-scores flag matches env.example', () => {
 test('env.example documents commercial canary runbook path', () => {
   assert.match(example, /COMMERCIAL-CANARIES|end-to-end canary/i);
 });
+
+
+test('live-scores accepts historical FEED alias for commercial approval', async () => {
+  const { evaluateLiveScoresPosture } = await import('../lib/live-scores');
+  assert.equal(evaluateLiveScoresPosture({}).allowed, false);
+  assert.equal(
+    evaluateLiveScoresPosture({
+      BBSPORTS_APPROVED_LIVE_SCORES_FEED: 'true',
+      LIVE_SCORES_API_KEY: 'k',
+    }).allowed,
+    true,
+  );
+  assert.equal(
+    evaluateLiveScoresPosture({
+      BBSPORTS_APPROVED_LIVE_SCORES: 'true',
+      LIVE_SCORES_API_KEY: 'k',
+    }).allowed,
+    true,
+  );
+});

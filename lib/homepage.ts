@@ -35,7 +35,10 @@ export type HomepageDesk = {
 export function isLiveScoreProviderApproved(
   env: Record<string, string | undefined> = process.env,
 ): boolean {
-  return env.BBSPORTS_APPROVED_LIVE_SCORES === 'true';
+  return (
+    env.BBSPORTS_APPROVED_LIVE_SCORES === 'true' ||
+    env.BBSPORTS_APPROVED_LIVE_SCORES_FEED === 'true'
+  );
 }
 
 /**

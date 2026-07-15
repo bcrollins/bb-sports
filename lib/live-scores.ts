@@ -21,7 +21,11 @@ export type LiveScoresPosture = {
 export function evaluateLiveScoresPosture(
   env: NodeJS.ProcessEnv | Record<string, string | undefined> = process.env,
 ): LiveScoresPosture {
-  const commercialApproved = env.BBSPORTS_APPROVED_LIVE_SCORES === 'true';
+  // Canonical flag is BBSPORTS_APPROVED_LIVE_SCORES. Accept the historical
+  // *_FEED alias so older Railway variables do not silently fail open or closed wrong.
+  const commercialApproved =
+    env.BBSPORTS_APPROVED_LIVE_SCORES === 'true' ||
+    env.BBSPORTS_APPROVED_LIVE_SCORES_FEED === 'true';
   const credentialsPresent = Boolean(
     env.LIVE_SCORES_API_KEY || env.SPORTRADAR_API_KEY || env.SPORTSDATAIO_API_KEY,
   );
