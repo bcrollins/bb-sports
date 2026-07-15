@@ -58,6 +58,8 @@ async function main() {
   await runCheck('podcast honesty', checkPodcastHonesty);
   await runCheck('videos honesty', checkVideosHonesty);
   await runCheck('support surface', checkSupportSurface);
+  await runCheck('status page honesty', checkStatusHonesty);
+  await runCheck('admin canaries auth boundary', checkAdminCanariesAuth);
 
   const failed = results.filter((result) => !result.ok);
   if (failed.length > 0) {
