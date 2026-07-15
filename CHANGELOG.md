@@ -5,6 +5,10 @@ All notable changes to BB Sports. Format loosely follows
 
 ## [Unreleased]
 
+### Added
+
+- Defined the zero-credential real-time newsroom foundation, deterministic owner-independent verification threshold, Brad-only publish boundary, protected SSE/fallback contract, Railway worker topology, provider kill switches, incident/correction runbooks, and source-by-source commercial activation posture.
+
 ### Security
 
 - Upgraded Next.js and its lint peer to 15.5.20, pinned patched PostCSS/esbuild resolutions, and made a zero-moderate-or-higher `npm audit` part of `npm run check`.

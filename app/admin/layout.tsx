@@ -16,6 +16,7 @@ import {
   MessageSquare,
   Newspaper,
   PenLine,
+  Radio,
   Rocket,
   Settings,
   Users,
@@ -30,6 +31,7 @@ export const metadata = {
 
 const NAV = [
   { href: '/admin', label: 'Command', icon: Home },
+  { href: '/admin/news-desk', label: 'Live desk', icon: Radio },
   { href: '/admin/articles', label: 'Articles', icon: FileText },
   { href: '/admin/articles/new', label: 'Write', icon: PenLine },
   { href: '/admin/media', label: 'Media', icon: ImageIcon },

@@ -35,4 +35,6 @@ test('production smoke gate is wired to first-party launch surfaces', async () =
   assert.match(smokeScript, /BB_PRODUCTION_GATE_PASSWORD/);
   assert.match(smokeScript, /\/api\/gate/);
   assert.match(smokeScript, /signed bb_gate cookie/);
+  assert.match(smokeScript, /live-newsroom auth boundary/);
+  assert.match(smokeScript, /\/api\/admin\/news-desk/);
 });

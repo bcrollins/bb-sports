@@ -18,6 +18,7 @@ import {
   LockKeyhole,
   MessageSquare,
   PenLine,
+  Radio,
   Settings,
   Users,
 } from 'lucide-react';
@@ -101,6 +102,7 @@ export default async function AdminOverview() {
               action is always the next highest-value move Brad or Brandon can verify without reading code.
             </p>
             <div className="mt-6 flex flex-wrap gap-2">
+              <CommandButton href="/admin/news-desk" label="Live desk" icon={Radio} primary />
               <CommandButton href="/admin/articles/new" label="Write" icon={PenLine} primary />
               <CommandButton href="/admin/articles" label="Articles" icon={FileText} />
               <CommandButton href="/admin/media" label="Media" icon={ImageIcon} />
