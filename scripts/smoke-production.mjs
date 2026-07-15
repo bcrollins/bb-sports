@@ -540,6 +540,26 @@ async function checkSupportSurface() {
   return 'support reachable';
 }
 
+async function checkStatusHonesty() {
+  const response = await request('/status', { headers: { Cookie: gateCookie } });
+  assertStatus(response, 200, '/status');
+  const html = await response.text();
+  invariant(/Live scores/i.test(html), 'status page missing live scores component');
+  invariant(/Not enabled|not enabled|no unlicensed/i.test(html), 'status must state scores not enabled');
+  invariant(!/scores are live|licensed live scores active/i.test(html), 'status must not invent live scores');
+  return 'status honest';
+}
+
+async function checkAdminCanariesAuth() {
+  const response = await request('/api/admin/canaries', { headers: { Cookie: gateCookie } });
+  // Site wall cookie is not an admin session — canaries require newsroom login.
+  invariant(
+    response.status === 401 || response.status === 403,
+    `/api/admin/canaries returned ${response.status}, expected 401/403`,
+  );
+  return `canaries auth ${response.status}`;
+}
+
 function assertStatus(response, expected, label) {
   invariant(response.status === expected, `${label} returned ${response.status}, expected ${expected}`);
 }
