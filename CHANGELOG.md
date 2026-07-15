@@ -34,6 +34,7 @@ All notable changes to BB Sports. Format loosely follows
 
 ### Fixed
 
+- Masthead network strip no longer claims “BB · LIVE”; it reads “BB Sports · Fan desk” with a semantic date.
 - Homepage rankings rail copy no longer claims “live” league data; it reads “Brad’s rankings · editorial.”
 - Newsletter unsubscribe GET paths are read-only (link scanners cannot suppress consent). Mutation requires POST (JSON, human form, or RFC 8058 `List-Unsubscribe=One-Click` on `/api/newsletter/unsubscribe`).
 - Renamed the public ticker from false “Breaking” to honest “Desk” for curated/static bumpers; live pulse is reserved for verified `isBreaking` rails only (editorial integrity).
