@@ -77,8 +77,9 @@ test('activation evaluation never claims transport is allowed from config', () =
   assert.match(providers, /transportAllowed: false/);
   assert.match(providers, /Never true from configuration alone/);
   assert.match(queries, /recentSuccess: false/);
-  assert.match(desk, /Sources: Manual only/);
+  assert.match(desk, /deskSourcesLabel \?\? 'Manual only'/);
   assert.match(desk, /external X, Bluesky, and RSS monitoring is not active/);
+  assert.match(desk, /transportAllowed: false/);
 });
 
 test('postgres client filters only known-harmless bootstrap notices', () => {

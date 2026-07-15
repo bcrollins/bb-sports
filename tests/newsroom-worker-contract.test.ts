@@ -32,7 +32,8 @@ test('worker never claims live ingest or opens provider transports', () => {
   assert.match(entry, /does not claim live monitoring/);
   assert.doesNotMatch(entry, /api\.x\.com|jetstream|WebSocket\(/);
   assert.doesNotMatch(loop, /fetch\(|WebSocket\(|https\.request/);
-  assert.match(desk, /Sources: Manual only/);
+  assert.match(desk, /deskSourcesLabel \?\? 'Manual only'/);
+  assert.match(desk, /transportAllowed: false/);
 });
 
 test('worker is bundled for the production image without replacing web start', () => {

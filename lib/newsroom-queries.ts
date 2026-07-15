@@ -5,6 +5,7 @@ import {
   eq,
   gt,
   inArray,
+  isNull,
   ne,
   or,
   sql,
@@ -16,6 +17,9 @@ import {
   newsEventSignals,
   newsEvents,
   newsEvidence,
+  newsProviders,
+  newsProviderDeadLetters,
+  newsProviderLeases,
   newsroomActivity,
   newsSignals,
   newsSources,
@@ -26,6 +30,13 @@ import {
   type NewsSource,
   type NewsVerificationReview,
 } from './db/schema';
+import {
+  evaluateProviderActivation,
+  isNewsroomProviderKey,
+  summarizeProviderDeskSources,
+  type NewsroomCommercialStatus,
+  type ProviderActivationSnapshot,
+} from './newsroom-providers';
 import {
   createExactContentHash,
   createExactUrlHash,
@@ -97,6 +108,29 @@ export type NewsroomSnapshotCounts = Record<NewsEventState, number> & {
   breaking: number;
 };
 
+export type NewsroomProviderDeskStatus = {
+  providerKey: string;
+  displayName: string;
+  commercialStatus: string;
+  configEnabled: boolean;
+  credentialPresence: string;
+  operationalLabel: ProviderActivationSnapshot['operationalLabel'];
+  transportAllowed: false;
+  blockers: readonly string[];
+  lastSuccessAt: Date | null;
+  lastFailureAt: Date | null;
+  lastFailureSummary: string;
+  leaseHeld: boolean;
+  leaseExpiresAt: Date | null;
+};
+
+export type NewsroomProviderStatusSummary = {
+  /** Honest desk label — never "Live monitoring" without runtime evidence. */
+  deskSourcesLabel: ReturnType<typeof summarizeProviderDeskSources>;
+  openDeadLetters: number;
+  providers: NewsroomProviderDeskStatus[];
+};
+
 export type NewsroomSnapshot = {
   generatedAt: Date;
   latestActivitySeq: number;
@@ -104,6 +138,7 @@ export type NewsroomSnapshot = {
   events: NewsEvent[];
   sources: NewsSource[];
   recentActivity: NewsroomActivityFeedItem[];
+  providerStatus: NewsroomProviderStatusSummary;
 };
 
 export type NewsEventSnapshot = {
@@ -287,7 +322,16 @@ export async function getNewsroomSnapshot(
   const eventLimit = boundedLimit(options.eventLimit, 50, 100);
   const activityLimit = boundedLimit(options.activityLimit, 30, 100);
 
-  const [events, sources, recentActivity, stateCounts, breakingRows] = await Promise.all([
+  const [
+    events,
+    sources,
+    recentActivity,
+    stateCounts,
+    breakingRows,
+    providers,
+    leases,
+    openDeadLetterRows,
+  ] = await Promise.all([
     database.select().from(newsEvents).orderBy(desc(newsEvents.updatedAt)).limit(eventLimit),
     database
       .select()
@@ -315,6 +359,13 @@ export async function getNewsroomSnapshot(
       .from(newsEvents)
       .where(and(eq(newsEvents.urgency, 'breaking'), ne(newsEvents.state, 'dismissed')))
       .limit(1),
+    database.select().from(newsProviders).orderBy(asc(newsProviders.providerKey)).limit(20),
+    database.select().from(newsProviderLeases).limit(20),
+    database
+      .select({ count: sql<number>`count(*)::int` })
+      .from(newsProviderDeadLetters)
+      .where(isNull(newsProviderDeadLetters.resolvedAt))
+      .limit(1),
   ]);
 
   const counts: NewsroomSnapshotCounts = {
@@ -329,6 +380,43 @@ export async function getNewsroomSnapshot(
     if (isNewsEventState(row.state)) counts[row.state] = row.count;
   }
 
+  const now = new Date();
+  const leaseByKey = new Map(leases.map((lease) => [lease.providerKey, lease]));
+  const activations: ProviderActivationSnapshot[] = [];
+  const providerStatusRows: NewsroomProviderDeskStatus[] = [];
+  for (const provider of providers) {
+    if (!isNewsroomProviderKey(provider.providerKey)) continue;
+    const lease = leaseByKey.get(provider.providerKey);
+    const leaseHeld = Boolean(lease && lease.expiresAt.getTime() > now.getTime());
+    const activation = evaluateProviderActivation({
+      providerKey: provider.providerKey,
+      configEnabled: provider.configEnabled,
+      commercialStatus: provider.commercialStatus as NewsroomCommercialStatus,
+      runtime: {
+        leaseHeld,
+        // Snapshot never invents worker success. Live requires separate evidence.
+        recentSuccess: false,
+        degraded: provider.consecutiveFailures > 0 && leaseHeld,
+      },
+    });
+    activations.push(activation);
+    providerStatusRows.push({
+      providerKey: provider.providerKey,
+      displayName: provider.displayName,
+      commercialStatus: provider.commercialStatus,
+      configEnabled: provider.configEnabled,
+      credentialPresence: provider.credentialPresence,
+      operationalLabel: activation.operationalLabel,
+      transportAllowed: false,
+      blockers: activation.blockers,
+      lastSuccessAt: provider.lastSuccessAt,
+      lastFailureAt: provider.lastFailureAt,
+      lastFailureSummary: provider.lastFailureSummary,
+      leaseHeld,
+      leaseExpiresAt: leaseHeld ? lease?.expiresAt ?? null : null,
+    });
+  }
+
   return {
     generatedAt: new Date(),
     latestActivitySeq: recentActivity[0]?.sequence ?? 0,
@@ -336,6 +424,11 @@ export async function getNewsroomSnapshot(
     events,
     sources,
     recentActivity,
+    providerStatus: {
+      deskSourcesLabel: summarizeProviderDeskSources(activations),
+      openDeadLetters: openDeadLetterRows[0]?.count ?? 0,
+      providers: providerStatusRows,
+    },
   };
 }
 

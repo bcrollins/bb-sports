@@ -95,7 +95,9 @@ test('desk transport health never masquerades as external source monitoring', ()
   const desk = source('app/admin/news-desk/_components/NewsDesk.tsx');
   assert.match(desk, /Desk live/);
   assert.match(desk, /Activity stream connected/);
-  assert.match(desk, /Sources: Manual only/);
+  assert.match(desk, /deskSourcesLabel \?\? 'Manual only'/);
   assert.match(desk, /external X, Bluesky, and RSS monitoring is not active/);
+  assert.match(desk, /transportAllowed: false/);
+  assert.match(desk, /A green commercial flag is not a live feed/);
   assert.doesNotMatch(desk, /label: 'Live', detail: 'Stream connected'/);
 });
