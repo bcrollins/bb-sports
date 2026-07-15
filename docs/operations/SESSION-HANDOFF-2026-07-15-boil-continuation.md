@@ -1,33 +1,24 @@
-# Session handoff — 2026-07-15 BOIL continuation
+# Session handoff — 2026-07-15 BOIL continuation (wave 2)
 
-## Live gold
-- **Commit:** `cf40fec` (matches `main` tip at handoff)
-- **Smoke:** **31/31** production smoke on https://bbsports.fans
-- **OG:** PNG 1200×630 OK
-- **Soft launch:** robots Disallow all, RSS empty, publicLaunch false
-- **Gate:** calebwilliamsmvp (signed cookie)
+## Live gold (verified)
+- Prior tip `f355965`: **31/31** smoke
+- Main tip advancing through PRs #139–#141 (publish checklist, type fixes, canary harness)
+- Soft launch: wall on, robots disallow, publicLaunch false
 
-## Shipped this wave (PRs)
-- #130 favorites (#84)
-- #131 reading list + share (#88/#89)
-- #132 media honesty + nav personalize (#86/#87/#91/#92/#95)
-- #133 contact receipt + support truth (#93/#94)
-- #134 ops governance SBOM/providers/handbook (#76/#96–#100)
-- #135 Stripe reconcile/provenance/media rights/watchlist (#38/#39/#42/#43/#85)
-- #136 image/alerts/calendar/smoke (#51/#75/#80/#82/#90)
-- #137 **critical** client-safe sports imports (unblocked Railway after #130 build break)
+## Shipped this wave
+| PR | Value |
+|----|--------|
+| #139 | Publish fact-check attestation + revision history panel + versioned migrations |
+| #140 | Type fixes for checklist + DB verifier |
+| #141 | Provider dry-run canary harness |
 
-## Ledger
-~93 Complete / 3 In progress / 4 Pending commercial or heavy:
-- #5 newsroom desk (in progress, connectors dark)
-- #20 versioned migrations
-- #34 Resend live canary
-- #37 Stripe live canary
-- #40 publish phrase extensions (in progress)
-- #45 R2 canary (fail-closed module ready)
-- #47 revision UI (in progress)
+## Ledger remaining (commercial / newsroom)
+- **#5** Live desk — connectors dark; manual desk works; commercial connectors pending
+- **#34** Resend live canary (dry harness pass; needs BBSPORTS_APPROVED_RESEND + domain)
+- **#37** Stripe live canary (dry harness pass; needs live account proof)
+- **#45** R2 transport canary (fail-closed + dry harness; transport not activated)
 
 ## Do not
 - Auto-publish
-- Unlicensed live scores
-- Mark commercial items Complete without canary evidence
+- Mark commercial Complete without live canary evidence
+- Edit applied migration SQL files
