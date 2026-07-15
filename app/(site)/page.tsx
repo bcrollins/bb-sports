@@ -4,6 +4,7 @@ import ArticleCard from '@/components/ArticleCard';
 import GeneratedMediaRail from '@/components/GeneratedMediaRail';
 import NewsletterSignup from '@/components/NewsletterSignup';
 import FavoriteArticlesRail from '@/components/FavoriteArticlesRail';
+import QuickAccessRail from '@/components/QuickAccessRail';
 import RankingsImpactPill from '@/components/RankingsImpactPill';
 import SportTag from '@/components/SportTag';
 import AiAssistedBadge from '@/components/AiAssistedBadge';
@@ -106,6 +107,8 @@ export default async function HomePage() {
           </div>
         </div>
       </section>
+
+      <QuickAccessRail />
 
       {/* PLAYER FACES RAIL
           Imagery on the face of the website, sport-agnostic but visually

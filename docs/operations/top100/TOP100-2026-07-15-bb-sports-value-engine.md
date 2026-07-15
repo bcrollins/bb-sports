@@ -1243,7 +1243,7 @@ Verification: Pointer/keyboard/storage tests; six widths and screen reader; no-h
 Customizability added: Reorder, pin, and hide optional nav destinations.
 Surfaces: web
 Risk & rollback: Users can lose routes; protected minimum set and prominent reset.
-Status: Pending
+Status: Complete — PrimaryNav local reorder/hide with core Articles/Rankings/Search protected; reset control; no hamburger.
 
 #87 — Add user-defined quick-access buttons
 Area: Navigation Anchor: consumer-CEO benchmark
@@ -1257,7 +1257,7 @@ Verification: URL-validation fuzz; create/reorder/delete; six widths and storage
 Customizability added: Exact one-tap buttons, order, label, and visibility.
 Surfaces: web
 Risk & rollback: Shortcut clutter/phishing; internal route allowlist and strict cap.
-Status: Pending
+Status: Complete — homepage QuickAccessRail; catalog allowlist + cap 6; external/javascript rejected; localStorage only.
 
 #88 — Add a local reading list with portable export
 Area: Reader utility Anchor: consumer-CEO benchmark
@@ -1313,7 +1313,7 @@ Verification: Route/copy scan; future feed validator/audio matrix/transcript che
 Customizability added: Brad controls real release date/category/artwork after evidence; readers choose interest only.
 Surfaces: web
 Risk & rollback: Empty nav frustrates readers; hide optional nav via #86 or retain honest preview.
-Status: Pending
+Status: Complete — honest not-launched status (lib/media-status); no fake player/episodes; newsletter interest; nav Soon badge.
 
 #92 — Make video status honest and rights-safe
 Area: Video Anchor: sports-newsroom benchmark
@@ -1327,7 +1327,7 @@ Verification: Copy/DOM scan; future media contract/caption/player tests at six w
 Customizability added: Brad orders approved playlists; readers control captions/quality/autoplay off.
 Surfaces: web
 Risk & rollback: Rights/performance harm; quarantine asset and show honest unavailable state.
-Status: Pending
+Status: Complete — removed fake clip tiles; honest not-launched status; rights/caption launch requirements documented on-page; nav Soon badge.
 
 #93 — Close the loop on contact and tip submissions
 Area: Reader contact Anchor: consumer-CEO benchmark
@@ -1369,7 +1369,7 @@ Verification: Link/state matrix anonymous/gated/admin; usability checklist; six 
 Customizability added: Reader reorders optional destinations via #86; core labels/status remain truthful.
 Surfaces: web
 Risk & rollback: Nav changes affect habits; retain redirects and reset preferences.
-Status: Pending
+Status: Complete — aria-current active states; Podcast/Videos Soon badges; Sign in to the newsroom label; Newsletter→/#newsletter; customize via #86.
 
 #96 — Maintain one commercial-use provider registry
 Area: Third-party governance Anchor: publishing-reliability benchmark
