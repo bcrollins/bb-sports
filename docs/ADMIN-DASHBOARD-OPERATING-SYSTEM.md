@@ -27,7 +27,7 @@ The BB Sports admin is Bradley Benson's no-code control room. It is not a develo
 - Public article comments render approved rows only; spam and flagged rows stay in the newsroom queue.
 - Newsletter, contact, and donation-interest records are stored first-party in Postgres before external services are wired.
 - Newsletter unsubscribe tokens are first-party and gate-bypassed; Resend is transport only, not the suppression source of truth.
-- The wall default password is `calebwilliamsMVP` until Brad changes it in `/admin/access-wall`.
+- The operator recovery password lives only in Railway. Brad can add an admin-managed password in `/admin/access-wall`; neither credential is rendered or committed.
 
 ## Command Center Contract
 

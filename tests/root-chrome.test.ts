@@ -26,7 +26,6 @@ test('public pages live in the site route group without changing URLs', async ()
     '../app/(site)/about/page.tsx',
     '../app/(site)/articles/page.tsx',
     '../app/(site)/articles/[slug]/page.tsx',
-    '../app/(site)/coming-soon/page.tsx',
     '../app/(site)/contact/page.tsx',
     '../app/(site)/search/page.tsx',
     '../app/(site)/support/page.tsx',
@@ -34,4 +33,19 @@ test('public pages live in the site route group without changing URLs', async ()
 
   await Promise.all(publicPages.map((page) => access(new URL(page, import.meta.url))));
   await assert.rejects(() => access(new URL('../app/page.tsx', import.meta.url)));
+});
+
+test('access wall is isolated from public chrome and keyboard focus order', async () => {
+  const [wallPage, wallForm] = await Promise.all([
+    readFile(new URL('../app/coming-soon/page.tsx', import.meta.url), 'utf8'),
+    readFile(new URL('../app/coming-soon/GateForm.tsx', import.meta.url), 'utf8'),
+  ]);
+
+  await assert.rejects(() => access(new URL('../app/(site)/coming-soon/page.tsx', import.meta.url)));
+  assert.match(wallPage, /<GateForm/);
+  assert.match(wallForm, /aria-label="BB Sports access wall"/);
+  for (const publicChromeImport of ['SiteHeader', 'SiteFooter', 'BreakingNewsBar', 'AnalyticsTracker']) {
+    assert.equal(wallPage.includes(publicChromeImport), false);
+    assert.equal(wallForm.includes(publicChromeImport), false);
+  }
 });

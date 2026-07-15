@@ -29,7 +29,7 @@ the newsroom feel like a public page wearing an admin mask.
 
 ## Capability Preserved
 
-- Public URLs preserved: `/`, `/about`, `/articles`, `/articles/[slug]`, `/coming-soon`,
+- Public URLs preserved: `/`, `/about`, `/articles`, `/articles/[slug]`, `/coming-soon` (isolated wall shell),
   `/contact`, `/corrections`, `/editorial-standards`, `/newsletter/unsubscribe`, `/podcast`,
   `/search`, `/support`, `/support/terms`, `/videos`.
 - Admin URLs preserved: `/admin`, `/admin/login`, and existing admin section links.

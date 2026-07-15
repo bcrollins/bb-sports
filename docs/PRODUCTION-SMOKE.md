@@ -16,7 +16,8 @@ Optional controls:
 
 - `PRODUCTION_BASE_URL=https://web-production-c65d6.up.railway.app`
 - `EXPECTED_COMMIT=<git-sha>`
-- `BB_PRODUCTION_GATE_COOKIE=bb_gate=1`
+- `BB_PRODUCTION_GATE_PASSWORD=<Railway GATE_PASSWORD>` (preferred; obtains a fresh signed cookie)
+- `BB_PRODUCTION_GATE_COOKIE=<bb_gate cookie>` (optional pre-issued-cookie override)
 - `BB_SMOKE_SEARCH_QUERY=Bears`
 - `BB_SMOKE_REQUIRED_TEXT="Why the Bears finally have a real shot"`
 - `BB_SMOKE_ARTICLE_SLUG=why-the-bears-finally-have-a-real-shot`
@@ -26,8 +27,10 @@ Optional controls:
 ## Checks
 
 - `GET /api/health` returns `status=ok`, `service=bb-sports`, and a reachable database when configured.
-- `GET /search?q=Bears` without `bb_gate=1` redirects to `/coming-soon` with a `next` value.
-- `GET /search?q=Bears` with `bb_gate=1` returns the search page headline and the known Bears article.
+- `GET /search?q=Bears` without a gate cookie redirects to `/coming-soon` with a `next` value.
+- `POST /api/gate` accepts the configured smoke credential and issues a signed `bb_gate` cookie.
+- `GET /search?q=Bears` with that signed cookie returns the search page headline and the known Bears article.
+- The retired `bb_gate=1` value is rejected; rotating `GATE_COOKIE_SECRET` invalidates all previously issued cookies.
 - `GET /api/search?q=Bears` returns JSON results including the known Bears article.
 - `GET /articles/why-the-bears-finally-have-a-real-shot` returns the headline, byline, and editorial note.
 - `GET /api/articles/why-the-bears-finally-have-a-real-shot/comments` returns the public comments array without creating reader data.

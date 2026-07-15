@@ -3,9 +3,8 @@
  *
  *   (1) Site-wide gate:    every public visit requires the bb_gate cookie. Without it,
  *                          requests are redirected to /coming-soon where the gate
- *                          password is entered. This is a soft-launch shield —
- *                          the password is validated server-side; the default
- *                          launch password is `calebwilliamsMVP`.
+ *                          password is entered. The password is validated server-side
+ *                          and the cookie is signed so credential rotation revokes it.
  *
  *   (2) Admin gate:        /admin/* and /api/admin/* require a valid bb_session JWT
  *                          (Bradley's super-admin login). Verified here in Edge with
@@ -17,9 +16,9 @@
  */
 import { NextRequest, NextResponse } from 'next/server';
 import { jwtVerify } from 'jose';
+import { GATE_COOKIE_NAME, verifyGateCookieToken } from '@/lib/gate-cookie';
 
 const SESSION_COOKIE = 'bb_session';
-const GATE_COOKIE = 'bb_gate';
 
 /** Paths the site gate never blocks (newsletter etc. work pre-gate so users can sign up). */
 const GATE_BYPASS_EXACT = new Set<string>([
@@ -52,7 +51,7 @@ export async function middleware(req: NextRequest) {
   // admin session. This includes /admin/login so the white wall is truly global.
   if (GATE_BYPASS_EXACT.has(pathname)) return NextResponse.next();
 
-  const hasGate = req.cookies.get(GATE_COOKIE)?.value === '1';
+  const hasGate = await verifyGateCookieToken(req.cookies.get(GATE_COOKIE_NAME)?.value);
   const hasSession = await hasValidSession(req);
   if (!hasGate && !hasSession) {
     // For API requests, return 401 instead of redirecting (caller is JS, not a browser).

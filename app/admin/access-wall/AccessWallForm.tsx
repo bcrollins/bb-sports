@@ -39,7 +39,7 @@ export default function AccessWallForm({ mode, updatedAt }: { mode: string; upda
         <div>
           <h2 className="font-serif text-xl font-bold text-navy">White access wall</h2>
           <p className="mt-1 text-sm text-navy/65">
-            Mode: {mode}. {updatedAt ? `Last updated ${new Date(updatedAt).toLocaleString()}.` : 'Using the default launch password.'}
+            Mode: {mode}. {updatedAt ? `Last updated ${new Date(updatedAt).toLocaleString()}.` : 'No additional admin-managed password is set.'}
           </p>
         </div>
         <span className="rounded-full bg-navy/10 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.16em] text-navy/70">
@@ -60,7 +60,7 @@ export default function AccessWallForm({ mode, updatedAt }: { mode: string; upda
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             className="h-11 w-full rounded border border-navy/20 bg-bone-50 px-3 text-sm outline-none focus:ring-2 focus:ring-broadcast-red/30"
-            placeholder="calebwilliamsMVP"
+            placeholder="At least 12 characters"
             required
           />
         </label>

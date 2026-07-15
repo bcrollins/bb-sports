@@ -1,8 +1,9 @@
 /**
  * /coming-soon — site-wide white access wall.
  *
- * Public visitors see only a white screen and password field until /api/gate
- * sets bb_gate. Admin authentication remains a separate layer after the wall.
+ * This route intentionally lives outside the public `(site)` layout so the
+ * public header, ticker, footer, analytics, and links never exist behind the
+ * white wall in the DOM or keyboard focus order.
  */
 import { safeInternalPath } from '@/lib/redirects';
 import GateForm from './GateForm';
@@ -22,8 +23,8 @@ export default async function ComingSoonPage({ searchParams }: Props) {
   const next = safeInternalPath(params.next);
 
   return (
-    <div className="fixed inset-0 z-[9999] grid min-h-screen place-items-center bg-white text-black">
+    <main id="main" className="fixed inset-0 z-[9999] grid min-h-screen place-items-center bg-white text-black">
       <GateForm nextPath={next} />
-    </div>
+    </main>
   );
 }
