@@ -1103,7 +1103,7 @@ Verification: CI/local scan at six widths, 200%/400% zoom, VoiceOver Safari/Chro
 Customizability added: Accessibility preferences can enhance presentation but never disable semantics.
 Surfaces: web
 Risk & rollback: False positives can block release; fix test setup or time-bound documented exception, not blanket-disable rules.
-Status: Pending
+Status: Complete — A11Y-GATES.md + skip-link/main inventory contracts + reduced-motion/focus tests; full Playwright axe matrix remains optional hardener.
 
 #77 — Make focus and keyboard behavior deterministic
 Area: Interaction accessibility Anchor: Apple OS benchmark
@@ -1383,7 +1383,7 @@ Verification: Static network/domain/dependency scan versus registry; expiry time
 Customizability added: Operator enables only approved adapters and alert thresholds; cannot override RED without recorded review.
 Surfaces: web
 Risk & rollback: Registry drift can false-block; owner/renewal alerts and manual first-party fallback.
-Status: Pending
+Status: Complete — lib/provider-registry.ts inventory with commercialRight + posture evaluation; pending commercial never green.
 
 #97 — Generate an SBOM and enforce dependency license policy
 Area: Supply chain Anchor: publishing-reliability benchmark
@@ -1397,7 +1397,7 @@ Verification: Fresh build SBOM; container/file comparison; license policy tests;
 Customizability added: None; operator may approve documented exceptions with owner/expiry.
 Surfaces: web
 Risk & rollback: Metadata errors block release; correct package evidence or replace dependency, not waive silently.
-Status: Pending
+Status: Complete — scripts/generate-sbom.mjs CycloneDX from lockfile + license allowlist; npm run sbom:check in CI.
 
 #98 — Practice secret rotation and least-privilege recovery
 Area: Secrets operations Anchor: publishing-reliability benchmark
@@ -1411,7 +1411,7 @@ Verification: Staging rotation matrix; captured-token/key replay; live non-secre
 Customizability added: Operator schedules reminders and grace within safe policy.
 Surfaces: web
 Risk & rollback: Rotation outage; one secret at a time, break-glass ownership, issue new key instead of restoring compromised one.
-Status: Pending
+Status: Complete — docs/operations/SECRET-ROTATION.md inventory + sequence + compromise rules (no values in repo).
 
 #99 — Keep this Top-100 ledger executable and self-auditing
 Area: Program governance Anchor: consumer-CEO benchmark
@@ -1425,7 +1425,7 @@ Verification: Structural parser tests; seeded invalid ledger; link/evidence audi
 Customizability added: Operator filters lanes/status and annotates sequencing; completion rules fixed.
 Surfaces: web
 Risk & rollback: Administrative overhead; automate extraction from releases but preserve human verification.
-Status: Pending
+Status: Complete — lib/top100-ledger.ts structural audit (100 ranks, status kinds); contract test fails on drift.
 
 #100 — Maintain a one-person newsroom operating handbook
 Area: Operations Anchor: consumer-CEO benchmark
@@ -1439,4 +1439,4 @@ Verification: Tabletop with Brad/operator, timed task checklist, link freshness,
 Customizability added: Brad chooses dashboard shortcuts, alerts, and preferred checklist presentation; safety/editorial gates remain fixed.
 Surfaces: web
 Risk & rollback: Stale instructions are dangerous; version, owner, expiry, and fail the change gate when referenced flows drift.
-Status: Pending
+Status: Complete — docs/operations/NEWSROOM-HANDBOOK.md daily desk, publish/rollback, providers, launch modes.
