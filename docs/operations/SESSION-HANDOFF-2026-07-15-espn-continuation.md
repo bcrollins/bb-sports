@@ -47,3 +47,31 @@
 - Truncate production DB
 - Set `BBSPORTS_PUBLIC_LAUNCH=true` without intentional public launch
 - Enable live scores without commercial approval + credentials
+
+## Continuation wave (PRs #114–#121)
+
+| PR | Summary |
+| --- | --- |
+| #114 | a11y motion/focus + fact-check checklist + quality gate |
+| #115 | Article reading controls |
+| #116 | Newsletter frequency/topics + SLO.md |
+| #117 | Per-article OG cards + hero allowlist ledger |
+| #118 | Citation extract/probe SSRF-safe |
+| #119 | Audience analytics posture + BACKUP-RESTORE.md |
+| #120 | Crash-safe draft autosave |
+| #121 | IP/UA retention policy dry-run |
+
+**Ledger ~64 Complete / ~33 Pending / 3 In progress**  
+**Tests ~384 green**  
+**Smoke 25/25** repeatedly on advancing live SHAs.
+
+### Still pending (provider / heavy)
+
+#20 migrations dir, #5 newsroom connectors commercial, #34 Resend e2e, #37–39 Stripe e2e, #29 multi-role RBAC matrix, #45 R2, #51 calendar, #75 full browser matrix, #76 axe CI.
+
+### Operator after queue drains
+
+1. Confirm `/api/health` commit == `git rev-parse origin/main`
+2. Smoke with EXPECTED_COMMIT
+3. Optional: `curl -sS "https://bbsports.fans/api/og/article?title=Hello&sport=NFL&by=Brad" -o og.png` (expect PNG once #117 live)
+4. Set ANALYTICS_HASH_SALT if writes desired
