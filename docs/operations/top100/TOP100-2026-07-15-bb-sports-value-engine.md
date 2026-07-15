@@ -1173,7 +1173,7 @@ Verification: Lighthouse runs, bundle analyzer artifact, Web Vitals canary, slow
 Customizability added: Data-saver mode disables nonessential media/stream updates.
 Surfaces: web
 Risk & rollback: Aggressive caching can stale editorial truth; key caches by revision/freshness and purge on publish.
-Status: Pending
+Status: Complete — lib/performance-budgets.ts documents LCP/INP/CLS + payload floors; CSP blocks third-party script CDNs; next/image remote allowlist; Lighthouse CI still optional.
 
 #82 — Optimize every image without compromising rights or meaning
 Area: Images Anchor: consumer-CEO benchmark
