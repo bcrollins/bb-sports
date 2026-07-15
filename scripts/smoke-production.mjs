@@ -54,6 +54,10 @@ async function main() {
   await runCheck('analytics contract GET', checkAnalyticsGet);
   await runCheck('analytics validation guard', checkAnalyticsValidationGuard);
   await runCheck('analytics write path', checkAnalyticsWritePath);
+  await runCheck('reading list page', checkReadingListPage);
+  await runCheck('podcast honesty', checkPodcastHonesty);
+  await runCheck('videos honesty', checkVideosHonesty);
+  await runCheck('support surface', checkSupportSurface);
 
   const failed = results.filter((result) => !result.ok);
   if (failed.length > 0) {
@@ -498,6 +502,40 @@ async function parseJson(response, label) {
   } catch {
     throw new Error(`${label} did not return JSON`);
   }
+}
+
+async function checkReadingListPage() {
+  const response = await request('/reading-list', { headers: { Cookie: gateCookie } });
+  assertStatus(response, 200, '/reading-list');
+  const html = await response.text();
+  invariant(/Reading list|reading list/i.test(html), 'reading list copy missing');
+  return 'reading list reachable';
+}
+
+async function checkPodcastHonesty() {
+  const response = await request('/podcast', { headers: { Cookie: gateCookie } });
+  assertStatus(response, 200, '/podcast');
+  const html = await response.text();
+  invariant(/coming soon|not live|No player/i.test(html), 'podcast must stay honest pre-launch');
+  invariant(!/<audio\b/i.test(html), 'podcast must not ship a fake audio player');
+  return 'podcast honest';
+}
+
+async function checkVideosHonesty() {
+  const response = await request('/videos', { headers: { Cookie: gateCookie } });
+  assertStatus(response, 200, '/videos');
+  const html = await response.text();
+  invariant(/coming soon|No clips|not live/i.test(html), 'videos must stay honest pre-launch');
+  invariant(!/<video\b/i.test(html), 'videos must not ship a fake video player');
+  return 'videos honest';
+}
+
+async function checkSupportSurface() {
+  const response = await request('/support', { headers: { Cookie: gateCookie } });
+  assertStatus(response, 200, '/support');
+  const html = await response.text();
+  invariant(/Payment status|support|Stripe|interest/i.test(html), 'support surface missing');
+  return 'support reachable';
 }
 
 function assertStatus(response, expected, label) {
