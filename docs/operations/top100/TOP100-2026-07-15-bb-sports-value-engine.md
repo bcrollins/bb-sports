@@ -893,7 +893,7 @@ Verification: Fault/status matrix; accessibility; slow/offline/reconnect browser
 Customizability added: Reader retries/collapses unavailable ancillary sections; truth labels fixed.
 Surfaces: web
 Risk & rollback: Strict DB failure can reduce availability; use last-known approved revision cache with explicit timestamp.
-Status: Pending
+Status: Complete — article [slug] loading skeleton + dedicated not-found; global error/not-found already branded; comments unavailable for non-catalog; homepage empty already honest.
 
 #62 — Make related-story recommendations explainable and diverse
 Area: Article discovery Anchor: consumer-CEO benchmark

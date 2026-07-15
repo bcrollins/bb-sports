@@ -7,6 +7,7 @@ All notable changes to BB Sports. Format loosely follows
 
 ### Added
 
+- Article loading skeletons and dedicated unpublished/missing take not-found surface.
 - Homepage desk chronology hardened: unique lead+latest slugs, desk-updated timestamp, empty catalog honesty.
 - Explainable related takes on article pages (same sport / tags / title / recency with reason labels).
 - Admin session control panel (`/admin/account/sessions`) — revoke one/other devices without raw IP/token exposure.
