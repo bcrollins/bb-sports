@@ -193,7 +193,7 @@ Verification: Generated route inventory; hostile Origin/Sec-Fetch/body corpus; D
 Customizability added: None for security; forms retain user-entered drafts after validation errors.
 Surfaces: web
 Risk & rollback: Webhooks require exceptions; grant only signature-verified exact paths and rollback route adapters, not core policy.
-Status: Pending
+Status: Complete — mutation-guard origin/Sec-Fetch-Site on public POSTs; Stripe webhook exempt; smoke/curl without Origin still allowed.
 
 #12 — Repair RFC 8058 one-click unsubscribe
 Area: Newsletter consent Anchor: publishing-reliability benchmark
@@ -375,7 +375,7 @@ Verification: Curl host/path/method matrix; browser inspect canonical/OG/RSS/sit
 Customizability added: None for readers; operator changes canonical host only through validated deploy config.
 Surfaces: web
 Risk & rollback: Redirects can break provider callbacks; exempt exact documented machine endpoints and rollback host middleware independently.
-Status: Pending
+Status: Complete — middleware 308 www + Railway → bbsports.fans for GET/HEAD; health/webhook/assets exempt.
 
 #25 — Publish complete privacy, terms, cookies, DMCA, and community policies
 Area: Legal trust Anchor: consumer-CEO benchmark
@@ -389,7 +389,7 @@ Verification: Data-flow-to-policy checklist; link crawl; accessibility/print rev
 Customizability added: Readers can access rights requests and consent preferences; legal text is versioned, not casually editable.
 Surfaces: web
 Risk & rollback: Inaccurate legal wording creates liability; label drafts for counsel, retain prior versions, and roll forward through reviewed amendments.
-Status: In progress — /privacy and /terms published with honest scope; cookies/DMCA/community pages still pending.
+Status: Complete — /privacy /terms /cookies /dmca /community published and footer-linked.
 
 #26 — Minimize and expire stored IP and user-agent data
 Area: Privacy engineering Anchor: consumer-CEO benchmark

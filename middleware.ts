@@ -24,6 +24,7 @@ import {
   ADMIN_SESSION_PURPOSE,
   isAdminRole,
 } from '@/lib/admin-session-contract';
+import { shouldRedirectToCanonical } from '@/lib/canonical-host';
 
 const SESSION_COOKIE = 'bb_session';
 
@@ -60,8 +61,24 @@ const ADMIN_PUBLIC = new Set<string>(['/admin/login', '/api/admin/login', '/api/
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
+  const host = req.headers.get('host') ?? '';
 
-  // 0. Always allow Next assets.
+  // 0a. Canonical host — www / Railway public host → apex for reader GET/HEAD.
+  // Health probes and Stripe webhooks are exempt (see isCanonicalExemptPath).
+  const canonical = shouldRedirectToCanonical({
+    host,
+    method: req.method,
+    pathname,
+  });
+  if (canonical.redirect) {
+    const url = req.nextUrl.clone();
+    url.protocol = 'https:';
+    url.host = canonical.locationHost;
+    url.port = '';
+    return NextResponse.redirect(url, 308);
+  }
+
+  // 0b. Always allow Next assets.
   if (GATE_BYPASS_PREFIX.some((p) => pathname.startsWith(p))) return NextResponse.next();
 
   // 1. Site wall — every non-bypass route requires either bb_gate or a valid
