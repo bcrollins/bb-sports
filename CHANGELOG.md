@@ -15,6 +15,7 @@ All notable changes to BB Sports. Format loosely follows
 
 ### Added
 
+- Contact public receipt IDs (#93) and truthful support payment surface modes (#94).
 - Primary nav personalization (reorder/hide optional links, core protected) (#86); homepage quick-access shortcuts with allowlist (#87).
 - Honest podcast/video not-launched surfaces (no fake players/clips) (#91/#92); nav Soon badges + active route labels (#95).
 - Local reading list with JSON export/import (#88) and privacy-safe share actions (Web Share + copy link, no third-party widgets) (#89).

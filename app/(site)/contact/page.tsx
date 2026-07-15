@@ -12,11 +12,13 @@ export default function ContactPage() {
   const [secure, setSecure] = useState(false);
   const [status, setStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle');
   const [feedback, setFeedback] = useState('');
+  const [receiptId, setReceiptId] = useState('');
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!email || !message) return;
+    if (!email || !message || status === 'submitting' || status === 'success') return;
     setStatus('submitting');
+    setReceiptId('');
     try {
       const res = await fetch('/api/contact', {
         method: 'POST',
@@ -27,6 +29,7 @@ export default function ContactPage() {
       if (!res.ok) throw new Error(json.error || 'Could not send message.');
       setStatus('success');
       setFeedback(json.message || 'Got it. Brad will see this.');
+      setReceiptId(typeof json.receiptId === 'string' ? json.receiptId : '');
       setName('');
       setEmail('');
       setMessage('');
@@ -175,9 +178,25 @@ export default function ContactPage() {
           </button>
 
           {status !== 'idle' && (
-            <p role="status" aria-live="polite" className={`text-sm ${status === 'error' ? 'text-breaking' : 'text-navy'}`}>
-              {feedback}
-            </p>
+            <div
+              role="status"
+              aria-live="polite"
+              className={`rounded border p-3 text-sm ${
+                status === 'error'
+                  ? 'border-breaking/40 bg-breaking/5 text-breaking'
+                  : 'border-navy/15 bg-bone-50 text-navy'
+              }`}
+            >
+              <p>{feedback}</p>
+              {status === 'success' && receiptId ? (
+                <p className="mt-2 font-mono text-xs tracking-wide text-navy/80">
+                  Receipt ID: <strong>{receiptId}</strong>
+                  <span className="mt-1 block font-sans normal-case tracking-normal text-charcoal/65">
+                    Keep this reference. It does not include your message body.
+                  </span>
+                </p>
+              ) : null}
+            </div>
           )}
         </form>
       </div>
