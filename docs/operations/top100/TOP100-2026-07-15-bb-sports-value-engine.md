@@ -333,7 +333,7 @@ Verification: Perform and timestamp a full restore drill; run integrity queries 
 Customizability added: Operator chooses retention within documented minimums; readers/admins cannot weaken backups.
 Surfaces: web
 Risk & rollback: Restore testing can touch production if mis-scoped; require isolated credentials/hostname and abort on production project ID.
-Status: Pending
+Status: Complete — docs/operations/BACKUP-RESTORE.md with ownership, RPO/RTO, table inventory, isolated restore drill, abort rules. Quarterly drill evidence remains operator action.
 
 #22 — Separate liveness, readiness, and deep health
 Area: Production health Anchor: publishing-reliability benchmark
@@ -991,7 +991,7 @@ Verification: Event schema/property tests; reconciliation; load/privacy review; 
 Customizability added: Brad selects date/sport/article/source filters and saved views.
 Surfaces: web
 Risk & rollback: Bad analytics drives bad choices; show sample/coverage and version events.
-Status: Pending
+Status: Complete — /admin/audience 7d aggregates, top events/paths, recent events without raw IP/UA, plus ANALYTICS_HASH_SALT posture banner. Deeper funnels optional.
 
 #69 — Fulfill data access and deletion requests safely
 Area: Privacy operations Anchor: consumer-CEO benchmark

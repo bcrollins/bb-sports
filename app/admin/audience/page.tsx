@@ -7,7 +7,7 @@
  */
 import type { ReactNode } from 'react';
 import { requireAdminPage } from '@/lib/admin-auth';
-import { getAnalyticsSnapshot } from '@/lib/analytics';
+import { evaluateAnalyticsHashPosture, getAnalyticsSnapshot } from '@/lib/analytics';
 import {
   compactStripeId,
   donationStatusLabel,
@@ -24,6 +24,7 @@ export default async function AudiencePage() {
     getAudienceSnapshot(),
     getAnalyticsSnapshot(),
   ]);
+  const hashPosture = evaluateAnalyticsHashPosture();
 
   return (
     <div>
@@ -36,6 +37,23 @@ export default async function AudiencePage() {
           Newsletter, tips, sponsor interest, and donation intent. First-party records, no spreadsheet drift.
         </p>
       </header>
+
+      <div
+        className={`mb-8 rounded border px-4 py-3 text-sm ${
+          hashPosture.allowed
+            ? 'border-emerald-300 bg-emerald-50 text-emerald-950'
+            : 'border-amber-300 bg-amber-50 text-amber-950'
+        }`}
+      >
+        <p className="font-mono text-[10px] font-black uppercase tracking-[0.18em]">
+          Analytics privacy posture
+        </p>
+        <p className="mt-1">
+          {hashPosture.allowed
+            ? 'Optional first-party analytics may write (dedicated ANALYTICS_HASH_SALT present). GPC/DNT/opt-out still suppress collection.'
+            : `Writes disabled: ${hashPosture.reason.replaceAll('_', ' ')}. Set independent ANALYTICS_HASH_SALT (≥16 chars, not JWT).`}
+        </p>
+      </div>
 
       <div className="mb-10 grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
         <Stat label="Subscribers" value={snapshot.counts.subscribers} />
