@@ -1,43 +1,56 @@
-# Session handoff — 2026-07-15
+# Session handoff — 2026-07-15 (updated)
 
-## Production truth (verified)
+## Production truth (verify with live health)
 
 | Item | Value |
 | --- | --- |
 | Repo | `/Users/brandonrollins/Code/bb-sports-production` |
 | GitHub | `https://github.com/bcrollins/bb-sports.git` |
-| Branch | `main` clean, = `origin/main` |
-| HEAD / live commit | `6fbe974b7726db17b6bcdc6a5bcce837cbab8b96` |
-| Deploy | SUCCESS `6e43d1e8-8e06-4862-aab5-50f67d29129d` |
 | Production | https://bbsports.fans |
 | Railway | project `bb-sports`, service `web` |
-| Smoke | **21/21** |
 | Gate password | `calebwilliamsmvp` |
-| Working-copy control | enabled (audit SHA still `cd27df9…` — enable is no-op when already on) |
+| Soft-launch gate | required |
 
-### Encyclopedia live counts
+### Live commits shipped this continuation (newest last)
+
+| SHA | PR | What |
+| --- | --- | --- |
+| `f39edf3…` | #81 | Encyclopedia people **51 → 130**; bootstrap people upsert; smoke ≥100 people |
+| `510e2a9…` | #82 | **CSP + HSTS** enforce-mode on every response |
+| `b8466a1…` | #83 | Public ticker **Desk** not false **Breaking** |
+| `c13fd72…` | #84 | Newsletter unsubscribe **GET read-only**; POST/RFC 8058 owns mutation |
+
+Confirm current live SHA:
+
+```bash
+curl -sS https://bbsports.fans/api/health
+```
+
+### Encyclopedia live counts (after #81)
 
 - 4 leagues, **124 teams** (NFL 32 / MLB 30 / NHL 32 / NBA 30)
-- **51 people** (first-party identity/role notes, not scraped stats)
-- Surfaces: `/teams`, `/teams/[league]?conference=…`, `/people`, `/api/teams`, `/api/teams?q=`
+- **130 people** (first-party identity/role notes, club-page citations)
+- Bias-core depth: Bears, Florida Panthers, Cubs, Bulls (4+ each)
+- Surfaces: `/teams`, `/teams/[league]?conference=…`, `/people`, `/people/[personKey]`, `/api/teams`, `/api/teams?q=`
+
+### Security headers (after #82)
+
+- `Content-Security-Policy` enforce (default-src self, object-src none, frame-ancestors self, form-action self, upgrade-insecure-requests)
+- `Strict-Transport-Security: max-age=63072000; includeSubDomains; preload`
+- Markdown sanitizer remains primary XSS barrier (`lib/markdown.ts`)
+
+### Editorial integrity (after #83)
+
+- Curated ticker labeled **Desk** / aria **BB Sports desk**
+- Live pulse + **Breaking** only when every item has `isBreaking: true`
+- Static defaults never claim breaking
 
 ### Newsroom / publication (still true)
 
-- External connectors **dark** (Manual only; parsers only; no live worker transport)
+- External connectors **dark** (Manual only; no live worker transport)
 - Worker bundle present: `ops/newsroom-worker.mjs` (default-off)
 - Brad publication gate + immutable revisions intact
-- Soft-launch gate + admin auth contracts intact
 - `/api/donations` 503 while donations disabled is intentional
-
-## What shipped this session (PR stack, newest last)
-
-| PR | Summary |
-| --- | --- |
-| #69–#75 | Provider governance, ingest txn, worker skeleton, desk status, RSS SSRF, notice filter, ops flat bundle |
-| #76 | DB population audit (no fake player encyclopedia) |
-| #77 | Sports encyclopedia foundation (schema + 124 teams + UI) |
-| #78 | People expansion (51), `/people`, search, smoke 21 checks |
-| #79 | Conference/division filters + homepage/footer encyclopedia entry |
 
 ## Non-negotiable editorial / data rules
 
@@ -49,11 +62,11 @@
 
 ## Recommended next work (priority order)
 
-1. **People growth** — more first-party person rows with club-page citations (still no stat tables).
-2. **Optional schema** — `person_team_stints` / seasons only if multi-year employment history is product goal.
-3. **Worker service** — separate Railway service running `node ops/newsroom-worker.mjs` only after commercial approval; keep `BBSPORTS_NEWSROOM_WORKER_ENABLED` false until ready.
-4. **Provider activation** — never set approval flags without credentials + legal posture + tests; transport still `connectionAllowed: false` for X/Bluesky/RSS preflight.
-5. **Licensed stats feed** — only path to “full career stats for every player.”
+1. **Access-wall / admin durable rate limits** (Top-100 #8–#9).
+2. **Published catalog reconciliation** — file-only articles vs DB (Top-100 #6; Brad approval for publish state).
+3. **Optional** `person_team_stints` only if multi-year employment history is a product goal.
+4. **Do NOT** activate provider worker/transports without commercial approval + credentials + tests.
+5. Licensed stats feed is the only honest path to full player career stats.
 
 ## Verify commands
 
@@ -63,13 +76,16 @@ git fetch origin --prune && git status --short --branch && git rev-parse HEAD or
 curl -sS https://bbsports.fans/api/health
 BB_PRODUCTION_GATE_PASSWORD='calebwilliamsmvp' npm run smoke:production -- \
   --base-url https://bbsports.fans --expected-commit "$(git rev-parse HEAD)"
-railway ssh --service web --environment production -- "node ops/publication-working-copy-control.mjs status"
-railway ssh --service web --environment production -- "node ops/verify-publication-postgres.mjs"
+# Headers
+curl -sSI https://bbsports.fans/api/health | grep -iE 'content-security|strict-transport'
 ```
 
 ## Key paths
 
 - Encyclopedia: `lib/sports-encyclopedia/*`, `app/(site)/teams/**`, `app/(site)/people/**`
+- Desk rail: `lib/breaking.ts`, `components/BreakingNewsBar.tsx`
+- Security headers: `next.config.mjs`, `tests/security-headers.test.ts`
 - Newsroom: `docs/REALTIME-NEWSROOM.md`, `lib/newsroom-*`, `lib/db/bootstrap.ts`
 - Audit: `docs/operations/DATABASE-POPULATION-AUDIT.md`
 - Citations: `db/seeds/_source_citations.md`
+- Top-100 ledger: `docs/operations/top100/TOP100-2026-07-15-bb-sports-value-engine.md`
