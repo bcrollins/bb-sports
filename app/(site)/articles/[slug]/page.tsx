@@ -2,7 +2,13 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import type { Metadata } from 'next';
-import { getAllArticles, getArticleBySlug, getRelatedArticles, formatDate, sportLabel } from '@/lib/articles';
+import {
+  getAllArticles,
+  getArticleBySlug,
+  getRelatedRecommendations,
+  formatDate,
+  sportLabel,
+} from '@/lib/articles';
 import { sportMeta } from '@/lib/sport-meta';
 import { getDemotionImpacts, type DemotionImpact } from '@/lib/rankings';
 import { serializeJsonLd } from '@/lib/json-ld';
@@ -54,7 +60,7 @@ export default async function ArticleDetail({ params }: Props) {
   if (!article) return notFound();
   const authorName = article.authorName?.trim() || 'Brad Benson';
   const [related, allArticles] = await Promise.all([
-    getRelatedArticles(article, 3),
+    getRelatedRecommendations(article, 3),
     getAllArticles(),
   ]);
   const m = sportMeta(article.sport);
@@ -237,23 +243,31 @@ export default async function ArticleDetail({ params }: Props) {
 
       <ArticleComments slug={article.slug} />
 
-      {/* Related */}
+      {/* Related — explainable recommendations (sport / tags / title / recency) */}
       {related.length > 0 && (
-        <section className="max-w-6xl mx-auto px-4 sm:px-6 pb-12">
-          <div className="bb-thin-rule pb-3 mb-6 flex items-end justify-between">
+        <section className="max-w-6xl mx-auto px-4 sm:px-6 pb-12" aria-labelledby="related-takes-heading">
+          <div className="bb-thin-rule pb-3 mb-6 flex items-end justify-between gap-4">
             <div className="flex items-center gap-3">
               <span className="block w-1.5 h-7 bg-breaking" aria-hidden="true" />
-              <h2 className="font-display uppercase italic text-navy-900 text-2xl tracking-[-0.01em]">
-                Recent takes
+              <h2
+                id="related-takes-heading"
+                className="font-display uppercase italic text-navy-900 text-2xl tracking-[-0.01em]"
+              >
+                Related takes
               </h2>
             </div>
-            <Link href="/articles" className="bb-link text-sm">
+            <Link href="/articles" className="bb-link text-sm min-h-[44px] inline-flex items-center">
               All articles →
             </Link>
           </div>
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {related.map((a) => (
-              <ArticleCard key={a.slug} article={a} />
+            {related.map((rec) => (
+              <div key={rec.article.slug} className="relative">
+                <p className="mb-2 font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-navy/50">
+                  {rec.reason}
+                </p>
+                <ArticleCard article={rec.article} />
+              </div>
             ))}
           </div>
         </section>

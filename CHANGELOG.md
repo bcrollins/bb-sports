@@ -7,6 +7,7 @@ All notable changes to BB Sports. Format loosely follows
 
 ### Added
 
+- Explainable related takes on article pages (same sport / tags / title / recency with reason labels).
 - Admin session control panel (`/admin/account/sessions`) — revoke one/other devices without raw IP/token exposure.
 - Archive shareable URL filters: sport, q, sort with clear chips, result count, safe invalid-param reset.
 - Analytics privacy floor: dedicated `ANALYTICS_HASH_SALT` only (no JWT/default), GPC/DNT/`bb_analytics=0` suppress optional events client+server; comments 404 when slug not in published catalog.

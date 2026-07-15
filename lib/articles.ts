@@ -184,37 +184,21 @@ export async function getArticleBySlug(slug: string): Promise<Article | null> {
 }
 
 /**
- * Related articles: prefer same-sport pieces; fall back to most-recent
- * across all sports if there aren't enough same-sport entries.
- *
- * When DATABASE_URL is set, the same-sport pull is one indexed query
- * instead of a full table scan + JS filter (see lib/queries.ts).
+ * Related articles with explainable ranking (same sport / tags / title / recency).
+ * Uses the full published catalog so recommendations stay canonical.
  */
 export async function getRelatedArticles(article: Article, limit = 3): Promise<Article[]> {
-  if (dbAvailable && article.id) {
-    const sameSport = await dbGetRelatedBySport(
-      article.id,
-      mapSportSlugToTag(article.sport),
-      limit,
-    );
-    if (sameSport.length >= limit) {
-      return Promise.all(sameSport.map(fromDb));
-    }
-    // Top up with most-recent across all sports if same-sport is thin.
-    const recent = await dbGetPublished();
-    const need = limit - sameSport.length;
-    const sameIds = new Set(sameSport.map((a) => a.id));
-    const filler = recent
-      .filter((a) => a.id !== article.id && !sameIds.has(a.id))
-      .slice(0, need);
-    const out = [...sameSport, ...filler];
-    return Promise.all(out.map(fromDb));
-  }
-  const all = await getAllArticles();
-  const same = all.filter((a) => a.slug !== article.slug && a.sport === article.sport);
-  if (same.length >= limit) return same.slice(0, limit);
-  const others = all.filter((a) => a.slug !== article.slug && a.sport !== article.sport);
-  return [...same, ...others].slice(0, limit);
+  const recs = await getRelatedRecommendations(article, limit);
+  return recs.map((r) => r.article);
+}
+
+export async function getRelatedRecommendations(
+  article: Article,
+  limit = 3,
+): Promise<import('./related-articles').RelatedRecommendation[]> {
+  const { rankRelatedArticles } = await import('./related-articles');
+  const catalog = await getAllArticles();
+  return rankRelatedArticles(article, catalog, limit);
 }
 
 /** Reverse of toSportSlug — maps a public slug back to the admin tag stored

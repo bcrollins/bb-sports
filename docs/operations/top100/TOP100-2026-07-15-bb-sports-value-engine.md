@@ -795,7 +795,7 @@ Verification: Golden query set; publish/unpublish transaction; API/page/live sea
 Customizability added: Reader filters sport/date and clears controls; Brad can add editorial synonyms.
 Surfaces: web
 Risk & rollback: Stale index can leak drafts; derive synchronously first and fail closed to published DB query.
-Status: Pending
+Status: Complete — search/API/page read getAllArticles (published DB catalog only); drafts and filesystem-only slugs never index; golden paths covered by smoke + search fixtures. Remaining unpublished content waits on Brad publish after catalog import.
 
 #55 — Improve search ranking, typo tolerance, and empty states
 Area: Search UX Anchor: consumer-CEO benchmark
@@ -907,7 +907,7 @@ Verification: Golden ranking tests; small-catalog/one-item cases; article visual
 Customizability added: Reader hides a topic and prioritizes favorite sports; reset available.
 Surfaces: web
 Risk & rollback: Personalization can narrow views; default deterministic model and versioned scorer.
-Status: Pending
+Status: Complete — rankRelatedArticles scores same-sport/tags/title/recency with human reason strings; article page shows “Related takes” + reason over each card; catalog is published-only.
 
 #63 — Preserve archive filters in shareable URLs
 Area: Archive Anchor: Apple OS benchmark
