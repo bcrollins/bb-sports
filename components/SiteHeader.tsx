@@ -34,8 +34,10 @@ export default function SiteHeader() {
       {/* Network bar — ESPN-style top strip with the date + brand CTAs */}
       <div className="hidden md:flex items-center justify-between px-6 py-1.5 text-[10.5px] uppercase tracking-[0.22em] text-bone bg-navy-deep border-b border-navy-700">
         <div className="flex items-center gap-4">
-          <span className="font-semibold text-bone">BB · LIVE</span>
-          <span className="opacity-70">{today}</span>
+          <span className="font-semibold text-bone">BB Sports · Fan desk</span>
+          <time className="opacity-70" dateTime={new Date().toISOString().slice(0, 10)}>
+            {today}
+          </time>
         </div>
         <div className="flex items-center gap-5">
           <a className="hover:text-breaking transition-colors" href="https://x.com/bbsports" rel="noopener" target="_blank">

@@ -276,8 +276,8 @@ Acceptance criteria: Pass only when no unsupported Live label appears in DOM/met
 Verification: Search built output; header tests; browser inspect desktop/mobile; simulate stale and approved timestamps. iOS: N/A.
 Customizability added: Brad can choose among approved non-live edition labels and timezone; Live remains system-controlled.
 Surfaces: web
-Risk & rollback: Brand change is visible but low blast radius; rollback to another truthful label, never unsupported Live.
-Status: Pending
+Risk & rollback: Brand energy may feel softer; keep navy strip styling and rollback only the label text.
+Status: Complete — masthead reads “BB Sports · Fan desk” with semantic <time>; contract test locks no BB · LIVE.
 
 #18 — Keep live scores impossible until licensing and freshness are proven
 Area: Sports data providers Anchor: sports-newsroom benchmark
