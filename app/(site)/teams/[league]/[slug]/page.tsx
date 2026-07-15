@@ -126,15 +126,20 @@ export default async function TeamDetailPage({ params }: Props) {
           ) : (
             <ul className="mt-3 space-y-3">
               {people.map((person) => (
-                <li key={person.id} className="rounded-xl border border-navy/10 px-3 py-3">
-                  <p className="text-sm font-bold text-navy-deep">{person.commonName}</p>
-                  <p className="text-[11px] uppercase tracking-wide text-navy/45">
-                    {person.role.replace('_', ' ')} · {person.positionOrTitle}
-                  </p>
-                  <p className="mt-1 text-xs leading-5 text-navy/70">{person.summary}</p>
-                  <p className="mt-2 text-[10px] text-navy/45">
-                    {person.dataConfidence} · {person.dataSource}
-                  </p>
+                <li key={person.id}>
+                  <Link
+                    href={`/people/${person.personKey}`}
+                    className="block rounded-xl border border-navy/10 px-3 py-3 hover:border-navy/30"
+                  >
+                    <p className="text-sm font-bold text-navy-deep">{person.commonName}</p>
+                    <p className="text-[11px] uppercase tracking-wide text-navy/45">
+                      {person.role.replaceAll('_', ' ')} · {person.positionOrTitle}
+                    </p>
+                    <p className="mt-1 text-xs leading-5 text-navy/70">{person.summary}</p>
+                    <p className="mt-2 text-[10px] text-navy/45">
+                      {person.dataConfidence} · {person.dataSource}
+                    </p>
+                  </Link>
                 </li>
               ))}
             </ul>

@@ -36,6 +36,8 @@ async function main() {
   await runCheck('article page render', checkArticlePage);
   await runCheck('comments read path', checkCommentsReadPath);
   await runCheck('sitemap editorial URLs', checkSitemap);
+  await runCheck('teams encyclopedia API', checkTeamsEncyclopediaApi);
+  await runCheck('teams encyclopedia pages', checkTeamsEncyclopediaPages);
   await runCheck('donation readiness contract', checkDonationReadiness);
   await runCheck('Stripe webhook contract', checkStripeWebhookContract);
   await runCheck('newsletter welcome contract', checkNewsletterContract);
@@ -201,7 +203,52 @@ async function checkSitemap() {
   const xml = await response.text();
   invariant(xml.includes(`/articles/${ARTICLE_SLUG}`), `sitemap missing article ${ARTICLE_SLUG}`);
   invariant(xml.includes('/search'), 'sitemap missing search route');
-  return 'article and search URLs present';
+  invariant(xml.includes('/teams'), 'sitemap missing teams encyclopedia route');
+  return 'article, search, and teams URLs present';
+}
+
+async function checkTeamsEncyclopediaApi() {
+  const response = await request('/api/teams', {
+    headers: { Cookie: gateCookie },
+  });
+  assertStatus(response, 200, '/api/teams');
+  const body = await parseJson(response, '/api/teams');
+  invariant(body.data?.stats?.teams >= 124, `expected >=124 teams, got ${body.data?.stats?.teams}`);
+  invariant(body.data?.stats?.leagues === 4, `expected 4 leagues, got ${body.data?.stats?.leagues}`);
+  invariant(Array.isArray(body.data?.teams), 'teams array missing');
+  invariant(body.data.teams.length >= 124, 'teams payload incomplete');
+  const search = await request('/api/teams?q=Bears', {
+    headers: { Cookie: gateCookie },
+  });
+  assertStatus(search, 200, '/api/teams?q=Bears');
+  const searchBody = await parseJson(search, '/api/teams?q=Bears');
+  invariant(
+    searchBody.data?.teams?.some((team) => String(team.displayName || '').includes('Bears')),
+    'teams search did not return Bears',
+  );
+  return `${body.data.stats.teams} teams, ${body.data.stats.people || 0} people`;
+}
+
+async function checkTeamsEncyclopediaPages() {
+  const index = await request('/teams', { headers: { Cookie: gateCookie } });
+  assertStatus(index, 200, '/teams');
+  const indexHtml = await index.text();
+  invariant(indexHtml.includes('Every franchise'), 'teams index heading missing');
+  invariant(!indexHtml.includes('Application error'), 'teams index application error');
+
+  const bears = await request('/teams/nfl/chicago-bears', {
+    headers: { Cookie: gateCookie },
+  });
+  assertStatus(bears, 200, '/teams/nfl/chicago-bears');
+  const bearsHtml = await bears.text();
+  invariant(bearsHtml.includes('Chicago Bears'), 'Bears franchise page missing title');
+  invariant(bearsHtml.includes('Source citation'), 'Bears source citation missing');
+
+  const people = await request('/people', { headers: { Cookie: gateCookie } });
+  assertStatus(people, 200, '/people');
+  const peopleHtml = await people.text();
+  invariant(peopleHtml.includes('People on the BB Sports radar'), 'people index heading missing');
+  return 'teams + bears + people pages';
 }
 
 async function checkDonationReadiness() {

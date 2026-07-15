@@ -10,6 +10,7 @@ test('team seeds cover complete major-league franchise counts', () => {
   assert.doesNotThrow(() => assertTeamSeedInvariants());
   assert.equal(LEAGUE_SEEDS.length, 4);
   assert.equal(TEAM_SEEDS.length, 32 + 30 + 32 + 30);
+  assert.ok(PERSON_SEEDS.length >= 40, `expected expanded people set, got ${PERSON_SEEDS.length}`);
 });
 
 test('every team and person seed carries source citation fields', () => {
@@ -51,6 +52,8 @@ test('encyclopedia refuses proprietary stats scrape posture in docs and seeds', 
   );
   assert.match(people, /NOT a scraped career-stats encyclopedia/i);
   assert.match(people, /No proprietary season stats table/i);
+  assert.match(people, /personKey: 'patrick-mahomes'/);
+  assert.match(people, /personKey: 'shai-gilgeous-alexander'/);
 
   const teams = readFileSync(
     new URL('../lib/sports-encyclopedia/teams.seed.ts', import.meta.url),

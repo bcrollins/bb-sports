@@ -1,7 +1,7 @@
 import type { MetadataRoute } from 'next';
 import { getAllArticles } from '@/lib/articles';
 import { LEAGUE_ORDER, buildLeagueRanking } from '@/lib/rankings';
-import { listSportsTeams } from '@/lib/sports-encyclopedia/queries';
+import { listSportsPeople, listSportsTeams } from '@/lib/sports-encyclopedia/queries';
 
 // The production article catalog is database-backed. Building this route into
 // a static artifact can permanently freeze an empty catalog when the build
@@ -20,6 +20,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     '/articles',
     '/rankings',
     '/teams',
+    '/people',
     '/search',
     '/podcast',
     '/videos',
@@ -100,6 +101,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     changeFrequency: 'monthly' as const,
     priority: 0.55,
   }));
+  const encyclopediaPeople = await listSportsPeople({ limit: 200 }).catch(() => []);
+  const encyclopediaPeopleRoutes: MetadataRoute.Sitemap = encyclopediaPeople.map((person) => ({
+    url: `${baseUrl}/people/${person.personKey}`,
+    lastModified: person.dataVerifiedDate,
+    changeFrequency: 'monthly' as const,
+    priority: 0.5,
+  }));
 
   return [
     ...staticRoutes,
@@ -108,5 +116,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...teamRoutes,
     ...encyclopediaLeagueRoutes,
     ...encyclopediaTeamRoutes,
+    ...encyclopediaPeopleRoutes,
   ];
 }
