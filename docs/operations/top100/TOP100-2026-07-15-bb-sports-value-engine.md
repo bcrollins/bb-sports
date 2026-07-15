@@ -725,7 +725,7 @@ Verification: Browser kill/network throttle/two-tab tests; API concurrency; six-
 Customizability added: Brad chooses autosave interval within bounds and can restore/discard versions.
 Surfaces: web
 Risk & rollback: Autosave could overwrite; optimistic concurrency and revision history; disable client timer without deleting drafts.
-Status: Pending
+Status: Complete — browser localStorage autosave (debounced) + restore/discard banner on editor; never writes published revision. Server-side versioned drafts remain the save API.
 
 #50 — Guarantee preview and published rendering parity
 Area: Article editor Anchor: Apple OS benchmark
