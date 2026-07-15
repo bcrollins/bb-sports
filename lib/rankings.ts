@@ -289,6 +289,46 @@ export function readTrashedTeams(article: Article): TrashedTeam[] {
   return fromBody;
 }
 
+const MIN_TRASH_DROP = 1;
+const MAX_TRASH_DROP = 10;
+
+/** Known franchise ids for directive validation (fail closed on unknowns). */
+const FRANCHISE_IDS_BY_LEAGUE: Record<RankingLeague, Set<string>> = {
+  nfl: new Set(NFL_BASELINE.map((t) => t.id)),
+  mlb: new Set(MLB_BASELINE.map((t) => t.id)),
+  nhl: new Set(NHL_BASELINE.map((t) => t.id)),
+  nba: new Set(NBA_BASELINE.map((t) => t.id)),
+};
+
+/**
+ * Validate a single bb:trash directive. Invalid league/team/drop/reason are rejected.
+ */
+export function validateTrashDirective(input: {
+  league: string;
+  team: string;
+  reason?: string;
+  drop?: number;
+}): { ok: true; value: TrashedTeam } | { ok: false; error: string } {
+  const league = String(input.league ?? '').toLowerCase().trim();
+  const team = String(input.team ?? '').toLowerCase().trim();
+  if (!isLeague(league)) {
+    return { ok: false, error: `Unknown league "${input.league}". Use nfl|mlb|nhl|nba.` };
+  }
+  if (!team || !FRANCHISE_IDS_BY_LEAGUE[league].has(team)) {
+    return { ok: false, error: `Unknown team "${input.team}" for ${league}.` };
+  }
+  // Reason is editorial; empty is allowed (UI may fill later) but length-capped.
+  const reason = String(input.reason ?? '').trim().slice(0, 280);
+  // Omit drop when not provided so engine applies default; clamp invalid numbers.
+  let drop: number | undefined;
+  if (input.drop == null || Number.isNaN(Number(input.drop))) {
+    drop = undefined;
+  } else {
+    drop = Math.min(MAX_TRASH_DROP, Math.max(MIN_TRASH_DROP, Math.floor(Number(input.drop))));
+  }
+  return { ok: true, value: { league, team, reason, drop } };
+}
+
 function parseTrashedFromBody(body: string): TrashedTeam[] {
   if (!body) return [];
   const pattern = /<!--\s*bb:trash\s+([^>]+?)-->/g;
@@ -296,15 +336,14 @@ function parseTrashedFromBody(body: string): TrashedTeam[] {
   let match: RegExpExecArray | null;
   while ((match = pattern.exec(body)) != null) {
     const attrs = parseAttrs(match[1]);
-    const league = (attrs.league ?? '').toLowerCase();
-    const team = (attrs.team ?? '').toLowerCase();
-    if (!isLeague(league) || !team) continue;
-    out.push({
-      league,
-      team,
+    const validated = validateTrashDirective({
+      league: attrs.league ?? '',
+      team: attrs.team ?? '',
       reason: attrs.reason ?? '',
       drop: attrs.drop ? Number(attrs.drop) : undefined,
     });
+    if (!validated.ok) continue; // fail closed — invalid directives never move rankings
+    out.push(validated.value);
   }
   return out;
 }

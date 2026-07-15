@@ -15,6 +15,7 @@ All notable changes to BB Sports. Format loosely follows
 
 ### Added
 
+- Rankings `bb:trash` directive validation (known league/team, drop clamp) before movements apply.
 - Privacy data-access and data-deletion contact modes wired from /privacy → /contact.
 - Admin catalog freshness risk advisory (aging/stale/archive bands) without auto-rewrite.
 
