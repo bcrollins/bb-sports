@@ -837,7 +837,7 @@ Verification: Bot/user-agent/route matrix; Search Console-style fetch; social ca
 Customizability added: Operator selects documented launch mode; individual published articles may be noindex with reason.
 Surfaces: web
 Risk & rollback: Search deindexing can persist; default private before launch and change atomically with sitemap.
-Status: Pending
+Status: Complete — crawl-policy: soft launch robots disallow all, empty sitemap, RSS channel without items; public launch allows crawl + sitemap + full RSS (admin/api still disallowed).
 
 #58 — Publish complete, safe sports-article structured data
 Area: SEO semantics Anchor: consumer-CEO benchmark

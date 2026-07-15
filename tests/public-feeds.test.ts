@@ -18,35 +18,66 @@ function nextRequest(url: string): NextRequest {
   return new NextRequest(new Request(url));
 }
 
-test('/rss.xml serves a valid RSS 2.0 feed with the launch tagline', async () => {
-  const res = await rssGET();
-  assert.equal(res.status, 200);
-  const contentType = res.headers.get('content-type') ?? '';
-  assert.match(contentType, /application\/rss\+xml/);
-  const cacheControl = res.headers.get('cache-control') ?? '';
-  assert.match(cacheControl, /no-cache/);
-  assert.match(cacheControl, /max-age=0/);
-  assert.match(cacheControl, /s-maxage=0/);
-  assert.match(cacheControl, /must-revalidate/);
+function withPublicLaunch<T>(fn: () => Promise<T> | T): Promise<T> | T {
+  const prev = process.env.BBSPORTS_PUBLIC_LAUNCH;
+  process.env.BBSPORTS_PUBLIC_LAUNCH = 'true';
+  try {
+    return fn();
+  } finally {
+    if (prev === undefined) delete process.env.BBSPORTS_PUBLIC_LAUNCH;
+    else process.env.BBSPORTS_PUBLIC_LAUNCH = prev;
+  }
+}
 
-  const body = await res.text();
-  assert.match(body, /^<\?xml version="1\.0" encoding="UTF-8"\?>/);
-  assert.match(body, /<rss version="2\.0"/);
-  assert.match(body, /<channel>/);
-  assert.match(body, /No BS\./, 'channel description contains the launch tagline');
-  // At least the welcome anchor article appears in the feed.
-  assert.match(body, /<title>Welcome to BB Sports/);
-  assert.match(body, /<dc:creator>Brad Benson<\/dc:creator>/);
+test('/rss.xml soft launch keeps channel shell without article items', async () => {
+  const prev = process.env.BBSPORTS_PUBLIC_LAUNCH;
+  delete process.env.BBSPORTS_PUBLIC_LAUNCH;
+  try {
+    const res = await rssGET();
+    assert.equal(res.status, 200);
+    const body = await res.text();
+    assert.match(body, /<rss version="2\.0"/);
+    assert.match(body, /No BS\./);
+    assert.equal(body.includes('<item>'), false, 'soft launch must not syndicate items');
+  } finally {
+    if (prev === undefined) delete process.env.BBSPORTS_PUBLIC_LAUNCH;
+    else process.env.BBSPORTS_PUBLIC_LAUNCH = prev;
+  }
+});
+
+test('/rss.xml serves a valid RSS 2.0 feed with the launch tagline', async () => {
+  await withPublicLaunch(async () => {
+    const res = await rssGET();
+    assert.equal(res.status, 200);
+    const contentType = res.headers.get('content-type') ?? '';
+    assert.match(contentType, /application\/rss\+xml/);
+    const cacheControl = res.headers.get('cache-control') ?? '';
+    assert.match(cacheControl, /no-cache/);
+    assert.match(cacheControl, /max-age=0/);
+    assert.match(cacheControl, /s-maxage=0/);
+    assert.match(cacheControl, /must-revalidate/);
+
+    const body = await res.text();
+    assert.match(body, /^<\?xml version="1\.0" encoding="UTF-8"\?>/);
+    assert.match(body, /<rss version="2\.0"/);
+    assert.match(body, /<channel>/);
+    assert.match(body, /No BS\./, 'channel description contains the launch tagline');
+    // At least the welcome anchor article appears in the feed.
+    assert.match(body, /<title>Welcome to BB Sports/);
+    assert.match(body, /<dc:creator>Brad Benson<\/dc:creator>/);
+  });
 });
 
 test('/rss.xml escapes XML-special characters in titles and descriptions', async () => {
-  const res = await rssGET();
-  const body = await res.text();
-  // Should never contain a raw &lt;script&gt; or unescaped ampersand inside text.
-  assert.equal(body.includes('<script>'), false);
-  // Every & must be part of an entity reference.
-  const stray = body.match(/&(?!amp;|lt;|gt;|quot;|apos;)/g);
-  assert.equal(stray, null, 'no stray ampersands');
+  await withPublicLaunch(async () => {
+    const res = await rssGET();
+    const body = await res.text();
+    // Should never contain a raw &lt;script&gt; or unescaped ampersand inside text.
+    assert.equal(body.includes('<script>'), false);
+    // Every & must be part of an entity reference.
+    const stray = body.match(/&(?!amp;|lt;|gt;|quot;|apos;)/g);
+    assert.equal(stray, null, 'no stray ampersands');
+  });
 });
 
 test('/api/rankings returns all four leagues with 25 teams each', async () => {

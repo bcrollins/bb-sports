@@ -7,6 +7,8 @@ All notable changes to BB Sports. Format loosely follows
 
 ### Added
 
+- Soft-launch crawl policy: robots disallow all, empty sitemap, RSS omits items until `BBSPORTS_PUBLIC_LAUNCH=true`.
+
 - Threaded comments accessibility (ARIA live status, reply focus, labeled replies).
 - Canonical AiAssistedBadge linking to editorial AI policy.
 - Corrections page wired to editorial_findings ledger.
