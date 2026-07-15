@@ -15,6 +15,7 @@ All notable changes to BB Sports. Format loosely follows
 
 ### Added
 
+- Per-article brand OG cards via `/api/og/article` (1200×630, rights-safe text).
 - Newsletter frequency + topic preferences on signup (schema + UI).
 - Operator SLO document (`docs/operations/SLO.md`).
 - Article reading controls (text size + column width) with localStorage persistence.
