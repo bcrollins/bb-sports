@@ -21,8 +21,10 @@ test('live and ready health endpoints exist and stay distinct from combined heal
   assert.doesNotMatch(live, /db\.execute|SELECT 1/);
   assert.match(ready, /check: 'ready'/);
   assert.match(ready, /database_not_configured|database_unreachable/);
+  assert.match(ready, /getPublicReleaseManifest/);
   assert.match(combined, /endpoints/);
   assert.match(combined, /\/api\/health\/live/);
+  assert.match(combined, /getPublicReleaseManifest/);
 });
 
 test('public status page is honest and links machine probes', () => {
@@ -32,6 +34,34 @@ test('public status page is honest and links machine probes', () => {
   assert.match(page, /not_enabled|Not enabled/);
   assert.match(page, /\/api\/health\/live/);
   assert.match(page, /evaluateLiveScoresPosture/);
+  assert.match(page, /getPublicReleaseManifest/);
+  assert.match(page, /Release SHA|data-release-commit/);
+});
+
+test('release manifest is public-safe and supports commit pinning', async () => {
+  const { commitsMatch, getPublicReleaseManifest } = await import('../lib/release-manifest');
+  const local = getPublicReleaseManifest({});
+  assert.equal(local.service, 'bb-sports');
+  assert.equal(local.commit, 'local');
+  assert.equal(local.publicLaunch, false);
+  assert.equal(typeof local.version, 'string');
+
+  const prod = getPublicReleaseManifest({
+    RAILWAY_GIT_COMMIT_SHA: 'abc123def4567890',
+    BBSPORTS_PUBLIC_LAUNCH: 'true',
+    NODE_ENV: 'production',
+    RAILWAY_DEPLOYMENT_ID: 'dep_1',
+  });
+  assert.equal(prod.commit, 'abc123def4567890');
+  assert.equal(prod.commitShort, 'abc123d');
+  assert.equal(prod.publicLaunch, true);
+  assert.equal(prod.environment, 'production');
+  assert.equal(prod.deploymentIdPresent, true);
+
+  assert.equal(commitsMatch('abc123d', 'abc123def4567890'), true);
+  assert.equal(commitsMatch('abc123def4567890', 'abc123d'), true);
+  assert.equal(commitsMatch('deadbeef', 'abc123def4567890'), false);
+  assert.equal(commitsMatch('abc', 'local'), false);
 });
 
 test('live scores fail closed without commercial approval and credentials', () => {

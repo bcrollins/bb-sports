@@ -361,7 +361,7 @@ Verification: Deliberately test mismatched SHA; verify Railway and apex manifest
 Customizability added: Operator chooses release label/notes; provenance fields are immutable.
 Surfaces: web
 Risk & rollback: Misconfigured commit env can false-red; support verified descendant ancestry while retaining exact artifact digest.
-Status: Pending
+Status: Complete — public release manifest on /api/health + /api/health/ready + /status (commit, short, version, publicLaunch); smoke pins EXPECTED_COMMIT with short/full SHA match and verifies soft-launch robots/sitemap posture.
 
 #24 — Canonicalize apex, www, and Railway hosts
 Area: Domains and SEO Anchor: consumer-CEO benchmark

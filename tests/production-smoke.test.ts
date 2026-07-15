@@ -25,6 +25,10 @@ test('production smoke gate is wired to first-party launch surfaces', async () =
   assert.match(smokeScript, /\/articles\/\$\{ARTICLE_SLUG\}/);
   assert.match(smokeScript, /\/api\/articles\/\$\{ARTICLE_SLUG\}\/comments/);
   assert.match(smokeScript, /\/sitemap\.xml/);
+  assert.match(smokeScript, /soft-launch robots\.txt/);
+  assert.match(smokeScript, /\/robots\.txt/);
+  assert.match(smokeScript, /commitsMatch/);
+  assert.match(smokeScript, /soft launch empty sitemap/);
   assert.match(smokeScript, /teams encyclopedia API/);
   assert.match(smokeScript, /\/api\/teams/);
   assert.match(smokeScript, /teams encyclopedia pages/);

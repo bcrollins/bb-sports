@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
 import { sql } from 'drizzle-orm';
-import pkg from '@/package.json';
 import { db, dbAvailable } from '@/lib/db/client';
 import { productionEnvPublicDto } from '@/lib/production-env';
+import { getPublicReleaseManifest } from '@/lib/release-manifest';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -15,6 +15,7 @@ export const dynamic = 'force-dynamic';
 export async function GET() {
   const envPosture = productionEnvPublicDto();
   const productionLike = envPosture.productionLike;
+  const release = getPublicReleaseManifest();
 
   const reasons: string[] = [];
   let dbLatencyMs: number | null = null;
@@ -42,9 +43,11 @@ export async function GET() {
     {
       status: ready ? 'ready' : 'not_ready',
       check: 'ready',
-      service: 'bb-sports',
-      version: pkg.version,
-      commit: process.env.RAILWAY_GIT_COMMIT_SHA ?? 'local',
+      service: release.service,
+      version: release.version,
+      commit: release.commit,
+      commitShort: release.commitShort,
+      release,
       ts: new Date().toISOString(),
       productionLike,
       db: {
