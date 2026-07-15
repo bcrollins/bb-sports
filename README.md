@@ -79,7 +79,7 @@ A production-ready Next.js 14 site for Brad Benson's personal sports-media brand
 - **Type:** Anton + Oswald for display headlines, Playfair Display for editorial serif, Inter for UI, Source Serif Pro for body copy, JetBrains Mono for stats.
 - **Color tokens:** navy `#0A1F44`, navy deep `#06122A`, breaking red `#D7263D`, bone `#F5F2EC`, charcoal `#1A1A1A`.
 
-See `/docs/00-BRADLEY-STRATEGY-BRIEF.md` for the full strategy synthesis from Brad's voice memos and `/docs/BB-SPORTS-PERFECTION-ENGINE-v1.0.md` for the master operating directive.
+See `/docs/00-BRADLEY-STRATEGY-BRIEF.md` for the full strategy synthesis from Brad's voice memos and `/docs/BB-SPORTS-PERFECTION-ENGINE-v1.0.md` for the master operating directive. Legal guardrails live in `/docs/legal/MEDIA-LAW-PLAYBOOK.md`; Bradley's copy-paste agent prompts live in `/docs/prompts/BRADLEY-PROMPT-ALBUM.md`.
 
 Release notes for every shipped change live in [`CHANGELOG.md`](CHANGELOG.md).
 

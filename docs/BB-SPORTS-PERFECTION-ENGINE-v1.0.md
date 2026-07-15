@@ -845,6 +845,8 @@ GitHub for v1, with awareness of Brandon's AeroLink-side migration to a self-hos
 
 BB Sports is a commercial entity. Every external API / data feed / tile source / library / dataset / font / icon set / image source touched by production code paths must be authorized for commercial use under written terms stored in `/docs/legal/`.
 
+**Canonical legal reference:** `/docs/legal/MEDIA-LAW-PLAYBOOK.md` — the umbrella media-law & compliance playbook (copyright text/images/embeds, trademark & Logo Rules, publicity rights, defamation pre-publish checklist, DMCA/UGC safe harbor, privacy/CAN-SPAM/COPPA, FTC monetization rules, entity memo). Required reading for any editorial, media, growth, monetization, or legal lane. On any conflict between this component and the playbook, the stricter rule governs.
+
 **Initial Provider Posture (v1)**
 | Provider | Use | Commercial Verdict | Replacement / Plan |
 |---|---|---|---|

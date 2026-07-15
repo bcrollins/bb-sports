@@ -32,3 +32,9 @@ test('skip link exists for keyboard users', () => {
   assert.match(layout, /Skip to main content/);
   assert.match(layout, /href="#main"/);
 });
+
+test('admin layout has skip link to main', () => {
+  const layout = readFileSync(new URL('../app/admin/layout.tsx', import.meta.url), 'utf8');
+  assert.match(layout, /Skip to main content/);
+  assert.match(layout, /id="main"/);
+});
