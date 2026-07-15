@@ -59,6 +59,16 @@ const GATE_BYPASS_PREFIX = [
 ]; // Static assets + health probes always pass the gate.
 const ADMIN_PUBLIC = new Set<string>(['/admin/login', '/api/admin/login', '/api/admin/logout']);
 
+function attachRequestId(req: NextRequest, res: NextResponse): NextResponse {
+  const incoming = req.headers.get('x-request-id') || req.headers.get('x-correlation-id');
+  const id =
+    incoming && /^[a-zA-Z0-9_-]{8,64}$/.test(incoming)
+      ? incoming
+      : crypto.randomUUID();
+  res.headers.set('x-request-id', id);
+  return res;
+}
+
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
   const host = req.headers.get('host') ?? '';
@@ -75,36 +85,40 @@ export async function middleware(req: NextRequest) {
     url.protocol = 'https:';
     url.host = canonical.locationHost;
     url.port = '';
-    return NextResponse.redirect(url, 308);
+    return attachRequestId(req, NextResponse.redirect(url, 308));
   }
 
   // 0b. Always allow Next assets.
-  if (GATE_BYPASS_PREFIX.some((p) => pathname.startsWith(p))) return NextResponse.next();
+  if (GATE_BYPASS_PREFIX.some((p) => pathname.startsWith(p))) {
+    return attachRequestId(req, NextResponse.next());
+  }
 
   // 1. Site wall — every non-bypass route requires either bb_gate or a valid
   // admin session. This includes /admin/login so the white wall is truly global.
-  if (GATE_BYPASS_EXACT.has(pathname)) return NextResponse.next();
+  if (GATE_BYPASS_EXACT.has(pathname)) {
+    return attachRequestId(req, NextResponse.next());
+  }
 
   const hasGate = await verifyGateCookieToken(req.cookies.get(GATE_COOKIE_NAME)?.value);
   const hasSession = await hasValidSession(req);
   if (!hasGate && !hasSession) {
     // For API requests, return 401 instead of redirecting (caller is JS, not a browser).
     if (pathname.startsWith('/api/')) {
-      return NextResponse.json({ error: 'Site gated' }, { status: 401 });
+      return attachRequestId(req, NextResponse.json({ error: 'Site gated' }, { status: 401 }));
     }
 
     const url = req.nextUrl.clone();
     url.pathname = '/coming-soon';
     if (pathname !== '/') url.searchParams.set('next', pathname);
-    return NextResponse.redirect(url);
+    return attachRequestId(req, NextResponse.redirect(url));
   }
 
   // 2. Admin routes — after the white wall is cleared, require a valid
   // newsroom JWT. /admin/login and login/logout APIs stay public behind the wall.
   const adminCheck = await adminAuthIfNeeded(req, pathname);
-  if (adminCheck) return adminCheck;
+  if (adminCheck) return attachRequestId(req, adminCheck);
 
-  return NextResponse.next();
+  return attachRequestId(req, NextResponse.next());
 }
 
 async function adminAuthIfNeeded(req: NextRequest, pathname: string): Promise<NextResponse | null> {
