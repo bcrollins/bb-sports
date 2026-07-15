@@ -851,7 +851,7 @@ Verification: Generator tests including injection strings; Schema.org/Rich Resul
 Customizability added: Brad chooses article section/tags from controlled taxonomy.
 Surfaces: web
 Risk & rollback: Wrong markup can harm search trust; remove invalid type while preserving page content.
-Status: In progress — org + WebSite JSON-LD on site layout; article-level sports Article schema still to complete.
+Status: Complete — NewsArticle JSON-LD with free access, publisher, sport about, AI creativeWorkStatus when labeled; WebSite+Org on layout.
 
 #59 — Generate accurate, licensed social cards per article
 Area: Sharing Anchor: consumer-CEO benchmark

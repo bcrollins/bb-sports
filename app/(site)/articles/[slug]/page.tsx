@@ -73,9 +73,12 @@ export default async function ArticleDetail({ params }: Props) {
     '@type': 'NewsArticle',
     headline: article.title,
     description: article.dek ?? article.excerpt,
+    url: articleUrl,
     datePublished: article.date,
     dateModified: article.date,
     mainEntityOfPage: { '@type': 'WebPage', '@id': articleUrl },
+    isAccessibleForFree: true,
+    isPartOf: { '@type': 'WebSite', name: 'BB Sports', url: siteUrl },
     author: {
       '@type': 'Person',
       name: authorName,
@@ -84,11 +87,21 @@ export default async function ArticleDetail({ params }: Props) {
     publisher: {
       '@type': 'NewsMediaOrganization',
       name: 'BB Sports',
+      url: siteUrl,
       logo: { '@type': 'ImageObject', url: `${siteUrl}/icon.svg` },
     },
     image: absoluteHero ? [absoluteHero] : undefined,
     articleSection: sportLabel(article.sport),
     keywords: article.tags.length > 0 ? article.tags.join(', ') : undefined,
+    about: {
+      '@type': 'Thing',
+      name: sportLabel(article.sport),
+    },
+    ...(article.aiAssisted
+      ? {
+          creativeWorkStatus: 'AI-assisted draft, edited by Brad Benson',
+        }
+      : {}),
   };
 
   return (
