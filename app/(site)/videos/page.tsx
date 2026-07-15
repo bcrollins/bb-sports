@@ -1,65 +1,72 @@
 import Link from 'next/link';
+import type { Metadata } from 'next';
+import { getVideoStatus } from '@/lib/media-status';
 
-export const metadata = {
-  title: 'Videos',
-  description: 'Short vertical clips and live game reactions from BB Sports. Coming this summer.'
+export const metadata: Metadata = {
+  title: 'Videos — coming soon',
+  description:
+    'BB Sports video clips are not live yet. No embeddable players or rights-cleared clips on this page.',
 };
 
-const PLACEHOLDER_CLIPS = [
-  { id: 1, title: 'Why the 9-6 hockey game was both great and bad', sport: 'NHL' },
-  { id: 2, title: 'Bears schedule: the games I’m actually worried about', sport: 'NFL' },
-  { id: 3, title: 'College football is a different sport now (and that’s fine)', sport: 'CFB' },
-  { id: 4, title: 'The Manchester United takes rewriting themselves', sport: 'Soccer' }
-];
-
 export default function VideosPage() {
+  const status = getVideoStatus();
+
   return (
     <div className="bg-bone">
-      <header className="bg-navy-deep text-bone relative overflow-hidden">
+      <header className="relative overflow-hidden bg-navy-deep text-bone">
         <div className="h-1 bg-breaking" aria-hidden="true" />
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-12 sm:py-16">
-          <p className="bb-eyebrow !text-breaking !tracking-[0.32em]">Video</p>
+        <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6 sm:py-16">
+          <p className="bb-eyebrow !tracking-[0.32em] !text-breaking">Video · not live</p>
           <h1
-            className="mt-3 font-display uppercase italic text-bone leading-[0.92] tracking-[-0.025em]"
+            className="mt-3 font-display uppercase italic leading-[0.92] tracking-[-0.025em] text-bone"
             style={{ fontSize: 'clamp(2.25rem, 7vw, 5.5rem)' }}
           >
-            Vertical clips.<br/>Live reactions.
+            Vertical clips.
+            <br />
+            Live reactions.
           </h1>
-          <p className="mt-4 text-lg text-bone/85 max-w-2xl">
-            TikTok-format short video grid + live game reactions during major moments. Going live with the public launch this summer.
+          <p
+            className="mt-4 inline-flex min-h-[40px] items-center rounded border border-breaking/50 bg-breaking/15 px-3 text-sm font-bold uppercase tracking-[0.14em] text-breaking"
+            role="status"
+          >
+            {status.statusLabel}
+          </p>
+          <p className="mt-4 max-w-2xl text-lg text-bone/85">
+            Short vertical video and game reactions will live here after rights-cleared, captioned,
+            Brad-approved assets exist. This page does not show pretend playable tiles.
           </p>
         </div>
       </header>
 
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-10">
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
-          {PLACEHOLDER_CLIPS.map((c) => (
-            <div
-              key={c.id}
-              className="aspect-[9/16] bg-navy text-bone rounded overflow-hidden relative flex items-end p-3"
-              aria-label={`Placeholder clip: ${c.title}`}
-            >
-              <div className="absolute inset-0 bg-gradient-to-b from-navy-deep/40 via-transparent to-navy-deep/85" />
-              <div className="relative">
-                <span className="bb-tag !bg-bone/20 !text-bone">{c.sport}</span>
-                <h3 className="mt-2 font-serif font-bold text-bone leading-tight text-base">{c.title}</h3>
-                <span className="text-[10px] uppercase tracking-[0.16em] text-bone/70">Coming this summer</span>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        <div className="mt-10 bg-white border border-navy/15 rounded p-6">
-          <h2 className="font-serif text-2xl font-bold text-navy-900">Where the clips will live</h2>
+      <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6">
+        <section
+          className="rounded border border-dashed border-navy/25 bg-white p-6"
+          data-media-state={status.state}
+          aria-label="No video library"
+        >
+          <h2 className="font-serif text-2xl font-bold text-navy-900">No clips published</h2>
           <p className="mt-2 text-charcoal/85">
-            Cross-posted to <a className="bb-link" href="https://tiktok.com/@bbsports" target="_blank" rel="noopener">TikTok</a>,{' '}
-            <a className="bb-link" href="https://instagram.com/bbsports" target="_blank" rel="noopener">Instagram</a>,{' '}
-            <a className="bb-link" href="https://youtube.com/@bbsports" target="_blank" rel="noopener">YouTube Shorts</a>, and embedded on this page.
-            Live game reactions stream on YouTube + the site, then archived as on-demand clips.
+            Placeholder thumbnails that look like a library were removed. When video launches, every
+            item will carry provenance, captions/transcript, poster/alt, and a takedown path — and
+            nothing autoplays audio.
           </p>
-          <p className="mt-3 text-sm text-charcoal/70">
-            Want to see a specific clip? <Link href="/contact" className="bb-link">Pitch it.</Link>
+          <ul className="mt-4 list-disc space-y-2 pl-5 text-sm text-charcoal/80">
+            <li>Storage and CDN only after commercial provider approval.</li>
+            <li>Cross-post targets (TikTok, Instagram, YouTube Shorts) remain marketing intent until assets ship.</li>
+            <li>Live reactions stream only when an approved broadcast exists.</li>
+          </ul>
+          <p className="mt-4 text-sm text-charcoal/70">
+            Want a specific clip when we open the desk?{' '}
+            <Link href="/contact" className="bb-link">
+              Pitch it.
+            </Link>
           </p>
+        </section>
+
+        <div className="mt-8 text-center">
+          <Link href="/articles" className="bb-link">
+            Read the written desk →
+          </Link>
         </div>
       </div>
     </div>

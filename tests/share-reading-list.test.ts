@@ -74,8 +74,8 @@ test('reading list route and nav entry exist', () => {
     new URL('../app/(site)/reading-list/page.tsx', import.meta.url),
     'utf8',
   );
-  const header = readFileSync(new URL('../components/SiteHeader.tsx', import.meta.url), 'utf8');
+  const nav = readFileSync(new URL('../lib/nav.ts', import.meta.url), 'utf8');
   assert.match(route, /ReadingListManager/);
   assert.match(route, /Local utility|local/i);
-  assert.match(header, /\/reading-list/);
+  assert.match(nav, /\/reading-list/);
 });
