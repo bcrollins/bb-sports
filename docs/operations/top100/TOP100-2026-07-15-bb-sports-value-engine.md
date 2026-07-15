@@ -1145,7 +1145,7 @@ Verification: Preference matrix, storage-disabled fallback, visual/contrast/prin
 Customizability added: Exact type, spacing, width, theme, and focus mode controls.
 Surfaces: web
 Risk & rollback: Theme combinations can fail contrast; expose only validated token sets and reset.
-Status: Pending
+Status: Complete — ReadingControls on article pages (size A−/A/A+, width narrow/standard/wide) with localStorage + data-reading-* CSS; 44pt targets; does not hide disclosures.
 
 #80 — Certify every surface across the real device matrix
 Area: Responsive UX Anchor: Apple OS benchmark

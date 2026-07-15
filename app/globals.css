@@ -237,11 +237,29 @@
 }
 
 /* Article body styling */
+/* Reader size/width prefs — set by ReadingControls on <html> */
 .article-body p {
   font-family: var(--font-source-serif), var(--font-playfair), Georgia, serif;
   font-size: 1.125rem;
   line-height: 1.7;
   margin-bottom: 1.4rem;
+}
+html[data-reading-size='sm'] .article-body p {
+  font-size: 1rem;
+  line-height: 1.65;
+}
+html[data-reading-size='lg'] .article-body p {
+  font-size: 1.3rem;
+  line-height: 1.75;
+}
+html[data-reading-width='narrow'] .article-reading-column {
+  max-width: 36rem;
+}
+html[data-reading-width='standard'] .article-reading-column {
+  max-width: 42rem; /* max-w-readable */
+}
+html[data-reading-width='wide'] .article-reading-column {
+  max-width: 52rem;
 }
 .article-body h2 {
   font-size: 1.75rem;

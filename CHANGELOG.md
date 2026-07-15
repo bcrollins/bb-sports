@@ -15,6 +15,7 @@ All notable changes to BB Sports. Format loosely follows
 
 ### Added
 
+- Article reading controls (text size + column width) with localStorage persistence.
 - Global keyboard focus-visible rings + hardened prefers-reduced-motion (hover transforms/pulse off).
 - Brad fact-check checklist on findings queue (advisory, sessionStorage).
 - `npm run check:ci` and quality-gate inventory tests.
