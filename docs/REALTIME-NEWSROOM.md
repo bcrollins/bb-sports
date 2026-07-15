@@ -29,6 +29,14 @@ ledgers, and pure activation evaluation that always keeps `transportAllowed`
 false until a separate worker proves live ingest. Configuration crumbs and
 parser modules must never be labeled “live monitoring.”
 
+The **authoritative provider ingest transaction**
+(`ingestProviderCandidate`) is also present. It normalizes a bounded candidate,
+fail-closed gates on provider commercial approval + config enablement + intake
+source state, exact-deduplicates by external id / content hash / URL hash, and
+atomically writes signal + event link + activity + ingest attempt. It never
+verifies, never publishes, and never stores secret-bearing provenance or full
+restricted provider bodies. Provider intake sources seed disabled.
+
 ## What “real time” means
 
 - A source event can become a newsroom signal within seconds when an approved
