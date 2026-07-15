@@ -20,6 +20,7 @@ All notable changes to BB Sports. Format loosely follows
 
 ### Security
 
+- Enforced Content-Security-Policy (default-src self, object-src none, frame-ancestors self, form-action self, upgrade-insecure-requests) and HSTS (2-year + includeSubDomains + preload) on every response; Markdown sanitization remains the primary XSS barrier.
 - Upgraded Next.js and its lint peer to 15.5.20, pinned patched PostCSS/esbuild resolutions, and made a zero-moderate-or-higher `npm audit` part of `npm run check`.
 - Made Postgres session rows authoritative for newsroom access: missing, expired, revoked, user-mismatched, or disallowed-role sessions now fail closed even when a JWT signature is valid.
 - Added issuer, audience, purpose, subject, JTI, and current-role validation to the admin session boundary; login records the session before issuing its cookie and logout no longer hides failed revocation.
