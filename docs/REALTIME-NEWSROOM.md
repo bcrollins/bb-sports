@@ -350,9 +350,11 @@ worker from the same repository and exact commit as the web service.
 ### Newsroom worker
 
 - Has no public domain.
-- Owns X/Bluesky persistent connections and RSS polling.
-- Normalizes and idempotently writes into Postgres.
-- Uses a database lease/advisory lock so only one active consumer owns each
+- Owns X/Bluesky persistent connections and RSS polling **only after** transport
+  activation; the shipped skeleton never dials providers.
+- Normalizes and idempotently writes into Postgres via `ingestProviderCandidate`
+  once a transport is approved.
+- Uses a database lease with fencing tokens so only one active consumer owns each
   singleton provider connection during deploy overlap.
 - Persists cursors/checkpoints only after the associated normalized event is
   committed.
@@ -360,6 +362,21 @@ worker from the same repository and exact commit as the web service.
 - Emits heartbeat, lag, reconnect, rate-limit, spend, and dead-letter metrics.
 - Shuts down gracefully on Railway deploy signals and resumes from the stored
   cursor.
+
+#### Worker skeleton (shipped, default-off)
+
+| Item | Value |
+| --- | --- |
+| Entrypoint | `node ops/newsroom-worker.mjs` (bundled from `worker/newsroom-worker.ts`) |
+| Local/dev | `npm run worker:newsroom` |
+| Health | `GET /health` and `GET /ready` on `WORKER_HEALTH_PORT` (default `3101`) |
+| Enable loop | `BBSPORTS_NEWSROOM_WORKER_ENABLED=true` (health-only when unset/false) |
+| Ingest claim | `activelyIngesting` is always `false` in this skeleton |
+| Web service | Continues to start with `node server.js` only |
+
+Deploy a **separate** Railway service from the same image/commit when ready.
+Do not set the web service start command to the worker. Do not enable the worker
+loop or provider gates without commercial approval and transport tests.
 
 ### Cron is recovery, not real time
 

@@ -35,7 +35,10 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 # Articles are read at runtime via fs — make sure content/ ships
 COPY --from=builder --chown=nextjs:nodejs /app/content ./content
-# Self-contained disposable-Postgres verifier for explicit Railway SSH use.
+# Self-contained disposable-Postgres verifier + newsroom worker entry for
+# explicit Railway SSH / separate worker service use. The web service still
+# starts with `node server.js` only — never the worker — so provider streams
+# cannot ride the request process.
 COPY --from=builder --chown=nextjs:nodejs /app/.ops ./ops
 # Defensive: ensure traversal/read perms across the runtime filesystem
 RUN chmod -R a+rX ./public ./.next ./content ./ops ./node_modules 2>/dev/null || true
