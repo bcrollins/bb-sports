@@ -11,7 +11,7 @@
     "typecheck": "tsc --noEmit",
     "test": "tsx --test tests/**/*.test.ts",
     "audit:security": "npm audit --audit-level=moderate",
-    "ops:bundle:publication-db": "esbuild scripts/verify-publication-postgres.ts scripts/verify-publication-postgres-child.ts scripts/publication-working-copy-control.ts worker/newsroom-worker.ts --bundle --platform=node --format=esm --target=node20 --outdir=.ops --out-extension:.js=.mjs --banner:js=\"import { createRequire } from 'node:module'; const require = createRequire(import.meta.url);\" --log-level=warning",
+    "ops:bundle:publication-db": "esbuild scripts/verify-publication-postgres.ts scripts/verify-publication-postgres-child.ts scripts/publication-working-copy-control.ts worker/newsroom-worker.ts --bundle --platform=node --format=esm --target=node20 --outdir=.ops --entry-names=[name] --out-extension:.js=.mjs --banner:js=\"import { createRequire } from 'node:module'; const require = createRequire(import.meta.url);\" --log-level=warning",
     "ops:publication-control": "npm run ops:bundle:publication-db && node .ops/publication-working-copy-control.mjs",
     "verify:publication-postgres": "npm run ops:bundle:publication-db && node .ops/verify-publication-postgres.mjs",
     "worker:newsroom": "npm run ops:bundle:publication-db && node .ops/newsroom-worker.mjs",
