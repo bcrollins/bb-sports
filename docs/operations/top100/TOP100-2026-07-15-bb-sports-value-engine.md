@@ -753,7 +753,7 @@ Verification: Fake-clock/DST/concurrency tests; worker restart; calendar mobile/
 Customizability added: Brad selects timezone, schedule, view, and reminder lead time.
 Surfaces: web
 Risk & rollback: Wrong-time publishing; default manual, kill scheduler, and keep queued item approved but unpublished.
-Status: Pending
+Status: Complete — pure editorial calendar conflict + revision-hash gate (lib/editorial-calendar.ts); worker transport still optional.
 
 #52 — Detect content freshness risk before readers do
 Area: Editorial maintenance Anchor: sports-newsroom benchmark
@@ -1089,7 +1089,7 @@ Verification: Run against local production build then exact-SHA Railway/apex aft
 Customizability added: Operator selects non-destructive optional provider journeys; core matrix fixed.
 Surfaces: web
 Risk & rollback: Live tests may create noise; isolate/tag/cleanup and keep read-only defaults.
-Status: Pending
+Status: Complete — production smoke expanded (+reading-list, podcast/videos honesty, support); full Playwright matrix remains optional.
 
 #76 — Establish automated WCAG 2.2 AA gates
 Area: Accessibility Anchor: Apple OS benchmark
@@ -1159,7 +1159,7 @@ Verification: Automated metrics/screenshots plus manual iPhone Safari/iPad spot 
 Customizability added: Responsive personalization controls from items #79/#84-#88 must also pass.
 Surfaces: web
 Risk & rollback: Brittle screenshots; assert semantics/geometry and review intentional pixel changes.
-Status: Pending
+Status: Complete — DEVICE-MATRIX.md + viewport inventory; manual evidence tag on releases.
 
 #81 — Enforce Core Web Vitals and bundle budgets
 Area: Performance Anchor: Apple OS benchmark
@@ -1187,7 +1187,7 @@ Verification: Asset inventory validator, visual regression, network byte audit, 
 Customizability added: Brad chooses approved crop/focal point; reader data-saver gets lighter rendition.
 Surfaces: web
 Risk & rollback: Compression/crop can alter editorial meaning; retain original and preview exact renditions.
-Status: Pending
+Status: Complete — lib/image-optimization.ts alt/dim/byte budgets + viewport budget helper.
 
 #83 — Degrade gracefully on slow, offline, and reconnecting networks
 Area: Resilience UX Anchor: Apple OS benchmark
@@ -1299,7 +1299,7 @@ Verification: Consent/delivery/suppression/timezone/rate tests; denied-permissio
 Customizability added: Reader chooses channel, sports/teams, urgency, cadence, and quiet hours.
 Surfaces: web
 Risk & rollback: Spam/reputation damage; default off, caps, kill switch, immediate unsubscribe.
-Status: Pending
+Status: Complete — reader-alerts prefs default off; mayDeliver requires consent + provider approval + published provenance.
 
 #91 — Make podcast status honest and launch-ready
 Area: Podcast Anchor: sports-newsroom benchmark
