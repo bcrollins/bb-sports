@@ -34,6 +34,22 @@ test('contact submission enforces mode, message length, and normalized email', (
   assert.equal(parsed.secure, true);
   assert.equal(contactSubmissionSchema.safeParse({ mode: 'bad', email: 'a@b.com', message: 'enough words' }).success, false);
   assert.equal(contactSubmissionSchema.safeParse({ mode: 'tip', email: 'a@b.com', message: 'short' }).success, false);
+  assert.equal(
+    contactSubmissionSchema.safeParse({
+      mode: 'privacy_access',
+      email: 'fan@example.com',
+      message: 'Please send a copy of my newsletter and comment records.',
+    }).success,
+    true,
+  );
+  assert.equal(
+    contactSubmissionSchema.safeParse({
+      mode: 'privacy_deletion',
+      email: 'fan@example.com',
+      message: 'Please delete my newsletter subscription and associated profile data.',
+    }).success,
+    true,
+  );
 });
 
 test('donation intent accepts supporter waitlist data without Stripe checkout', () => {

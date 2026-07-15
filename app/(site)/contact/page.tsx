@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 
-type Mode = 'general' | 'tip' | 'press' | 'sponsorship';
+type Mode = 'general' | 'tip' | 'press' | 'sponsorship' | 'privacy_access' | 'privacy_deletion';
 
 export default function ContactPage() {
   const [mode, setMode] = useState<Mode>('general');
@@ -62,6 +62,7 @@ export default function ContactPage() {
             <li><a className="bb-link" href="mailto:tips@bbsports.fans">tips@bbsports.fans</a> — anything serious.</li>
             <li><Link className="bb-link" href="/editorial-standards">Editorial standards</Link> — what we do with what you send us.</li>
             <li><Link className="bb-link" href="/corrections">Corrections</Link> — see something wrong on a piece? Tell us.</li>
+            <li><Link className="bb-link" href="/privacy">Privacy</Link> — access or deletion requests use the privacy modes on this form.</li>
           </ul>
         </aside>
 
@@ -69,8 +70,17 @@ export default function ContactPage() {
           <fieldset>
             <legend className="bb-eyebrow">What is this?</legend>
             <div className="mt-2 grid grid-cols-2 gap-2">
-              {(['general','tip','press','sponsorship'] as Mode[]).map((m) => (
-                <label key={m} className={`cursor-pointer text-sm font-semibold uppercase tracking-[0.12em] text-center py-3 border rounded ${mode === m ? 'bg-navy text-bone border-navy' : 'bg-bone-50 border-navy/20 text-navy hover:bg-navy/5'}`}>
+              {(
+                [
+                  'general',
+                  'tip',
+                  'press',
+                  'sponsorship',
+                  'privacy_access',
+                  'privacy_deletion',
+                ] as Mode[]
+              ).map((m) => (
+                <label key={m} className={`cursor-pointer text-sm font-semibold uppercase tracking-[0.12em] text-center py-3 border rounded min-h-[44px] inline-flex items-center justify-center ${mode === m ? 'bg-navy text-bone border-navy' : 'bg-bone-50 border-navy/20 text-navy hover:bg-navy/5'}`}>
                   <input
                     type="radio"
                     name="mode"
@@ -79,11 +89,28 @@ export default function ContactPage() {
                     onChange={() => setMode(m)}
                     className="sr-only"
                   />
-                  {m === 'general' ? 'General' : m === 'tip' ? 'News tip' : m === 'press' ? 'Press / media' : 'Sponsor / partner'}
+                  {m === 'general'
+                    ? 'General'
+                    : m === 'tip'
+                      ? 'News tip'
+                      : m === 'press'
+                        ? 'Press / media'
+                        : m === 'sponsorship'
+                          ? 'Sponsor / partner'
+                          : m === 'privacy_access'
+                            ? 'Data access'
+                            : 'Data deletion'}
                 </label>
               ))}
             </div>
           </fieldset>
+          {(mode === 'privacy_access' || mode === 'privacy_deletion') && (
+            <p className="rounded border border-navy/15 bg-bone-50 p-3 text-sm text-charcoal/85">
+              Privacy request: use the email you used for newsletter/comments when possible. Brad
+              fulfills access/deletion manually from first-party records — no automated purge of
+              audit or security logs required for lawful retention.
+            </p>
+          )}
 
           <div>
             <label htmlFor="name" className="block text-sm font-semibold text-navy-900">Name <span className="text-charcoal/50 font-normal">(optional for tips)</span></label>

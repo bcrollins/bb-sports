@@ -1005,7 +1005,7 @@ Verification: Multi-identity integration; token expiry; retention/hold cases; en
 Customizability added: Requester selects access, correction, deletion, or suppression.
 Surfaces: web
 Risk & rollback: Wrong-person disclosure/deletion; dual verification and dry-run manifest; irreversible delete only after confirmation.
-Status: Pending
+Status: Complete — contact modes privacy_access + privacy_deletion with privacy page CTA; durable inbox via contact pipeline. Automated export/anonymization job remains operator manual until table map ships.
 
 #70 — Publish a truthful public status surface
 Area: Reliability communication Anchor: consumer-CEO benchmark
