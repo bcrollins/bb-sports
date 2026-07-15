@@ -15,6 +15,10 @@ test('production smoke gate is wired to first-party launch surfaces', async () =
 
   assert.equal(packageJson.scripts['smoke:production'], 'node scripts/smoke-production.mjs');
   assert.match(smokeScript, /\/api\/health/);
+  assert.match(smokeScript, /\/api\/health\/live/);
+  assert.match(smokeScript, /\/api\/health\/ready/);
+  assert.match(smokeScript, /public status page/);
+  assert.match(smokeScript, /\/status/);
   assert.match(smokeScript, /\/search\?q=/);
   assert.match(smokeScript, /Find the take\./);
   assert.match(smokeScript, /BB_SMOKE_ARTICLE_SLUG/);

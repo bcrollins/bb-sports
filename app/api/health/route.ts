@@ -6,6 +6,11 @@ import { db, dbAvailable } from '@/lib/db/client';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
+/**
+ * Combined public health (smoke + dashboards).
+ * Prefer /api/health/live for process probes and /api/health/ready for
+ * dependency readiness. This route remains stable for existing smoke contracts.
+ */
 async function checkDb(): Promise<{ configured: boolean; reachable: boolean; latencyMs: number | null }> {
   if (!dbAvailable || !db) return { configured: false, reachable: false, latencyMs: null };
   const start = Date.now();
@@ -26,12 +31,21 @@ export async function GET() {
   return NextResponse.json(
     {
       status: healthy ? 'ok' : 'degraded',
+      check: 'combined',
       service: 'bb-sports',
       version: pkg.version,
       commit: process.env.RAILWAY_GIT_COMMIT_SHA ?? 'local',
       ts: new Date().toISOString(),
       db: dbStatus,
+      endpoints: {
+        live: '/api/health/live',
+        ready: '/api/health/ready',
+        status: '/status',
+      },
     },
-    { status: healthy ? 200 : 503 },
+    {
+      status: healthy ? 200 : 503,
+      headers: { 'Cache-Control': 'no-store' },
+    },
   );
 }

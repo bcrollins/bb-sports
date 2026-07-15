@@ -11,8 +11,9 @@
  *                          jose; route handlers re-verify against the users table.
  *
  * Always allowed (no gate, no auth):
- *   /coming-soon, /api/gate, /api/health, /api/analytics, Stripe webhook, newsletter unsubscribe, approved media streams,
- *   static brand/image assets, _next assets, robots/sitemap/icons/og.
+ *   /coming-soon, /api/gate, /api/health (+ /live, /ready), /status, /api/analytics, Stripe webhook,
+ *   newsletter unsubscribe, approved media streams, static brand/image assets, _next assets,
+ *   robots/sitemap/icons/og.
  */
 import { NextRequest, NextResponse } from 'next/server';
 import { jwtVerify } from 'jose';
@@ -31,6 +32,9 @@ const GATE_BYPASS_EXACT = new Set<string>([
   '/coming-soon',
   '/api/gate',
   '/api/health',
+  '/api/health/live',
+  '/api/health/ready',
+  '/status',
   '/api/analytics',
   '/api/newsletter',
   '/api/rankings',
@@ -45,7 +49,13 @@ const GATE_BYPASS_EXACT = new Set<string>([
   '/og.png',
   '/icon.svg',
 ]);
-const GATE_BYPASS_PREFIX = ['/_next/', '/api/media/assets/', '/brand/', '/images/']; // Static assets always pass the gate.
+const GATE_BYPASS_PREFIX = [
+  '/_next/',
+  '/api/media/assets/',
+  '/brand/',
+  '/images/',
+  '/api/health/',
+]; // Static assets + health probes always pass the gate.
 const ADMIN_PUBLIC = new Set<string>(['/admin/login', '/api/admin/login', '/api/admin/logout']);
 
 export async function middleware(req: NextRequest) {
