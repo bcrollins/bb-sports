@@ -69,6 +69,15 @@ test('parent verifier owns database lifecycle and cannot initialize the applicat
   assert.match(parent, /TEMPLATE template0/);
   assert.match(parent, /mkdtemp\(/);
   assert.match(parent, /mkdir\(path\.join\(workerCwd, 'content', 'articles'\)/);
+  assert.match(parent, /import \{[\s\S]*writeFile[\s\S]*\} from 'node:fs\/promises'/);
+  assert.match(
+    parent,
+    /rolling-legacy-live-\$\{suffix\}[\s\S]*hero_alt[\s\S]*hero_credit[\s\S]*await writeFile\(/,
+  );
+  assert.match(
+    parent,
+    /await writeFile\([\s\S]*slug: \$\{legacySlug\}[\s\S]*hero: \$\{legacyHero\}[\s\S]*heroAlt:[\s\S]*heroCredit:[\s\S]*startChild\('verify'\)/,
+  );
   assert.doesNotMatch(parent, /\.\.\.process\.env/);
   assert.doesNotMatch(parent, /console\.(?:log|info|error)\([^\n]*(?:DATABASE_URL|disposableUrl)/);
 });
@@ -90,6 +99,12 @@ test('child verifier runs actual bootstrap and publication persistence boundarie
     assert.match(child, new RegExp(`${operation}\\(`));
   }
   assert.match(child, /stale article edit CAS is rejected/);
+  assert.match(child, /published working-copy edit is blocked before activation/);
+  assert.match(child, /'RELEASE_CONVERGENCE'/);
+  assert.match(child, /blockedEditToken[\s\S]*publication_activation_contract[\s\S]*freshEditToken/);
+  assert.match(child, /set_config\([\s\S]*'bbsports\.publication_activation_contract'[\s\S]*'v1'/);
+  assert.match(child, /\.update\(publicationRuntimeControls\)/);
+  assert.doesNotMatch(child, /publication-working-copy-control/);
   assert.match(child, /current super-admin role revocation/);
   assert.match(child, /article revision UPDATE trigger/);
   assert.match(child, /publication event DELETE trigger/);
@@ -97,6 +112,12 @@ test('child verifier runs actual bootstrap and publication persistence boundarie
   assert.match(child, /article_publication_events_revision_integrity/);
   assert.match(child, /articles_published_snapshot_complete/);
   assert.match(child, /articles_published_revision_same_article/);
+  assert.match(child, /action, 'legacy_backfill'/);
+  assert.match(child, /Pointerless legacy live article/);
+  assert.match(child, /An old replica must not unpublish this row before backfill finishes\./);
+  assert.match(child, /publication-verifier-legacy-hero\.png/);
+  assert.match(child, /Legacy backfill changed reader-visible fields beyond hero metadata\./);
+  assert.match(child, /PASS legacy metadata completion preserves and immutably snapshots the live story/);
   assert.match(child, /finally \{[\s\S]*await closeDatabaseClient\(\)/);
 });
 

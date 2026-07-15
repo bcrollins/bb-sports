@@ -9,7 +9,7 @@
  */
 import { spawn, type ChildProcess } from 'node:child_process';
 import { randomBytes } from 'node:crypto';
-import { mkdir, mkdtemp, rm } from 'node:fs/promises';
+import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -419,19 +419,29 @@ export async function runDisposablePublicationVerification(): Promise<void> {
     await race`
       DROP TRIGGER media_assets_live_article_ready_guard ON media_assets
     `;
+    const legacySlug = `rolling-legacy-live-${suffix}`;
+    const legacyHero = '/images/publication-verifier-legacy-hero.png';
+    const legacyHeroAlt = 'Disposable exact-match legacy hero';
+    const legacyHeroCredit = 'BB Sports publication verifier';
     const [legacyLive] = await race`
       INSERT INTO articles (
         slug,
         title,
         body,
+        hero,
+        hero_alt,
+        hero_credit,
         author_name,
         published,
         published_at
       )
       VALUES (
-        ${`rolling-legacy-live-${suffix}`},
+        ${legacySlug},
         'Pointerless legacy live article',
         'An old replica must not unpublish this row before backfill finishes.',
+        ${legacyHero},
+        '',
+        '',
         'Publication Verifier',
         true,
         now()
@@ -439,6 +449,23 @@ export async function runDisposablePublicationVerification(): Promise<void> {
       RETURNING id
     `;
     if (!legacyLive?.id) throw new Error('Could not create pointerless legacy live fixture.');
+    if (!workerCwd) throw new Error('Verifier worker directory is unavailable.');
+    await writeFile(
+      path.join(workerCwd, 'content', 'articles', `${legacySlug}.md`),
+      [
+        '---',
+        `slug: ${legacySlug}`,
+        'title: Repository metadata must not replace the database title',
+        `hero: ${legacyHero}`,
+        `heroAlt: ${legacyHeroAlt}`,
+        `heroCredit: ${legacyHeroCredit}`,
+        '---',
+        '',
+        'Repository prose must not replace the already-public database body.',
+        '',
+      ].join('\n'),
+      { encoding: 'utf8', mode: 0o600 },
+    );
 
     let siteLockAcquiredResolve: (() => void) | null = null;
     let siteLockAcquiredReject: ((error: unknown) => void) | null = null;
