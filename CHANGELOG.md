@@ -15,6 +15,8 @@ All notable changes to BB Sports. Format loosely follows
 
 ### Added
 
+- Align .env.example with runtime gates (LIVE_SCORES not *_FEED, R2/schema/public launch); manual desk canary contracts.
+
 - Newsroom watchlist preview on Live Desk; commercial canary runbook + `npm run canaries:dry`.
 
 - Production smoke: status page live-scores honesty + admin canaries auth boundary.
