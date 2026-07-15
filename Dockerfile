@@ -40,8 +40,10 @@ COPY --from=builder --chown=nextjs:nodejs /app/content ./content
 # starts with `node server.js` only — never the worker — so provider streams
 # cannot ride the request process.
 COPY --from=builder --chown=nextjs:nodejs /app/.ops ./ops
+# Versioned SQL migrations for `BBSPORTS_SCHEMA_MODE=migrations` / `npm run db:migrate`
+COPY --from=builder --chown=nextjs:nodejs /app/drizzle ./drizzle
 # Defensive: ensure traversal/read perms across the runtime filesystem
-RUN chmod -R a+rX ./public ./.next ./content ./ops ./node_modules 2>/dev/null || true
+RUN chmod -R a+rX ./public ./.next ./content ./ops ./drizzle ./node_modules 2>/dev/null || true
 
 USER nextjs
 EXPOSE 3000

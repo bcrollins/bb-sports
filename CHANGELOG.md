@@ -15,6 +15,8 @@ All notable changes to BB Sports. Format loosely follows
 
 ### Added
 
+- Admin dry-run provider canaries on /admin/launch + GET /api/admin/canaries; Docker ships drizzle migrations.
+
 - Publish checklist attestation + revision history panel + versioned migrations runner (#20/#40/#47).
 
 ### Added

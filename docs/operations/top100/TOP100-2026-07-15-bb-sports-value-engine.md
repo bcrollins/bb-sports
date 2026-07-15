@@ -109,7 +109,7 @@ Verification: Contract-test manual intake and the persistent stream; prove cron 
 Customizability added: Brad controls source enablement, sport/team watchlists, corroboration thresholds within safe floors, quiet hours, alert channel, draft template, expiry, and one-tap actions.
 Surfaces: web
 Risk & rollback: Misinformation, license breach, SSRF, spam, or accidental publication; adapters default off, manual intake remains, kill switch stops ingestion, and published items can be retracted/corrected without deleting audit history.
-Status: In progress — the protected manual Live Desk, deterministic verification, SSE/poll fallback, and immutable Brad approval gate are implemented; paid/provider connectors remain disabled pending commercial approval, credentials, persistent worker delivery, and live canary proof.
+Status: In progress — protected Live Desk + SSE/poll + verification + Brad-only draft/publish gate + provider governance/ingest fail-closed + dry canaries on /admin/launch; paid connectors remain dark until commercial canary proof.
 
 #6 — Converge the published article catalog without data loss
 Area: Editorial data plane Anchor: publishing-reliability benchmark
