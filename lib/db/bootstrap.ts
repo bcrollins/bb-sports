@@ -1728,6 +1728,8 @@ async function bootstrap(): Promise<void> {
       })
       .onConflictDoNothing({ target: [sportsTeams.leagueKey, sportsTeams.teamKey] });
   }
+  // People registry is seed-driven identity/role truth: upsert so club moves and
+  // FLAGGED title corrections land on boot without inventing proprietary stats.
   for (const person of PERSON_SEEDS) {
     await db
       .insert(sportsPeople)
@@ -1747,7 +1749,25 @@ async function bootstrap(): Promise<void> {
         dataConfidence: person.dataConfidence,
         dataNotes: person.dataNotes ?? '',
       })
-      .onConflictDoNothing({ target: sportsPeople.personKey });
+      .onConflictDoUpdate({
+        target: sportsPeople.personKey,
+        set: {
+          fullName: person.fullName,
+          commonName: person.commonName,
+          role: person.role,
+          leagueKey: person.leagueKey,
+          teamKey: person.teamKey,
+          positionOrTitle: person.positionOrTitle,
+          summary: person.summary,
+          officialUrl: person.officialUrl,
+          dataSource: person.dataSource,
+          dataSourceUrl: person.dataSourceUrl,
+          dataVerifiedDate: sportsVerifiedAt,
+          dataConfidence: person.dataConfidence,
+          dataNotes: person.dataNotes ?? '',
+          updatedAt: new Date(),
+        },
+      });
   }
 
   // 2. Admin user seed (idempotent ON CONFLICT DO NOTHING).

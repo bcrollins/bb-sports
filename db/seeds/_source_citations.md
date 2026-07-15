@@ -23,10 +23,12 @@
 
 ## sports_people
 
-- **Coverage:** First-party set material to BB Sports columns and rankings (40+ rows across NFL/MLB/NHL/NBA — not full league rosters).
+- **Coverage:** First-party set material to BB Sports columns and rankings (100+ rows across NFL/MLB/NHL/NBA — not full league rosters).
+- **Bias-core depth:** Chicago Bears, Florida Panthers, Chicago Cubs, Chicago Bulls each carry multi-person first-party rows (Brad’s disclosed rooting interests).
 - **Primary source:** Official club pages linked per row.
-- **Confidence:** Mostly `CROSS_REFERENCED`; coaching titles and free-agent-risk associations may be `FLAGGED` for offseason churn.
-- **Excluded:** Full career stat lines, proprietary WAR/DVOA/etc. tables.
+- **Confidence:** Mostly `CROSS_REFERENCED`; coaching titles, GMs, and free-agent/trade-risk associations may be `FLAGGED` for offseason churn.
+- **Bootstrap:** `PERSON_SEEDS` upserts identity/role fields on deploy so club moves (e.g. high-profile trades) land without inventing stats.
+- **Excluded:** Full career stat lines, proprietary WAR/DVOA/etc. tables, scraped Sports Reference dumps.
 
 ## Maintenance
 
