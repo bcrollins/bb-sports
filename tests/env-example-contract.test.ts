@@ -26,8 +26,11 @@ test('env.example declares runtime commercial gates with correct names', () => {
 test('code live-scores flag matches env.example', () => {
   const live = readFileSync(new URL('../lib/live-scores.ts', import.meta.url), 'utf8');
   const r2 = readFileSync(new URL('../lib/r2-storage.ts', import.meta.url), 'utf8');
+  const example = readFileSync(new URL('../.env.example', import.meta.url), 'utf8');
   assert.match(live, /BBSPORTS_APPROVED_LIVE_SCORES/);
-  assert.doesNotMatch(live, /BBSPORTS_APPROVED_LIVE_SCORES_FEED/);
+  // Canonical name is required; legacy FEED alias is allowed in code only as fallback.
+  assert.match(example, /^BBSPORTS_APPROVED_LIVE_SCORES=/m);
+  assert.doesNotMatch(example, /^BBSPORTS_APPROVED_LIVE_SCORES_FEED=/m);
   assert.match(r2, /BBSPORTS_APPROVED_R2/);
 });
 
