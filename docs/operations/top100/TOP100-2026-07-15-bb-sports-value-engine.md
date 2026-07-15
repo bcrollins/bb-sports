@@ -1271,7 +1271,7 @@ Verification: Storage/import fuzz/version migration; article/archive/mobile/keyb
 Customizability added: Reader groups/orders saved articles and chooses offline availability.
 Surfaces: web
 Risk & rollback: Local storage loss; portable export and graceful reset.
-Status: Pending
+Status: Complete — localStorage reading list + /reading-list manager with JSON export/import; Save for later on article pages; nav “Saved”; no server PII.
 
 #89 — Make share actions fast, private, and accurate
 Area: Sharing Anchor: Apple OS benchmark
@@ -1285,7 +1285,7 @@ Verification: Browser capability matrix; clipboard denial; metadata/share-card v
 Customizability added: Reader chooses native share/copy; Brad separately approves any brand-account post.
 Surfaces: web
 Risk & rollback: Stale social caches; digest-versioned cards and canonical stable URL.
-Status: Pending
+Status: Complete — ShareActions: Web Share + copy-link + intentional X/Facebook/mailto intents on canonical apex URL; no third-party widgets; auto-post remains off.
 
 #90 — Offer opt-in reader alerts only after delivery consent
 Area: Notifications Anchor: consumer-CEO benchmark

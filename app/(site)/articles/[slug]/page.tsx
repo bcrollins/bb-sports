@@ -18,6 +18,8 @@ import NewsletterSignup from '@/components/NewsletterSignup';
 import SportTag from '@/components/SportTag';
 import AiAssistedBadge from '@/components/AiAssistedBadge';
 import ReadingControls from '@/components/ReadingControls';
+import ShareActions from '@/components/ShareActions';
+import SaveToReadingList from '@/components/SaveToReadingList';
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -218,36 +220,13 @@ export default async function ArticleDetail({ params }: Props) {
           </p>
         </div>
 
-        {/* Share row */}
-        <div className="mt-6 flex flex-wrap gap-3">
-          <a
-            target="_blank"
-            rel="noopener"
-            href={`https://x.com/intent/tweet?text=${encodeURIComponent(article.title)}&url=${encodeURIComponent(
-              `https://bbsports.fans/articles/${article.slug}`
-            )}`}
-            className="bb-button-ghost"
-          >
-            Share on X
-          </a>
-          <a
-            target="_blank"
-            rel="noopener"
-            href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(
-              `https://bbsports.fans/articles/${article.slug}`
-            )}`}
-            className="bb-button-ghost"
-          >
-            Facebook
-          </a>
-          <a
-            href={`mailto:?subject=${encodeURIComponent(article.title)}&body=${encodeURIComponent(
-              `https://bbsports.fans/articles/${article.slug}`
-            )}`}
-            className="bb-button-ghost"
-          >
-            Email
-          </a>
+        <div className="mt-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <SaveToReadingList
+            slug={article.slug}
+            title={article.title}
+            sport={sportLabel(article.sport)}
+          />
+          <ShareActions title={article.title} slug={article.slug} />
         </div>
       </div>
 
