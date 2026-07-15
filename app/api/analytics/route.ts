@@ -16,21 +16,7 @@ export async function POST(req: NextRequest) {
   const blocked = rejectIfMutationBlocked(req);
   if (blocked) return blocked;
 
-  const privacy = parseAnalyticsPrivacySignals({
-    headers: req.headers,
-    cookieHeader: req.headers.get('cookie'),
-  });
-  if (!analyticsCollectionAllowed(privacy)) {
-    // Honor GPC / DNT / explicit opt-out without error noise.
-    return NextResponse.json({ ok: true, recorded: false, reason: 'privacy_signal' });
-  }
-
-  const hashPosture = evaluateAnalyticsHashPosture();
-  if (!hashPosture.allowed) {
-    return NextResponse.json({ ok: true, recorded: false, reason: hashPosture.reason });
-  }
-
-  const { ip, userAgent } = requestMeta(req);
+  // Validate payload first so bad clients still get 400 (smoke + schema contract).
   let body: unknown;
   try {
     body = await req.json();
@@ -43,6 +29,20 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid analytics event.' }, { status: 400 });
   }
 
+  const privacy = parseAnalyticsPrivacySignals({
+    headers: req.headers,
+    cookieHeader: req.headers.get('cookie'),
+  });
+  if (!analyticsCollectionAllowed(privacy)) {
+    return NextResponse.json({ ok: true, recorded: false, reason: 'privacy_signal' });
+  }
+
+  const hashPosture = evaluateAnalyticsHashPosture();
+  if (!hashPosture.allowed) {
+    return NextResponse.json({ ok: true, recorded: false, reason: hashPosture.reason });
+  }
+
+  const { ip, userAgent } = requestMeta(req);
   try {
     const row = await recordAnalyticsEvent(parsed.data, { ip, userAgent }, { privacy });
     return NextResponse.json({ ok: true, recorded: Boolean(row) });
