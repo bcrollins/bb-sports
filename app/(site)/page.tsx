@@ -308,7 +308,9 @@ export default async function HomePage() {
           </div>
 
           <aside className="grid gap-5 content-start">
-            <NewsletterSignup variant="block" />
+            <div id="newsletter" className="scroll-mt-24">
+              <NewsletterSignup variant="block" />
+            </div>
             <section className="border border-navy/15 bg-white p-5">
               <p className="bb-eyebrow !text-breaking">Franchise rankings</p>
               <h2 className="mt-2 font-serif text-2xl font-bold leading-tight text-navy-900">
