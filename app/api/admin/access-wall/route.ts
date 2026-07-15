@@ -7,6 +7,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { ACCESS_WALL_CONFIG_KEY, type AccessWallConfig, updateAccessWallPassword } from '@/lib/access-wall';
 import { accessWallUpdateSchema, validationErrorMessage } from '@/lib/intake-validation';
 import { getCurrentUser } from '@/lib/auth';
+import { assertCapability } from '@/lib/admin-roles';
 import { getConfig } from '@/lib/queries';
 
 export const runtime = 'nodejs';
@@ -15,6 +16,8 @@ export const dynamic = 'force-dynamic';
 export async function GET() {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const allowed = assertCapability(user.role, 'manage_access_wall');
+  if (!allowed.ok) return NextResponse.json({ error: allowed.error }, { status: 403 });
   const config = await getConfig<AccessWallConfig | null>(ACCESS_WALL_CONFIG_KEY, null);
   return NextResponse.json({
     wall: {
@@ -28,6 +31,8 @@ export async function GET() {
 export async function PUT(req: NextRequest) {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const allowed = assertCapability(user.role, 'manage_access_wall');
+  if (!allowed.ok) return NextResponse.json({ error: allowed.error }, { status: 403 });
 
   let body: unknown;
   try {

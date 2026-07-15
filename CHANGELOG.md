@@ -15,6 +15,7 @@ All notable changes to BB Sports. Format loosely follows
 
 ### Added
 
+- Newsroom least-privilege capability matrix on comments, access wall, site config, citations.
 - IP/UA retention policy with dry-run SQL (`lib/ip-retention.ts`, `docs/operations/IP-RETENTION.md`).
 - Crash-safe local draft autosave in article editor (browser only, never publishes).
 - Audience analytics privacy posture banner; backup/restore operator runbook.
