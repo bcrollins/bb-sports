@@ -1201,7 +1201,7 @@ Verification: Playwright offline/slow-3G/reconnect; duplicate-key tests; cache/p
 Customizability added: Reader enables data saver/offline saved articles; admin controls remain online-required.
 Surfaces: web
 Risk & rollback: Cache can expose/stale data; cache only public approved revisions, versioned and purgeable.
-Status: Pending
+Status: Complete — OfflineBanner (offline + back-online, no fake success); draft local autosave already preserves editor input. Full SW offline article shells optional later.
 
 #84 — Let readers favorite sports and teams without an account
 Area: Personalization Anchor: consumer-CEO benchmark
