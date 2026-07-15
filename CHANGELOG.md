@@ -7,6 +7,10 @@ All notable changes to BB Sports. Format loosely follows
 
 ### Added
 
+- Threaded comments accessibility (ARIA live status, reply focus, labeled replies).
+- Canonical AiAssistedBadge linking to editorial AI policy.
+- Corrections page wired to editorial_findings ledger.
+- Search typo tolerance + richer empty states with latest suggestions.
 - Catalog reconcile admin: dry-run + draft-only import for filesystem Markdown (never publish).
 - Durable comment rate limiting via shared auth_attempts (comment purpose).
 - Admin audit event ledger + /admin/audit UI.

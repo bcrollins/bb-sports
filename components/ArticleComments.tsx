@@ -75,10 +75,17 @@ export default function ArticleComments({ slug }: { slug: string }) {
   }
 
   return (
-    <section className="max-w-readable mx-auto px-4 sm:px-6 pb-10" id="comments">
+    <section
+      className="max-w-readable mx-auto px-4 sm:px-6 pb-10"
+      id="comments"
+      aria-labelledby="comments-heading"
+    >
       <div className="bb-thin-rule pb-3 mb-4 flex flex-wrap items-end gap-3">
         <span className="block h-7 w-1.5 bg-breaking" aria-hidden="true" />
-        <h2 className="font-display uppercase italic text-navy-900 text-2xl tracking-[-0.01em] flex-1">
+        <h2
+          id="comments-heading"
+          className="font-display uppercase italic text-navy-900 text-2xl tracking-[-0.01em] flex-1"
+        >
           Yell at me
         </h2>
         <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-charcoal/60">
@@ -88,20 +95,24 @@ export default function ArticleComments({ slug }: { slug: string }) {
 
       <div className="rounded-sm border border-navy/15 bg-white">
         <div className="border-b border-navy/10 p-4 sm:p-5">
-          <div className="flex items-center gap-2 text-sm font-bold text-navy">
+          <div className="flex items-center gap-2 text-sm font-bold text-navy" aria-live="polite">
             <MessageCircle size={18} aria-hidden="true" />
-            {commentsUnavailable ? 'Comments unavailable' : `${comments.length} approved ${comments.length === 1 ? 'comment' : 'comments'}`}
+            {commentsUnavailable
+              ? 'Comments unavailable'
+              : `${comments.length} approved ${comments.length === 1 ? 'comment' : 'comments'}`}
           </div>
-          <p className="mt-1 text-sm leading-6 text-charcoal/75">
+          <p id="comments-help" className="mt-1 text-sm leading-6 text-charcoal/75">
             Keep it about the take. Clean comments post fast; spam, gambling promos, and review-keyword comments go to the queue first.
           </p>
         </div>
 
-        <div className="p-4 sm:p-5">
+        <div className="p-4 sm:p-5" aria-busy={status === 'loading'}>
           {status === 'loading' ? (
-            <div className="rounded border border-navy/10 bg-bone-50 p-4 text-sm text-navy/70">Loading the thread...</div>
+            <div role="status" className="rounded border border-navy/10 bg-bone-50 p-4 text-sm text-navy/70">
+              Loading the thread...
+            </div>
           ) : commentsUnavailable ? (
-            <div className="rounded border border-broadcast-red/25 bg-broadcast-red/5 p-4 text-sm text-broadcast-red">
+            <div role="alert" className="rounded border border-broadcast-red/25 bg-broadcast-red/5 p-4 text-sm text-broadcast-red">
               {message}
             </div>
           ) : tree.length === 0 ? (
@@ -109,23 +120,42 @@ export default function ArticleComments({ slug }: { slug: string }) {
               No approved comments yet. First real argument gets the room.
             </div>
           ) : (
-            <ol className="space-y-4">
+            <ol className="space-y-4" aria-label="Comment thread">
               {tree.map((comment) => (
-                <CommentItem key={comment.id} comment={comment} onReply={setReplyTo} />
+                <CommentItem
+                  key={comment.id}
+                  comment={comment}
+                  onReply={(c) => {
+                    setReplyTo(c);
+                    queueMicrotask(() => document.getElementById('comment-body')?.focus());
+                  }}
+                />
               ))}
             </ol>
           )}
         </div>
 
-        <form onSubmit={submit} className="border-t border-navy/10 bg-bone-50 p-4 sm:p-5">
+        <form
+          onSubmit={submit}
+          className="border-t border-navy/10 bg-bone-50 p-4 sm:p-5"
+          aria-describedby="comments-help comment-status"
+        >
           <div className="flex flex-wrap items-center gap-2">
-            <h3 className="font-serif text-xl font-bold text-navy">{replyTo ? `Replying to ${replyTo.authorName}` : 'Add your take'}</h3>
+            <h3 className="font-serif text-xl font-bold text-navy">
+              {replyTo ? `Replying to ${replyTo.authorName}` : 'Add your take'}
+            </h3>
             {replyTo ? (
-              <button type="button" onClick={() => setReplyTo(null)} className="bb-link text-sm">
+              <button type="button" onClick={() => setReplyTo(null)} className="bb-link text-sm min-h-[44px]">
                 Cancel reply
               </button>
             ) : null}
           </div>
+          {replyTo ? (
+            <p className="mt-2 text-sm text-navy/60" id="reply-context">
+              Thread reply under: “{replyTo.body.slice(0, 120)}
+              {replyTo.body.length > 120 ? '…' : ''}”
+            </p>
+          ) : null}
 
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
             <Field label="Name" htmlFor="comment-name">
@@ -136,18 +166,18 @@ export default function ArticleComments({ slug }: { slug: string }) {
                 maxLength={80}
                 value={authorName}
                 onChange={(e) => setAuthorName(e.target.value)}
-                className="bb-admin-input"
+                className="bb-admin-input min-h-[44px]"
                 autoComplete="name"
                 disabled={commentsUnavailable}
               />
             </Field>
-            <Field label="Email (private)" htmlFor="comment-email">
+            <Field label="Email (private, never shown)" htmlFor="comment-email">
               <input
                 id="comment-email"
                 type="email"
                 value={authorEmail}
                 onChange={(e) => setAuthorEmail(e.target.value)}
-                className="bb-admin-input"
+                className="bb-admin-input min-h-[44px]"
                 autoComplete="email"
                 disabled={commentsUnavailable}
               />
@@ -164,14 +194,24 @@ export default function ArticleComments({ slug }: { slug: string }) {
               onChange={(e) => setBody(e.target.value)}
               className="bb-admin-input min-h-[120px] resize-y"
               disabled={commentsUnavailable}
+              aria-describedby={replyTo ? 'reply-context' : undefined}
             />
           </Field>
 
           <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <p aria-live="polite" className={`text-sm ${status === 'error' ? 'text-broadcast-red' : 'text-navy/65'}`}>
+            <p
+              id="comment-status"
+              role="status"
+              aria-live="polite"
+              className={`text-sm ${status === 'error' ? 'text-broadcast-red' : 'text-navy/65'}`}
+            >
               {message}
             </p>
-            <button type="submit" disabled={status === 'submitting' || commentsUnavailable} className="bb-button-primary inline-flex items-center justify-center gap-2 disabled:opacity-60">
+            <button
+              type="submit"
+              disabled={status === 'submitting' || commentsUnavailable}
+              className="bb-button-primary inline-flex min-h-[44px] items-center justify-center gap-2 disabled:opacity-60"
+            >
               <Send size={16} aria-hidden="true" />
               {commentsUnavailable ? 'Comments unavailable' : status === 'submitting' ? 'Posting...' : 'Post comment'}
             </button>
@@ -185,18 +225,24 @@ export default function ArticleComments({ slug }: { slug: string }) {
 function CommentItem({ comment, onReply }: { comment: CommentNode; onReply: (comment: PublicComment) => void }) {
   return (
     <li className="rounded border border-navy/10 bg-white p-4">
-      <div className="flex flex-wrap items-center gap-2">
-        <div className="font-serif text-lg font-bold text-navy">{comment.authorName}</div>
-        <time className="text-xs text-navy/45" dateTime={comment.createdAt}>
-          {new Date(comment.createdAt).toLocaleString()}
-        </time>
-      </div>
-      <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-charcoal/85">{comment.body}</p>
-      <button type="button" onClick={() => onReply(comment)} className="mt-3 inline-flex min-h-[36px] items-center gap-1.5 text-xs font-bold uppercase tracking-[0.16em] text-broadcast-red">
-        <Reply size={14} aria-hidden="true" /> Reply
-      </button>
+      <article aria-label={`Comment by ${comment.authorName}`}>
+        <header className="flex flex-wrap items-center gap-2">
+          <p className="font-serif text-lg font-bold text-navy">{comment.authorName}</p>
+          <time className="text-xs text-navy/45" dateTime={comment.createdAt}>
+            {new Date(comment.createdAt).toLocaleString()}
+          </time>
+        </header>
+        <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-charcoal/85">{comment.body}</p>
+        <button
+          type="button"
+          onClick={() => onReply(comment)}
+          className="mt-3 inline-flex min-h-[44px] items-center gap-1.5 text-xs font-bold uppercase tracking-[0.16em] text-broadcast-red"
+        >
+          <Reply size={14} aria-hidden="true" /> Reply to {comment.authorName}
+        </button>
+      </article>
       {comment.replies.length > 0 ? (
-        <ol className="mt-4 space-y-3 border-l-2 border-navy/10 pl-3 sm:pl-5">
+        <ol className="mt-4 space-y-3 border-l-2 border-navy/10 pl-3 sm:pl-5" aria-label={`Replies to ${comment.authorName}`}>
           {comment.replies.map((reply) => (
             <CommentItem key={reply.id} comment={reply} onReply={onReply} />
           ))}
