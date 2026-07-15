@@ -7,6 +7,7 @@ All notable changes to BB Sports. Format loosely follows
 
 ### Added
 
+- Expanded encyclopedia people registry to 130 first-party cited figures (was 51), with deep Brad-bias coverage for Bears / Panthers / Cubs / Bulls plus broader NFL–NHL–MLB–NBA faces. Club-page citations only; no proprietary career-stat tables. Bootstrap now upserts people identity/role so trade-window corrections land on deploy.
 - Shipped a first-party sports encyclopedia foundation: complete NFL/MLB/NHL/NBA franchise registries (124 teams) with source citations, a small cited people set, `/teams` UI, and `/api/teams` — public identity facts only, not a proprietary stats scrape.
 - Expanded the encyclopedia people registry (40+ cited figures), added `/people` pages, encyclopedia search on `/api/teams?q=`, and production smoke coverage for teams/people surfaces.
 - Added conference/division filters on league team pages, homepage/footer entry points to the encyclopedia, and major-league player-face rail links into `/teams/{league}`.

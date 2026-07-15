@@ -215,6 +215,10 @@ async function checkTeamsEncyclopediaApi() {
   const body = await parseJson(response, '/api/teams');
   invariant(body.data?.stats?.teams >= 124, `expected >=124 teams, got ${body.data?.stats?.teams}`);
   invariant(body.data?.stats?.leagues === 4, `expected 4 leagues, got ${body.data?.stats?.leagues}`);
+  invariant(
+    (body.data?.stats?.people ?? 0) >= 100,
+    `expected >=100 people, got ${body.data?.stats?.people}`,
+  );
   invariant(Array.isArray(body.data?.teams), 'teams array missing');
   invariant(body.data.teams.length >= 124, 'teams payload incomplete');
   const search = await request('/api/teams?q=Bears', {
